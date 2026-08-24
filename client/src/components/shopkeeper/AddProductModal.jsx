@@ -10,6 +10,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
     quantity: '',
     unit: 'kg',
     category: 'Fertilizer',
+    status: 'In Stock',
     imageUrl: '',
     description: '',
   });
@@ -17,6 +18,8 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+
+  const statuses = ['In Stock', 'Low Stock', 'Out of Stock', 'Full', 'Empty'];
 
   const samplePresets = [
     { label: '🌾 Urea Fertilizer', url: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=600&q=80' },
@@ -76,6 +79,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
         quantity: '',
         unit: 'kg',
         category: 'Fertilizer',
+        status: 'In Stock',
         imageUrl: '',
         description: '',
       });
@@ -122,7 +126,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all cursor-pointer"
                 >
                   {categories.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -141,7 +145,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
                 name="unit"
                 value={formData.unit}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all cursor-pointer"
               >
                 {units.map((u) => (
                   <option key={u} value={u}>
@@ -152,7 +156,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Price (₹) *
@@ -190,6 +194,24 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
                   className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Availability Status
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all font-semibold cursor-pointer"
+              >
+                {statuses.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

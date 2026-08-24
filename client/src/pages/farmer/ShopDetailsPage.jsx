@@ -208,7 +208,7 @@ export default function ShopDetailsPage() {
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status</span>
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            isOutOfStock
+                            item.status === 'Out of Stock' || item.status === 'Empty'
                               ? 'bg-rose-50 text-rose-700 border-rose-200'
                               : item.status === 'Low Stock'
                               ? 'bg-amber-50 text-amber-700 border-amber-200'
@@ -216,7 +216,11 @@ export default function ShopDetailsPage() {
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {isOutOfStock ? '🔴 Out of Stock' : `🟢 ${item.status}`}
+                          {item.status === 'Out of Stock' || item.status === 'Empty'
+                            ? '🔴 Out of Stock'
+                            : item.status === 'Low Stock'
+                            ? '🟠 Low Stock'
+                            : `🟢 ${item.status}`}
                         </span>
                       </div>
                     </div>

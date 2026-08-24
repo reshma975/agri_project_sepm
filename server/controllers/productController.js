@@ -133,22 +133,18 @@ export const addProductToShop = async (req, res) => {
       });
     }
 
-    // Determine status
-    let status = 'In Stock';
-    const numQty = Number(quantity);
-    if (numQty === 0) status = 'Out of Stock';
-    else if (numQty <= 5) status = 'Low Stock';
-    else if (numQty >= 100) status = 'Full';
+    // Accept status directly from shopkeeper request, defaulting to 'In Stock'
+    const finalStatus = req.body.status || (Number(quantity) === 0 ? 'Out of Stock' : 'In Stock');
 
     const inventoryItem = await ShopInventory.create({
       shopId: shop._id,
       productId: product._id,
       customName: name,
       price: Number(price),
-      quantity: numQty,
+      quantity: Number(quantity),
       unit: unit || product.defaultUnit || 'kg',
       rating: rating ? Number(rating) : 4.5,
-      status,
+      status: finalStatus,
       imageUrl: imageUrl || product.imageUrl,
     });
 
@@ -187,11 +183,6 @@ export const updateProductInShop = async (req, res) => {
     if (status !== undefined) item.status = status;
     if (imageUrl !== undefined) item.imageUrl = imageUrl;
     if (name !== undefined) item.customName = name;
-
-    // If quantity is zero, set out of stock automatically
-    if (item.quantity === 0) {
-      item.status = 'Out of Stock';
-    }
 
     await item.save();
 

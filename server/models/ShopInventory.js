@@ -51,18 +51,5 @@ const shopInventorySchema = new mongoose.Schema(
   }
 );
 
-// Auto calculate status based on quantity
-shopInventorySchema.pre('save', function (next) {
-  if (this.quantity === 0) {
-    this.status = 'Out of Stock';
-  } else if (this.quantity <= 5) {
-    this.status = 'Low Stock';
-  } else if (this.quantity >= 100) {
-    this.status = 'Full';
-  } else {
-    this.status = 'In Stock';
-  }
-  next();
-});
-
 export const ShopInventory = mongoose.model('ShopInventory', shopInventorySchema);
+
