@@ -91,9 +91,9 @@ export default function FarmerProfilePage() {
       {/* Back button (Wireframe 5) */}
       <Link
         to="/farmer/dashboard"
-        className="inline-flex items-center gap-1 text-xs font-bold text-forest-700 hover:text-forest-900 transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-forest-800 bg-forest-50 hover:bg-forest-100 border border-forest-200/80 transition-all shadow-2xs"
       >
-        <ArrowLeft className="w-4 h-4" /> Go back to Dashboard
+        <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
       </Link>
 
       {/* Header Profile Title */}

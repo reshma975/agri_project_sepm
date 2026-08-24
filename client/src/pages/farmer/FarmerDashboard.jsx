@@ -50,22 +50,22 @@ export default function FarmerDashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Namaste, {user?.name || 'Farmer'} 🌾
             </h1>
             <StatusBadge status={profile.registrationStatus || 'VERIFIED'} />
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Farmer ID: <span className="font-mono font-bold text-forest-800">{profile.farmerId || 'FMR000123'}</span> •{' '}
+          <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">
+            Farmer ID: <span className="font-mono font-bold text-teal-400">{profile.farmerId || 'FMR000123'}</span> •{' '}
             {profile.village ? `${profile.village}, ` : ''}{profile.district || 'Vijayawada'}
           </p>
         </div>
 
-        {/* Quick Quick Actions */}
+        {/* Quick Actions */}
         <div className="flex items-center gap-2.5">
           <Link
             to="/farmer/crops/register"
-            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-forest-200 transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-extrabold rounded-2xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2"
           >
             <FilePlus className="w-4 h-4" />
             + Register New Crop
@@ -73,12 +73,12 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* 1. Top Weather Banner (Matches Wireframe 3 Layout) */}
+      {/* 1. Top Weather Banner */}
       <WeatherBanner location={`${profile.district || 'Vijayawada'}, Andhra Pradesh`} />
 
-      {/* 2. Four Core Feature Cards (Matches Wireframe 3 Layout!) */}
+      {/* 2. Four Core Feature Cards (Matches Picture 2 Style!) */}
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-teal-400/80 mb-3">
           Quick Access Portals
         </h3>
 
@@ -86,22 +86,22 @@ export default function FarmerDashboard() {
           {/* Card 1: Digital Farm Records */}
           <Link
             to="/farmer/crops"
-            className="glass-card rounded-3xl p-6 border border-emerald-200 hover:border-forest-600 group transition-all flex flex-col justify-between"
+            className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-teal-400/50 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <LandPlot className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-extrabold text-lg text-slate-900 group-hover:text-forest-700 transition-colors">
+                <h4 className="font-extrabold text-lg text-white group-hover:text-teal-300 transition-colors">
                   Digital Farm Records
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   View past crop records, land survey parcels, and official verification status.
                 </p>
               </div>
             </div>
-            <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-forest-700">
+            <div className="mt-6 pt-3 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
               <span>{stats.totalCrops} Crop Entries</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -110,22 +110,22 @@ export default function FarmerDashboard() {
           {/* Card 2: Agricultural Shops & Stock Discovery */}
           <Link
             to="/farmer/shops"
-            className="glass-card rounded-3xl p-6 border border-amber-200 hover:border-amber-600 group transition-all flex flex-col justify-between"
+            className="glass-card rounded-3xl p-6 border border-amber-500/20 hover:border-amber-400/50 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-amber-950/70 border border-amber-500/30 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Store className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-extrabold text-lg text-slate-900 group-hover:text-amber-700 transition-colors">
+                <h4 className="font-extrabold text-lg text-white group-hover:text-amber-300 transition-colors">
                   Agricultural Shops
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Find local fertilizer & seed centers, check stock availability, and compare prices.
                 </p>
               </div>
             </div>
-            <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+            <div className="mt-6 pt-3 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-amber-400">
               <span>Find Fertilizers & Seeds</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -134,22 +134,22 @@ export default function FarmerDashboard() {
           {/* Card 3: Benefits & Policies (Government Updates) */}
           <Link
             to="/farmer/government-updates"
-            className="glass-card rounded-3xl p-6 border border-blue-200 hover:border-blue-600 group transition-all flex flex-col justify-between"
+            className="glass-card rounded-3xl p-6 border border-cyan-500/20 hover:border-cyan-400/50 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-500/30 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Building2 className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-extrabold text-lg text-slate-900 group-hover:text-blue-700 transition-colors">
+                <h4 className="font-extrabold text-lg text-white group-hover:text-cyan-300 transition-colors">
                   Benefits & Policies
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Official government welfare schemes, fertilizer subsidies, and crop insurance alerts.
                 </p>
               </div>
             </div>
-            <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-700">
+            <div className="mt-6 pt-3 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-cyan-400">
               <span>Recommended Schemes</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -158,22 +158,22 @@ export default function FarmerDashboard() {
           {/* Card 4: Register Ourselves / Crop */}
           <Link
             to="/farmer/crops/register"
-            className="glass-card rounded-3xl p-6 border border-teal-200 hover:border-teal-600 group transition-all flex flex-col justify-between bg-gradient-to-br from-white to-teal-50/40"
+            className="glass-card rounded-3xl p-6 border border-teal-500/30 hover:border-teal-400/60 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-teal-950/80 border border-teal-500/40 text-teal-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Sprout className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-extrabold text-lg text-slate-900 group-hover:text-teal-700 transition-colors">
+                <h4 className="font-extrabold text-lg text-white group-hover:text-teal-300 transition-colors">
                   Register Crop
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Pre-register your crop season, survey numbers, and document copies for officer verification.
                 </p>
               </div>
             </div>
-            <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700">
+            <div className="mt-6 pt-3 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
               <span>Submit New Record</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -181,15 +181,15 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* Floating / Direct FarmSetu AI Assistant Action (Wireframe 3) */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-forest-800 to-forest-900 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Direct FarmSetu AI Assistant Action */}
+      <div className="p-6 rounded-3xl bg-[#092027] border border-teal-900/60 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 border border-white/20 flex-shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-[#0e2c34] flex items-center justify-center text-teal-400 border border-teal-500/30 flex-shrink-0">
             <Bot className="w-8 h-8 animate-pulse-subtle" />
           </div>
           <div>
-            <h3 className="text-lg font-bold">Have an Agriculture Question?</h3>
-            <p className="text-xs sm:text-sm text-forest-200 mt-0.5">
+            <h3 className="text-lg font-bold text-white">Have an Agriculture Question?</h3>
+            <p className="text-xs sm:text-sm text-slate-300 mt-0.5">
               Ask our AI voice assistant about fertilizer ratios, yellow leaves, pests, or PM-KISAN schemes.
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function FarmerDashboard() {
 
         <button
           onClick={() => setAssistantOpen(true)}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-forest-950 font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 flex-shrink-0"
+          className="px-6 py-3 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-extrabold text-xs sm:text-sm rounded-2xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2 flex-shrink-0"
         >
           <span>🎙️ Open AI Assistant</span>
           <ArrowRight className="w-4 h-4" />

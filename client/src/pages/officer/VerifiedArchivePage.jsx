@@ -55,9 +55,9 @@ export default function VerifiedArchivePage() {
         <div>
           <Link
             to="/officer/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 mb-2 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 transition-all mb-3 shadow-2xs"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <CheckCircle2 className="w-7 h-7 text-emerald-600" />

@@ -19,23 +19,23 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
       <div
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 animate-slide-up`}
+        className={`relative w-full ${maxWidth} bg-[#091b21] rounded-3xl shadow-2xl border border-teal-500/25 overflow-hidden z-10 animate-slide-up text-slate-100`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-teal-900/50 bg-[#061217]">
+          <h3 className="text-lg font-bold text-white tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-[#0c242b] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-teal-400" />
           </button>
         </div>
 

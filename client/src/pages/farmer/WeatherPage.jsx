@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import {
@@ -12,7 +13,8 @@ import {
   Calendar,
   CheckCircle2,
   Sprout,
-  ShieldAlert
+  ShieldAlert,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function WeatherPage() {
@@ -45,15 +47,21 @@ export default function WeatherPage() {
   const isSevere = weather?.alertType === 'SEVERE';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header & Back Navigation */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <CloudSun className="w-7 h-7 text-forest-600" />
-            Agricultural Weather & Advisory
+          <Link
+            to="/farmer/dashboard"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/30 transition-all mb-3 shadow-xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+            <CloudSun className="w-7 h-7 text-emerald-400" />
+            <span>Agricultural Weather & Advisory</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
             Real-time conditions, rainfall predictions, and field-level spraying advisories.
           </p>
         </div>
@@ -136,32 +144,32 @@ export default function WeatherPage() {
       {/* Field Activity Recommendations */}
       {weather?.advisory && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="glass-card rounded-2xl p-5 border border-slate-200 space-y-2">
-            <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Droplets className="w-4 h-4 text-sky-600" />
-              Irrigation Advisory
+          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+            <h4 className="font-black text-sm text-white flex items-center gap-2">
+              <Droplets className="w-4 h-4 text-sky-400" />
+              <span className="text-sky-300">Irrigation Advisory</span>
             </h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-200 font-medium leading-relaxed">
               {weather.advisory.irrigation}
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-slate-200 space-y-2">
-            <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Wind className="w-4 h-4 text-teal-600" />
-              Pesticide Spraying Guide
+          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+            <h4 className="font-black text-sm text-white flex items-center gap-2">
+              <Wind className="w-4 h-4 text-teal-400" />
+              <span className="text-teal-300">Pesticide Spraying Guide</span>
             </h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-200 font-medium leading-relaxed">
               {weather.advisory.pesticideSpraying}
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-slate-200 space-y-2">
-            <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Sprout className="w-4 h-4 text-emerald-600" />
-              Fertilizer Application
+          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+            <h4 className="font-black text-sm text-white flex items-center gap-2">
+              <Sprout className="w-4 h-4 text-emerald-400" />
+              <span className="text-emerald-300">Fertilizer Application</span>
             </h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-200 font-medium leading-relaxed">
               {weather.advisory.fertilizerApplication}
             </p>
           </div>
@@ -170,22 +178,22 @@ export default function WeatherPage() {
 
       {/* 5-Day Forecast Grid */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-forest-600" />
-          5-Day Agricultural Forecast
+        <h3 className="text-lg font-black text-white flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-teal-400" />
+          <span>5-Day Agricultural Forecast</span>
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {weather?.forecast?.map((day, idx) => (
             <div
               key={idx}
-              className="glass-card rounded-2xl p-4 text-center border border-slate-200 space-y-2"
+              className="glass-card rounded-2xl p-4 text-center border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg hover:border-teal-400/50 transition-all"
             >
-              <span className="text-xs font-bold text-slate-600 block">{day.day}</span>
+              <span className="text-xs font-bold text-teal-300 block">{day.day}</span>
               <span className="text-3xl block my-1">{day.emoji}</span>
-              <strong className="text-sm text-slate-900 block">{day.temp}</strong>
-              <p className="text-[11px] text-slate-500">{day.condition}</p>
-              <span className="inline-block text-[10px] font-semibold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-md">
+              <strong className="text-sm font-black text-white block">{day.temp}</strong>
+              <p className="text-xs font-medium text-slate-300">{day.condition}</p>
+              <span className="inline-block text-[11px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
                 Rain: {day.rain}
               </span>
             </div>

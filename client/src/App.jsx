@@ -63,15 +63,14 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 function AppContent() {
-  const { user, isFarmer } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const [floatingAssistantOpen, setFloatingAssistantOpen] = useState(false);
 
-  // Hide floating bot button on dedicated assistant page
-  const showFloatingBot = isFarmer && location.pathname !== '/farmer/assistant';
+  const isLandingPage = location.pathname === '/';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F9F6] text-slate-800">
+    <div className="min-h-screen flex flex-col bg-transparent text-slate-100 selection:bg-teal-500 selection:text-black">
       <Navbar />
 
       <main className="flex-1">
@@ -229,11 +228,11 @@ function AppContent() {
         </Routes>
       </main>
 
-      <Footer />
-
-      {/* Floating AI Voice Assistant Button (Wireframe 3) */}
-      {showFloatingBot && (
+      {/* Footer & Floating AI Voice Assistant ONLY on Landing Page */}
+      {isLandingPage && (
         <>
+          <Footer />
+
           <button
             onClick={() => setFloatingAssistantOpen(true)}
             className="fixed bottom-6 right-6 z-40 p-3.5 sm:p-4 bg-forest-600 hover:bg-forest-700 text-white rounded-full shadow-2xl hover:scale-105 transition-all flex items-center gap-2 border-2 border-white ring-4 ring-forest-100"

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import {
   Bot,
@@ -11,7 +12,8 @@ import {
   RefreshCw,
   Sprout,
   HelpCircle,
-  Radio
+  Radio,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function AssistantPage() {
@@ -172,20 +174,27 @@ export default function AssistantPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header with Audio Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Bot className="w-7 h-7 text-forest-600" />
-            FarmSetu AI Agricultural Assistant
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Voice-enabled advisor for crop protection, fertilizers, pest remedies, and government schemes.
-          </p>
-        </div>
+      {/* Header with Audio Controls & Back Navigation */}
+      <div className="space-y-3">
+        <Link
+          to="/farmer/dashboard"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/30 transition-all shadow-xs"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+        </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+              <Bot className="w-7 h-7 text-emerald-400" />
+              <span>FarmSetu AI Agricultural Assistant</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
+              Voice-enabled advisor for crop protection, fertilizers, pest remedies, and government schemes.
+            </p>
+          </div>
 
-        {/* Audio Output Settings */}
-        <div className="flex items-center gap-2">
+          {/* Audio Output Settings */}
+          <div className="flex items-center gap-2">
           {/* Toggle Auto-Speak */}
           <button
             type="button"
@@ -218,6 +227,7 @@ export default function AssistantPage() {
           )}
         </div>
       </div>
+    </div>
 
       {/* Main Chat Frame */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[650px]">

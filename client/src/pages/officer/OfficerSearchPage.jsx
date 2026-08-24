@@ -13,7 +13,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Calendar,
-  Layers
+  Layers,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function OfficerSearchPage() {
@@ -42,14 +43,20 @@ export default function OfficerSearchPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header & Back Navigation */}
       <div>
+        <Link
+          to="/officer/dashboard"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 transition-all mb-3 shadow-2xs"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+        </Link>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
           <Search className="w-7 h-7 text-blue-600" />
           🔍 Officer Farmer Search Portal
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
           Lookup farmer registration records by Farmer ID (e.g. FMR000123), Name, Mobile Number, or Village.
         </p>
       </div>

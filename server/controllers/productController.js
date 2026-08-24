@@ -46,7 +46,30 @@ export const searchProductsAcrossShops = async (req, res) => {
     }
 
     if (location && location !== 'All') {
-      matchConditions['shop.location'] = { $regex: location, $options: 'i' };
+      const stopWords = new Set(['town', 'city', 'district', 'distrcit', 'dist', 'near', 'mandal', 'village', 'state', 'andhra', 'pradesh']);
+      const tokens = location
+        .split(/[,;\s/]+/)
+        .map(t => t.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .filter(t => t.length >= 2 && !stopWords.has(t.toLowerCase()));
+
+      if (tokens.length === 0) {
+        matchConditions.$or = [
+          ...(matchConditions.$or || []),
+          { 'shop.location': { $regex: location.trim(), $options: 'i' } },
+          { 'shop.address': { $regex: location.trim(), $options: 'i' } },
+        ];
+      } else {
+        const locQueries = tokens.flatMap(token => [
+          { 'shop.location': { $regex: token, $options: 'i' } },
+          { 'shop.address': { $regex: token, $options: 'i' } },
+        ]);
+        if (matchConditions.$or) {
+          matchConditions.$and = [{ $or: matchConditions.$or }, { $or: locQueries }];
+          delete matchConditions.$or;
+        } else {
+          matchConditions.$or = locQueries;
+        }
+      }
     }
 
     if (minPrice || maxPrice) {

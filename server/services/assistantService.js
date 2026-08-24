@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 // Comprehensive Agricultural AI Assistant Knowledge & Advisory Engine
 
 // In-depth agricultural knowledge base categorized by crop, topic, pest, and scheme
@@ -165,7 +167,7 @@ const AGRICULTURAL_KNOWLEDGE = {
   }
 };
 
-// Generic smart agricultural query processor
+// Generic smart agricultural query processor (Hybrid: Gemini API + Local Knowledge Base Fallback)
 export const processAgriculturalQuery = async (query = '', farmerContext = {}) => {
   const clean = query.trim().toLowerCase();
 
@@ -177,7 +179,47 @@ export const processAgriculturalQuery = async (query = '', farmerContext = {}) =
     };
   }
 
-  // 1. Direct match with categorized knowledge items
+  // 1. If GEMINI_API_KEY is provided in .env, query Google Gemini LLM
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (geminiApiKey && geminiApiKey.trim() !== '' && !geminiApiKey.includes('mock') && !geminiApiKey.includes('your_')) {
+    try {
+      const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        systemInstruction: `You are FarmSetu AI, an expert agricultural advisor and agronomist empowering Indian farmers.
+Provide concise, highly accurate, and practical farming advice in friendly bullet points with emojis.
+Cover:
+1. Exact dosage of fertilizers (NPK, DAP, Urea, Potash, organic FYM/vermicompost) per acre or plant.
+2. Integrated Pest Management (both chemical with technical names and organic bio-pesticides like Neem Oil/Trichoderma).
+3. Timely weather/irrigation advice and relevant Indian government welfare schemes (PM-KISAN, PMFBY, Rythu Bharosa, e-NAM) when relevant.
+Keep the language simple, respectful, and easy for farmers to understand.`
+      });
+
+      const contextInfo = farmerContext?.district
+        ? ` (Farmer location: ${farmerContext.district}, Andhra Pradesh, Land: ${farmerContext.totalLandArea || '2'} Acres)`
+        : '';
+
+      const prompt = `${query}${contextInfo}`;
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+
+      if (responseText && responseText.trim()) {
+        return {
+          answer: responseText,
+          suggestions: [
+            'How to prevent pest attack in this crop?',
+            'What is the recommended fertilizer schedule?',
+            'Available government subsidies for this crop'
+          ],
+          topic: 'FarmSetu AI (Powered by Google Gemini)'
+        };
+      }
+    } catch (geminiError) {
+      console.warn('Gemini API query failed, falling back to local agricultural knowledge engine:', geminiError?.message || geminiError);
+    }
+  }
+
+  // 2. Direct match with categorized knowledge items (Fallback / Local Engine)
   for (const [key, item] of Object.entries(AGRICULTURAL_KNOWLEDGE)) {
     const hasMatch = item.matches.some((keyword) => {
       // Check if keyword appears as substring or word

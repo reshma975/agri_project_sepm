@@ -180,9 +180,9 @@ export default function ShopDetailsPage() {
       <div className="flex items-center justify-between">
         <Link
           to="/shopkeeper/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-2xs"
         >
-          <ArrowLeft className="w-4 h-4" /> Go back to My Shops
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to My Shops
         </Link>
 
         <button
