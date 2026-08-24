@@ -3,6 +3,49 @@ import { ShopInventory } from '../models/ShopInventory.js';
 import { Product } from '../models/Product.js';
 import { Review } from '../models/Review.js';
 
+// @desc    Get all distinct shop locations in database
+// @route   GET /api/shops/locations
+// @access  Public
+export const getShopLocations = async (req, res) => {
+  try {
+    const locations = await Shop.distinct('location');
+    const cleanLocations = locations.filter(Boolean).map(l => l.trim());
+    const uniqueLocations = [...new Set(cleanLocations)].sort();
+    return res.status(200).json({ success: true, locations: uniqueLocations });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Helper to build flexible multi-word location query
+const buildLocationMatch = (locString, prefix = '') => {
+  if (!locString || locString === 'All') return null;
+  const stopWords = new Set(['town', 'city', 'district', 'distrcit', 'dist', 'near', 'mandal', 'village', 'state', 'andhra', 'pradesh']);
+  const tokens = locString
+    .split(/[,;\s/]+/)
+    .map(t => t.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter(t => t.length >= 2 && !stopWords.has(t.toLowerCase()));
+
+  const locField = prefix ? `${prefix}.location` : 'location';
+  const addrField = prefix ? `${prefix}.address` : 'address';
+
+  if (tokens.length === 0) {
+    return {
+      $or: [
+        { [locField]: { $regex: locString.trim(), $options: 'i' } },
+        { [addrField]: { $regex: locString.trim(), $options: 'i' } }
+      ]
+    };
+  }
+
+  return {
+    $or: tokens.flatMap(token => [
+      { [locField]: { $regex: token, $options: 'i' } },
+      { [addrField]: { $regex: token, $options: 'i' } }
+    ])
+  };
+};
+
 // @desc    Get all shops with search and location filters
 // @route   GET /api/shops
 // @access  Public
@@ -16,7 +59,15 @@ export const getShops = async (req, res) => {
     }
 
     if (location && location !== 'All') {
-      query.location = { $regex: location, $options: 'i' };
+      const locMatch = buildLocationMatch(location);
+      if (locMatch) {
+        if (query.$or) {
+          query.$and = [{ $or: query.$or }, locMatch];
+          delete query.$or;
+        } else {
+          query.$or = locMatch.$or;
+        }
+      }
     }
 
     if (minRating) {
@@ -39,7 +90,10 @@ export const getMyShops = async (req, res) => {
     const query = { ownerId: req.user._id };
 
     if (location && location !== 'All') {
-      query.location = { $regex: location, $options: 'i' };
+      const locMatch = buildLocationMatch(location);
+      if (locMatch) {
+        query.$and = locMatch.$or ? [{ $or: locMatch.$or }] : [];
+      }
     }
 
     const shops = await Shop.find(query).sort({ createdAt: -1 });

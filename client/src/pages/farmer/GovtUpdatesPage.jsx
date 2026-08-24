@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatDate } from '../../utils/helpers';
@@ -12,7 +13,8 @@ import {
   Search,
   MapPin,
   ShieldCheck,
-  Award
+  Award,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function GovtUpdatesPage() {
@@ -55,14 +57,20 @@ export default function GovtUpdatesPage() {
   }, [selectedCategory, searchQuery]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Header */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Top Header & Back Navigation */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-          <Building2 className="w-7 h-7 text-forest-600" />
-          🏛️ Government Benefits, Policies & Schemes
+        <Link
+          to="/farmer/dashboard"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/30 transition-all mb-3 shadow-xs"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+        </Link>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+          <Building2 className="w-7 h-7 text-emerald-400" />
+          <span>Government Benefits, Policies & Schemes</span>
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
           Official announcements from the Ministry of Agriculture and Andhra Pradesh Rythu Seva Departments.
         </p>
       </div>

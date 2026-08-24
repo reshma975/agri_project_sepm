@@ -94,12 +94,20 @@ export default function ShopDetailsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Back Link */}
-      <Link
-        to="/farmer/shops"
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-700 hover:text-forest-900 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Agricultural Shops
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link
+          to="/farmer/shops"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-forest-800 bg-forest-50 hover:bg-forest-100 border border-forest-200/80 transition-all shadow-2xs"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Agricultural Shops
+        </Link>
+        <Link
+          to="/farmer/dashboard"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all"
+        >
+          Dashboard
+        </Link>
+      </div>
 
       {/* Shop Banner & Profile Card */}
       <div className="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-md">

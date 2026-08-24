@@ -57,6 +57,15 @@ export const getFarmerLands = async (req, res) => {
     }
 
     const lands = await Land.find({ farmerId: profile._id }).sort({ createdAt: -1 });
+    
+    // Ensure all lands have a unique landId
+    for (const land of lands) {
+      if (!land.landId) {
+        land.landId = `LND${Math.floor(10000 + Math.random() * 90000)}`;
+        await land.save();
+      }
+    }
+
     return res.status(200).json({ success: true, lands });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -254,7 +263,7 @@ export const registerCrop = async (req, res) => {
         farmerId: profile._id,
         landId: land._id,
         cropName: item.cropName,
-        cropCategory: item.cropCategory || 'Cereals & Food Grains',
+        cropCategory: item.cropCategory || 'Cereals',
         surveyNumber: land.surveyNumber,
         cultivatedArea: Number(item.cultivatedArea),
         totalLandArea: Number(totalLandArea) || land.totalArea,
@@ -329,19 +338,48 @@ export const updateCrop = async (req, res) => {
       }
     });
 
-    if (req.body.resubmit) {
+    const isDraft = crop.status === 'DRAFT';
+    const isSubmitting = req.body.submit || req.body.resubmit;
+
+    if (isSubmitting) {
       crop.status = 'SUBMITTED';
       crop.submittedAt = new Date();
+
       await CropRegistrationHistory.create({
         registrationId: crop._id,
-        action: 'RESUBMITTED',
-        comment: req.body.resubmitComment || 'Corrected and resubmitted by farmer',
-        officerName: 'Farmer Resubmission'
+        action: isDraft ? 'SUBMITTED' : 'RESUBMITTED',
+        comment: isDraft
+          ? (req.body.submitComment || 'Draft submitted digitally by farmer for officer verification')
+          : (req.body.resubmitComment || 'Corrected and resubmitted by farmer'),
+        officerName: isDraft ? 'Farmer Self-Submission' : 'Farmer Resubmission'
+      });
+
+      // Update farmer profile registration status
+      const profile = await FarmerProfile.findOne({ userId: req.user._id });
+      if (profile && profile.registrationStatus !== 'VERIFIED') {
+        profile.registrationStatus = 'UNDER_VERIFICATION';
+        await profile.save();
+      }
+    } else if (isDraft) {
+      await CropRegistrationHistory.create({
+        registrationId: crop._id,
+        action: 'DRAFT_SAVED',
+        comment: 'Draft details updated by farmer',
+        officerName: 'Farmer Self-Submission'
       });
     }
 
     await crop.save();
-    return res.status(200).json({ success: true, message: 'Crop registration updated successfully', crop });
+
+    const responseMessage = isSubmitting
+      ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully!')
+      : 'Crop details updated successfully!';
+
+    return res.status(200).json({
+      success: true,
+      message: responseMessage,
+      crop
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

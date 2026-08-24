@@ -11,8 +11,9 @@ import {
   CheckCircle2,
   FileCheck,
   Users,
-  TrendingUp,
-  MapPin
+  Sparkles,
+  Search,
+  Check
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -20,156 +21,126 @@ export default function LandingPage() {
     {
       icon: Sprout,
       title: '🌾 Digital Farm Records',
-      description: 'Digitally maintain crop and land-related information with multi-year historical logs and verification status.',
-      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      description: 'Digitally maintain crop and land records with multi-year historical logs and official verification status.',
+      bg: 'bg-emerald-950/60 text-teal-300 border-teal-500/30',
     },
     {
       icon: Store,
-      title: '🏪 Agricultural Shops',
+      title: '🏪 Agricultural Shops & Stock',
       description: 'Find authorized local agricultural shops, check real-time product stock, compare prices, and read farmer ratings.',
-      bg: 'bg-amber-50 text-amber-700 border-amber-200',
+      bg: 'bg-amber-950/60 text-amber-300 border-amber-500/30',
     },
     {
       icon: CloudSun,
-      title: '🌦️ Weather Alerts',
-      description: 'Get location-specific agricultural weather forecasts, rain probability, and timely severe-weather farming advisories.',
-      bg: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+      title: '🌦️ Agricultural Weather Advisories',
+      description: 'Get location-specific agricultural weather forecasts, rain probability, and timely farming advisories.',
+      bg: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/30',
     },
     {
       icon: Building2,
-      title: '🏛️ Government Updates',
+      title: '🏛️ Government Schemes & Subsidies',
       description: 'Stay updated with verified government welfare schemes, fertilizer subsidies, crop insurance, and official notifications.',
-      bg: 'bg-blue-50 text-blue-700 border-blue-200',
+      bg: 'bg-blue-950/60 text-blue-300 border-blue-500/30',
     },
     {
       icon: Bot,
       title: '🤖 AI Agricultural Assistant',
       description: 'Ask farming-related questions in text or voice regarding pest management, fertilizer ratios, and crop care.',
-      bg: 'bg-teal-50 text-teal-700 border-teal-200',
+      bg: 'bg-teal-950/60 text-teal-300 border-teal-500/30',
     },
   ];
 
   return (
-    <div className="space-y-20 pb-16">
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-20 md:py-28 overflow-hidden bg-gradient-to-b from-forest-50/70 via-emerald-50/30 to-[#F7F9F6]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-forest-100/80 border border-forest-300 text-forest-800 text-xs sm:text-sm font-bold shadow-xs">
-                <Sprout className="w-4 h-4 text-forest-600 animate-pulse" />
-                <span>Next-Gen MERN Agriculture Platform</span>
-              </div>
+    <div className="min-h-screen text-slate-100 selection:bg-teal-400 selection:text-black">
+      {/* Hero Section with Concentric Radar Ripple Glow */}
+      <section className="relative min-h-[75vh] flex flex-col items-center justify-center pt-16 pb-24 px-4 overflow-hidden">
+        {/* Ambient Dark Radar / Ripple Rings */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          {/* Central Radial Teal Glow */}
+          <div className="absolute w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-3xl" />
+          <div className="absolute w-[350px] h-[350px] bg-teal-400/12 rounded-full blur-2xl" />
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-                Connecting <span className="text-forest-600 underline decoration-forest-300 decoration-wavy decoration-2">Farmers</span>,{' '}
-                <span className="text-amber-600">Markets</span> &{' '}
-                <span className="text-blue-700">Government</span>
-              </h1>
+          {/* Concentric Ripple Rings */}
+          <div className="radar-circle w-[280px] h-[280px] border-teal-500/20" />
+          <div className="radar-circle w-[460px] h-[460px] border-teal-500/15" />
+          <div className="radar-circle w-[680px] h-[680px] border-teal-500/10" />
+          <div className="radar-circle w-[920px] h-[920px] border-teal-500/5" />
+        </div>
 
-              <p className="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed">
-                <strong>FarmSetu</strong> is a digital crop pre-registration, agricultural shops discovery, and officer verification platform designed to streamline agricultural records and eliminate waiting lines.
-              </p>
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-7 px-4">
+          {/* Mini Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#06181d]/80 border border-teal-500/30 text-teal-300 text-xs sm:text-sm font-semibold backdrop-blur-md shadow-[0_0_20px_rgba(45,212,191,0.15)]">
+            <Sprout className="w-4 h-4 text-teal-400 animate-pulse" />
+            <span>Next-Gen MERN Agriculture Platform</span>
+          </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link
-                  to="/select-role"
-                  className="w-full sm:w-auto px-8 py-4 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-2xl shadow-lg shadow-forest-300 transition-all flex items-center justify-center gap-2 group text-base"
-                >
-                  <span>Get Started Now</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+          {/* Main Title matching Reference Style */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[#2dd4bf] text-glow-teal tracking-tight leading-tight">
+            Welcome to FarmSetu
+          </h1>
 
-                <a
-                  href="#features"
-                  className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl border border-slate-200 shadow-sm transition-all text-center text-base"
-                >
-                  Explore Features
-                </a>
-              </div>
+          {/* Subtitle matching Reference Style */}
+          <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+            Your smart companion for managing farm records, health of crops, agricultural shops, and government verifications.
+          </p>
 
-              {/* Trust badges */}
-              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-slate-500 font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-forest-600" />
-                  Officer Verification Audit
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-forest-600" />
-                  Real-time Stock Discovery
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Bot className="w-4 h-4 text-forest-600" />
-                  AI Voice Assistant
-                </span>
-              </div>
-            </div>
+          {/* Center Pill Buttons matching Reference */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-3">
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-9 py-3 btn-glow-primary text-sm sm:text-base font-bold flex items-center justify-center gap-2"
+            >
+              <span>Login</span>
+            </Link>
 
-            {/* Right Hero Graphic Card */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-forest-100">
-                {/* Visual crop banner */}
-                <div className="relative h-56 rounded-2xl overflow-hidden mb-5">
-                  <img
-                    src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80"
-                    alt="Lush Agricultural Field"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
-                    <div className="text-white">
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-[10px] font-bold uppercase tracking-wider">
-                        Live Field Record
-                      </span>
-                      <h3 className="font-bold text-base mt-1">Paddy (Kharif Season 2026)</h3>
-                      <p className="text-xs text-slate-200">Survey No. 125/2 • 2.5 Acres • Krishna Dist</p>
-                    </div>
-                  </div>
-                </div>
+            <Link
+              to="/select-role"
+              className="w-full sm:w-auto px-9 py-3 btn-glow-secondary text-sm sm:text-base font-semibold flex items-center justify-center gap-2"
+            >
+              <span>Signup / Select Role</span>
+            </Link>
+          </div>
 
-                {/* Floating Micro Cards */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-forest-50 border border-forest-200 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">☀️</span>
-                      <div>
-                        <strong className="text-forest-900 block">31°C • Good Farming Weather</strong>
-                        <span className="text-forest-600">Ideal for weeding and field inspection</span>
-                      </div>
-                    </div>
-                    <span className="px-2 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px]">
-                      Optimal
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Store className="w-5 h-5 text-amber-600" />
-                      <div>
-                        <strong className="text-amber-900 block">Sri Lakshmi Agro Agencies</strong>
-                        <span className="text-amber-700">Urea ₹267/bag • 🟢 In Stock</span>
-                      </div>
-                    </div>
-                    <span className="text-amber-800 font-bold">⭐ 4.8</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Trust Highlights */}
+          <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <ShieldCheck className="w-4 h-4 text-teal-400" />
+              Officer Verification Audit
+            </span>
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-teal-400" />
+              Real-time Stock Discovery
+            </span>
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <Bot className="w-4 h-4 text-teal-400" />
+              AI Agronomy Assistant
+            </span>
           </div>
         </div>
       </section>
 
-      {/* 3 Core Roles Section (Section 8) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* "Why Choose FarmSetu?" Section matching Reference Style */}
+      <section className="relative py-16 px-4 sm:px-6 lg:px-8 border-t border-teal-950/40">
+        <div className="max-w-4xl mx-auto text-center space-y-5">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#2dd4bf] text-glow-teal tracking-tight">
+            Why Choose FarmSetu?
+          </h2>
+          <p className="text-sm sm:text-base md:text-lg text-slate-300 leading-relaxed max-w-3xl mx-auto font-normal">
+            Just as modern technology guides every sector toward prosperity, FarmSetu becomes the digital bridge for farmers in the field—streamlining crop registration, providing instant access to nearby authorized shops, and steering agriculture toward transparency and growth.
+          </p>
+        </div>
+      </section>
+
+      {/* 3 Core Roles Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-          <span className="text-xs font-bold text-forest-700 uppercase tracking-wider bg-forest-50 px-3 py-1 rounded-full border border-forest-200">
-            Three Dedicated Portals
+          <span className="text-xs font-bold text-teal-300 uppercase tracking-wider bg-[#06181d] px-3 py-1 rounded-full border border-teal-500/30">
+            Dedicated Portals
           </span>
-          <h2 className="text-3xl font-extrabold text-slate-900">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
             Choose Your Platform Experience
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Select your role to access customized dashboards, workflows, and tools.
           </p>
         </div>
@@ -178,18 +149,18 @@ export default function LandingPage() {
           {/* Role 1: Farmer */}
           <Link
             to="/login?role=FARMER"
-            className="glass-card rounded-3xl p-6 border-2 border-emerald-200 hover:border-forest-600 group transition-all"
+            className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-teal-400/60 group transition-all"
           >
-            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-950/80 border border-teal-500/30 text-teal-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-teal-950">
               👨‍🌾
             </div>
-            <h3 className="text-xl font-bold text-slate-800 group-hover:text-forest-700 transition-colors">
+            <h3 className="text-xl font-bold text-white group-hover:text-teal-300 transition-colors">
               Farmer Portal
             </h3>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              Digitally submit crop information, maintain multi-year records, track verification, search nearby shops, and consult AI assistant.
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Digitally submit crop information, maintain multi-year records, track officer verification, search nearby shops, and consult AI assistant.
             </p>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-forest-700">
+            <div className="mt-6 pt-4 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
               <span>Enter Farmer Portal</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -198,18 +169,18 @@ export default function LandingPage() {
           {/* Role 2: Shopkeeper */}
           <Link
             to="/login?role=SHOPKEEPER"
-            className="glass-card rounded-3xl p-6 border-2 border-amber-200 hover:border-amber-600 group transition-all"
+            className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-amber-400/60 group transition-all"
           >
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-amber-950/80 border border-amber-500/30 text-amber-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-amber-950">
               🏪
             </div>
-            <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors">
+            <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
               Shopkeeper Portal
             </h3>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              Manage your agricultural stores, list seeds, fertilizers, and machinery, update live stock quantities, and serve farmers.
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Manage your agricultural stores, list seeds, fertilizers, and machinery, update live stock quantities, and serve farmers transparently.
             </p>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+            <div className="mt-6 pt-4 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-amber-400">
               <span>Enter Shopkeeper Portal</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -218,18 +189,18 @@ export default function LandingPage() {
           {/* Role 3: Officer */}
           <Link
             to="/login?role=OFFICER"
-            className="glass-card rounded-3xl p-6 border-2 border-blue-200 hover:border-blue-600 group transition-all"
+            className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-cyan-400/60 group transition-all"
           >
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-cyan-950">
               🏛️
             </div>
-            <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+            <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">
               Agriculture Officer Portal
             </h3>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
               Review pre-registered crop records in your jurisdiction, verify land parcels, return corrections with audit notes, and export reports.
             </p>
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-700">
+            <div className="mt-6 pt-4 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-cyan-400">
               <span>Enter Officer Portal</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
@@ -237,16 +208,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Landing Page Features (Section 6) */}
-      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Platform Features Section */}
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-          <span className="text-xs font-bold text-forest-700 uppercase tracking-wider bg-forest-50 px-3 py-1 rounded-full border border-forest-200">
-            Comprehensive Capabilities
+          <span className="text-xs font-bold text-teal-300 uppercase tracking-wider bg-[#06181d] px-3 py-1 rounded-full border border-teal-500/30">
+            Platform Capabilities
           </span>
-          <h2 className="text-3xl font-extrabold text-slate-900">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
             Engineered for Modern Agriculture
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Every feature is tailored to bring transparency, efficiency, and real-time connectivity to farming communities.
           </p>
         </div>
@@ -255,63 +226,63 @@ export default function LandingPage() {
           {features.map((f, idx) => {
             const Icon = f.icon;
             return (
-              <div key={idx} className="glass-card rounded-3xl p-6 border border-slate-200 space-y-3">
+              <div key={idx} className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-teal-400/50 space-y-3">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${f.bg}`}>
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">{f.title}</h3>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{f.description}</p>
+                <h3 className="text-lg font-bold text-white">{f.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{f.description}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* How It Works (Section 7) */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-forest-900 text-white rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+      {/* How It Works Flow */}
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
+        <div className="bg-[#051116] text-white rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden border border-teal-900/50">
           <div className="max-w-2xl mb-10 space-y-2">
-            <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full border border-white/10">
+            <span className="text-xs font-bold text-teal-300 uppercase tracking-wider bg-teal-950/80 px-3 py-1 rounded-full border border-teal-500/30">
               Simple Digital Flow
             </span>
-            <h2 className="text-3xl font-extrabold text-white">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
               How FarmSetu Verification Works
             </h2>
-            <p className="text-xs sm:text-sm text-emerald-100">
-              Transforming traditional Sachivalayam paper queues into a fast digital pre-registration workflow.
+            <p className="text-xs sm:text-sm text-slate-300">
+              Transforming traditional paper queues into a fast, transparent digital pre-registration workflow.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {/* Step 1 */}
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/15 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white font-extrabold flex items-center justify-center text-lg">
+            <div className="bg-[#071920] p-6 rounded-2xl border border-teal-900/60 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-400 text-slate-950 font-extrabold flex items-center justify-center text-lg shadow-md shadow-teal-500/20">
                 1
               </div>
-              <h3 className="text-base font-bold text-white">👨‍🌾 Farmer Submits Information</h3>
-              <p className="text-xs text-emerald-100 leading-relaxed">
+              <h3 className="text-base font-bold text-white">👨‍🌾 Farmer Submits Details</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Farmer enters land survey details, crop season, sowing date, and uploads required document copies in minutes.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/15 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white font-extrabold flex items-center justify-center text-lg">
+            <div className="bg-[#071920] p-6 rounded-2xl border border-teal-900/60 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-400 text-slate-950 font-extrabold flex items-center justify-center text-lg shadow-md shadow-teal-500/20">
                 2
               </div>
               <h3 className="text-base font-bold text-white">🏛️ Officer Reviews & Verifies</h3>
-              <p className="text-xs text-emerald-100 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Government Agriculture Officer reviews the pending application, checks survey records, and approves or requests correction.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/15 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500 text-white font-extrabold flex items-center justify-center text-lg">
+            <div className="bg-[#071920] p-6 rounded-2xl border border-teal-900/60 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-400 text-slate-950 font-extrabold flex items-center justify-center text-lg shadow-md shadow-teal-500/20">
                 3
               </div>
-              <h3 className="text-base font-bold text-white">🌾 Farmer Accesses Verified Records</h3>
-              <p className="text-xs text-emerald-100 leading-relaxed">
+              <h3 className="text-base font-bold text-white">🌾 Verified Digital Pass</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Farmer immediately views verified digital records with official audit timestamps for crop insurance and welfare schemes.
               </p>
             </div>

@@ -22,7 +22,15 @@ import {
   Clock,
   RotateCcw,
   Save,
-  AlertCircle
+  AlertCircle,
+  Table,
+  LayoutGrid,
+  Search,
+  ChevronRight,
+  Droplets,
+  Building2,
+  Sparkles,
+  Info
 } from 'lucide-react';
 
 export default function DigitalFarmRecordsPage() {
@@ -32,8 +40,9 @@ export default function DigitalFarmRecordsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [selectedSurvey, setSelectedSurvey] = useState('All');
-  const [viewMode, setViewMode] = useState('parcels'); // 'parcels' | 'grid'
+  const [selectedParcelId, setSelectedParcelId] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'parcels' | 'grid'
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -113,7 +122,7 @@ export default function DigitalFarmRecordsPage() {
       });
 
       if (res.data.success) {
-        setLandModalSuccess(`Land Parcel (Survey No. ${res.data.land.surveyNumber}) added successfully!`);
+        setLandModalSuccess(`Land Parcel (${res.data.land.landId || 'New'} • Survey No. ${res.data.land.surveyNumber}) added successfully!`);
         fetchRecords();
         setTimeout(() => {
           setAddLandModalOpen(false);
@@ -135,76 +144,108 @@ export default function DigitalFarmRecordsPage() {
     }
   };
 
-  // Filter crops by selected survey if chosen
-  const filteredCrops = crops.filter((crop) => {
-    if (selectedSurvey !== 'All' && crop.surveyNumber !== selectedSurvey) {
-      return false;
-    }
-    return true;
-  });
+  // Build unique parcel map keyed by unique Land ID / MongoDB ID
+  // Note: Survey Number is a cadastral field within a village, NOT the unique primary key.
+  const parcelMap = {};
 
-  // Group crops by land / survey number for parcels view
-  const surveyGroups = {};
-
-  // First seed from registered lands
+  // First seed all registered lands
   lands.forEach((l) => {
-    surveyGroups[l.surveyNumber] = {
-      land: l,
+    const key = l._id || l.landId;
+    parcelMap[key] = {
+      _id: l._id,
+      landId: l.landId || `LND-${l.surveyNumber}`,
       surveyNumber: l.surveyNumber,
-      village: l.village,
-      mandal: l.mandal,
-      district: l.district,
-      totalArea: l.totalArea,
+      village: l.village || 'Vijayawada',
+      mandal: l.mandal || '',
+      district: l.district || 'Vijayawada',
+      totalArea: l.totalArea || 0,
       areaUnit: l.areaUnit || 'Acres',
       ownershipType: l.ownershipType || 'Owned',
       crops: []
     };
   });
 
-  // Then map crops into groups
-  filteredCrops.forEach((c) => {
-    const s = c.surveyNumber || 'Unassigned';
-    if (!surveyGroups[s]) {
-      surveyGroups[s] = {
-        land: c.landId || null,
-        surveyNumber: s,
-        village: c.landId?.village || 'Village',
-        district: c.landId?.district || 'District',
+  // Next associate crops with their respective land parcel
+  crops.forEach((c) => {
+    const landObj = c.landId;
+    const key = landObj?._id || landObj?.landId || `legacy-${c.surveyNumber}`;
+    if (!parcelMap[key]) {
+      parcelMap[key] = {
+        _id: landObj?._id || null,
+        landId: landObj?.landId || `LND-${c.surveyNumber}`,
+        surveyNumber: c.surveyNumber,
+        village: landObj?.village || 'Village',
+        mandal: landObj?.mandal || '',
+        district: landObj?.district || 'Vijayawada',
         totalArea: c.totalLandArea || c.cultivatedArea || 0,
         areaUnit: c.areaUnit || 'Acres',
         ownershipType: c.ownershipType || 'Owned',
         crops: []
       };
     }
-    surveyGroups[s].crops.push(c);
+    parcelMap[key].crops.push(c);
   });
 
-  const parcelList = Object.values(surveyGroups).filter((group) => {
-    if (selectedSurvey !== 'All' && group.surveyNumber !== selectedSurvey) {
-      return false;
+  const parcelList = Object.values(parcelMap);
+
+  // Filter crops based on parcel, search query, year, and status
+  const filteredCrops = crops.filter((crop) => {
+    // Filter by selected parcel
+    if (selectedParcelId !== 'All') {
+      const cropLandKey = crop.landId?._id || crop.landId?.landId || `legacy-${crop.surveyNumber}`;
+      if (cropLandKey !== selectedParcelId && crop.surveyNumber !== selectedParcelId) {
+        return false;
+      }
     }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchName = crop.cropName?.toLowerCase().includes(q);
+      const matchCategory = crop.cropCategory?.toLowerCase().includes(q);
+      const matchSurvey = crop.surveyNumber?.toLowerCase().includes(q);
+      const matchRegId = crop.registrationId?.toLowerCase().includes(q);
+      const matchLandId = crop.landId?.landId?.toLowerCase().includes(q);
+      const matchVillage = crop.landId?.village?.toLowerCase().includes(q);
+      if (!matchName && !matchCategory && !matchSurvey && !matchRegId && !matchLandId && !matchVillage) {
+        return false;
+      }
+    }
+
     return true;
   });
 
+  // Calculate high-level summary metrics
+  const totalLandHoldings = lands.reduce((acc, l) => acc + (l.totalArea || 0), 0);
+  const totalCultivatedArea = crops.reduce((acc, c) => acc + (c.cultivatedArea || 0), 0);
+  const verifiedCount = crops.filter((c) => c.status === 'VERIFIED').length;
+  const pendingCount = crops.filter((c) => ['SUBMITTED', 'UNDER_VERIFICATION'].includes(c.status)).length;
+  const returnedCount = crops.filter((c) => c.status === 'RETURNED_FOR_CORRECTION').length;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Header & Navigation */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      
+      {/* Top Breadcrumb & Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <Link
             to="/farmer/dashboard"
-            className="inline-flex items-center gap-1 text-xs font-bold text-forest-700 hover:text-forest-900 mb-2 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/30 transition-all mb-2.5 shadow-sm"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            🌾 Digital Farm & Land Records
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Manage multiple land parcels, track multiple crops per land, and monitor official officer verifications.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2 drop-shadow-md">
+              <span className="text-emerald-400">🌾</span>
+              <span className="text-white font-extrabold">Digital Farm & Land Records</span>
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
+            Manage your cadastral land parcels, track crop allotments, and inspect official verification status.
           </p>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
@@ -213,15 +254,15 @@ export default function DigitalFarmRecordsPage() {
               setLandModalSuccess('');
               setAddLandModalOpen(true);
             }}
-            className="px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl shadow-xs transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-[#06171c]/90 hover:bg-[#0c242c] border border-teal-500/30 text-teal-300 text-xs sm:text-sm font-bold rounded-2xl shadow-sm transition-all flex items-center gap-2 hover:border-teal-400"
           >
-            <LandPlot className="w-4 h-4 text-forest-600" />
+            <LandPlot className="w-4 h-4 text-teal-400" />
             + Add Land Parcel
           </button>
 
           <Link
             to="/farmer/crops/register"
-            className="px-4 py-2.5 bg-forest-600 hover:bg-forest-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-forest-200 transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             + Register Land & Crop
@@ -229,92 +270,204 @@ export default function DigitalFarmRecordsPage() {
         </div>
       </div>
 
-      {/* Filter & View Mode Bar */}
-      <div className="glass-card rounded-2xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4 bg-white">
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <Filter className="w-4 h-4 text-forest-600" />
-            <span>Filter By:</span>
+      {/* Summary KPI Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="glass-card bg-[#06151a]/90 p-4 sm:p-5 rounded-2xl border border-teal-500/20 shadow-lg space-y-1 hover:border-teal-400/40 transition-all">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            Land Parcels
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-black text-white">
+              {lands.length || parcelList.length}
+            </span>
+            <span className="text-xs text-slate-400 font-medium">
+              ({totalLandHoldings.toFixed(1)} Acres)
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-card bg-[#06151a]/90 p-4 sm:p-5 rounded-2xl border border-teal-500/20 shadow-lg space-y-1 hover:border-teal-400/40 transition-all">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            Cultivated Crops
+          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-black text-teal-400">
+              {crops.length}
+            </span>
+            <span className="text-xs text-slate-400 font-medium">
+              ({totalCultivatedArea.toFixed(1)} Acres)
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-card bg-[#06151a]/90 p-4 sm:p-5 rounded-2xl border border-teal-500/20 shadow-lg space-y-1 hover:border-teal-400/40 transition-all">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            Verified Records
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl sm:text-2xl font-black text-emerald-400">
+              {verifiedCount}
+            </span>
+            <span className="text-xs text-emerald-300 font-bold bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+              ✅ Approved
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-card bg-[#06151a]/90 p-4 sm:p-5 rounded-2xl border border-teal-500/20 shadow-lg space-y-1 hover:border-teal-400/40 transition-all">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            Pending / Action
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl sm:text-2xl font-black text-amber-400">
+              {pendingCount + returnedCount}
+            </span>
+            <span className="text-xs text-amber-300 font-bold bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+              {returnedCount > 0 ? `⚠️ ${returnedCount} Returned` : '⏳ Under Review'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter, Search & View Mode Switcher */}
+      <div className="glass-card bg-[#06151a]/90 rounded-3xl p-4 sm:p-5 border border-teal-500/20 shadow-lg space-y-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          
+          {/* Search Bar */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by crop, survey no., parcel ID (e.g. LND-10492), or village..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white font-bold bg-[#030b0e] hover:bg-[#051419] focus:bg-[#051419] border border-teal-900/60 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 rounded-2xl outline-none placeholder:text-slate-500 placeholder:font-normal transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-3 text-xs text-slate-400 hover:text-white font-bold"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          {/* Survey / Land Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500 font-medium">Land Parcel:</span>
-            <select
-              value={selectedSurvey}
-              onChange={(e) => setSelectedSurvey(e.target.value)}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none"
+          {/* View Mode Toggle Buttons */}
+          <div className="flex items-center gap-1 p-1 bg-[#030b0e] rounded-2xl self-end lg:self-center border border-teal-900/60">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-teal-400 text-slate-950 font-black shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              <option value="All">All Land Parcels ({Object.keys(surveyGroups).length})</option>
-              {Object.keys(surveyGroups).map((survey) => (
-                <option key={survey} value={survey}>
-                  Survey No. {survey}
+              <Table className="w-3.5 h-3.5" />
+              <span>Table View</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('parcels')}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'parcels'
+                  ? 'bg-teal-400 text-slate-950 font-black shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <LandPlot className="w-3.5 h-3.5" />
+              <span>Land Parcels</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-teal-400 text-slate-950 font-black shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Cards Grid</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Dropdown Filters Strip */}
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-teal-900/40 text-xs">
+          <div className="flex items-center gap-1.5 text-teal-300 font-bold">
+            <Filter className="w-3.5 h-3.5 text-teal-400" />
+            <span>Filters:</span>
+          </div>
+
+          {/* Land Parcel Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-300 font-medium">Parcel:</span>
+            <select
+              value={selectedParcelId}
+              onChange={(e) => setSelectedParcelId(e.target.value)}
+              className="px-3 py-1.5 text-xs font-bold text-white bg-[#030b0e] border border-teal-900/60 rounded-xl focus:border-teal-400 outline-none shadow-2xs cursor-pointer"
+            >
+              <option value="All" className="bg-[#06171c] text-white">All Parcels ({parcelList.length})</option>
+              {parcelList.map((p) => (
+                <option key={p._id || p.landId} value={p._id || p.landId} className="bg-[#06171c] text-white">
+                  {p.landId} (Survey No. {p.surveyNumber} • {p.village})
                 </option>
               ))}
             </select>
           </div>
 
           {/* Year Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500 font-medium">Year:</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-300 font-medium">Year:</span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-[#030b0e] border border-teal-900/60 rounded-xl focus:border-teal-400 outline-none shadow-2xs cursor-pointer"
             >
-              <option value="All">All Years</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
+              <option value="All" className="bg-[#06171c] text-white">All Years</option>
+              <option value="2026" className="bg-[#06171c] text-white">2026</option>
+              <option value="2025" className="bg-[#06171c] text-white">2025</option>
+              <option value="2024" className="bg-[#06171c] text-white">2024</option>
             </select>
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-500 font-medium">Status:</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-300 font-medium">Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-[#030b0e] border border-teal-900/60 rounded-xl focus:border-teal-400 outline-none shadow-2xs cursor-pointer"
             >
-              <option value="All">All Statuses</option>
-              <option value="VERIFIED">✅ Verified</option>
-              <option value="SUBMITTED">⏳ Submitted / Pending</option>
-              <option value="RETURNED_FOR_CORRECTION">↩️ Returned for Correction</option>
+              <option value="All" className="bg-[#06171c] text-white">All Statuses</option>
+              <option value="VERIFIED" className="bg-[#06171c] text-white">✅ Verified</option>
+              <option value="SUBMITTED" className="bg-[#06171c] text-white">⏳ Submitted / Pending</option>
+              <option value="DRAFT" className="bg-[#06171c] text-white">📝 Drafts</option>
+              <option value="RETURNED_FOR_CORRECTION" className="bg-[#06171c] text-white">↩️ Returned for Correction</option>
             </select>
           </div>
-        </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl self-end lg:self-center">
-          <button
-            type="button"
-            onClick={() => setViewMode('parcels')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-              viewMode === 'parcels'
-                ? 'bg-white text-forest-800 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <LandPlot className="w-3.5 h-3.5" />
-            <span>Land Parcels View</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('grid')}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-              viewMode === 'grid'
-                ? 'bg-white text-forest-800 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sprout className="w-3.5 h-3.5" />
-            <span>All Crops Grid</span>
-          </button>
+          {(selectedParcelId !== 'All' || selectedYear !== 'All' || statusFilter !== 'All' || searchQuery) && (
+            <button
+              onClick={() => {
+                setSelectedParcelId('All');
+                setSelectedYear('All');
+                setStatusFilter('All');
+                setSearchQuery('');
+              }}
+              className="px-2.5 py-1 text-xs font-bold text-teal-300 hover:text-white bg-[#081e25] hover:bg-[#0e2c36] rounded-lg transition-colors flex items-center gap-1 border border-teal-500/30 shadow-2xs cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" /> Reset Filters
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Render */}
       {loading ? (
         <LoadingSpinner message="Fetching your digital farm records..." />
       ) : filteredCrops.length === 0 && parcelList.length === 0 ? (
@@ -325,8 +478,123 @@ export default function DigitalFarmRecordsPage() {
           actionText="+ Register New Crop"
           onAction={() => navigate('/farmer/crops/register')}
         />
+      ) : viewMode === 'table' ? (
+        
+        /* ================= 1. CLEAN STREAMLINED LIST / TABLE VIEW ================= */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Table className="w-4 h-4 text-teal-400" />
+              <h2 className="text-sm font-extrabold text-white">
+                Registered Crops & Survey Records ({filteredCrops.length})
+              </h2>
+            </div>
+            <span className="text-[11px] text-teal-300 font-medium">
+              💡 Click any row to view full crop details
+            </span>
+          </div>
+
+          {filteredCrops.length === 0 ? (
+            <div className="glass-card bg-[#06151a]/90 rounded-3xl border border-teal-500/20 p-8 text-center space-y-3 shadow-lg">
+              <p className="text-sm text-slate-300">No crop entries match the current filter criteria.</p>
+              <Link
+                to="/farmer/crops/register"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs font-black rounded-xl shadow-md transition-all"
+              >
+                <Plus className="w-4 h-4" /> Register Crop Now
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredCrops.map((crop) => {
+                const land = crop.landId;
+                const parcelId = land?.landId || `LND-${crop.surveyNumber}`;
+                const village = land?.village || 'Vijayawada';
+
+                return (
+                  <div
+                    key={crop._id}
+                    onClick={() => handleCardClick(crop)}
+                    className="glass-card bg-[#06151a]/90 rounded-2xl border border-teal-500/20 hover:border-teal-400/60 hover:shadow-lg hover:shadow-teal-500/10 p-4 sm:p-5 transition-all duration-200 cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    {/* Left: Survey Number & Crop */}
+                    <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
+                      {/* Survey Number Column */}
+                      <div className="min-w-[180px]">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                          Survey Number
+                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-teal-950/80 text-teal-400 flex items-center justify-center flex-shrink-0 border border-teal-500/30 group-hover:bg-teal-900 transition-colors">
+                            <MapPin className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-sm sm:text-base text-white font-mono">
+                              Survey No. {crop.surveyNumber}
+                            </span>
+                            <p className="text-[11px] text-slate-400 font-medium">
+                              {village} • {parcelId}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider on desktop */}
+                      <div className="hidden sm:block h-10 w-[1px] bg-teal-900/40" />
+
+                      {/* Crop Name Column */}
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                          Crop
+                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-950/80 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/30 group-hover:bg-emerald-900 transition-colors">
+                            <Sprout className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-sm sm:text-base text-white group-hover:text-teal-300 transition-colors">
+                                {crop.cropName}
+                              </span>
+                              {crop.cropCategory && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-200 border border-teal-500/30 font-semibold">
+                                  {crop.cropCategory}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-mono">
+                              ID: {crop.registrationId}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Status & Action Button */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-teal-900/40">
+                      <StatusBadge status={crop.status} />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCardClick(crop);
+                        }}
+                        className="px-4 py-2 bg-[#081e25] hover:bg-teal-400 hover:text-slate-950 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 transition-all inline-flex items-center gap-1.5 shadow-2xs group-hover:border-teal-400 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View Details</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : viewMode === 'parcels' ? (
-        /* Land Parcels & Multi-Crop Grouped View */
+
+        /* ================= 2. LAND PARCELS SUMMARY VIEW ================= */
         <div className="space-y-6">
           {parcelList.map((parcel) => {
             const cultivatedTotal = parcel.crops.reduce((acc, c) => acc + (c.cultivatedArea || 0), 0);
@@ -334,53 +602,56 @@ export default function DigitalFarmRecordsPage() {
 
             return (
               <div
-                key={parcel.surveyNumber}
-                className="bg-white rounded-3xl p-6 border border-slate-200 shadow-md space-y-5 transition-all hover:border-forest-300"
+                key={parcel._id || parcel.landId}
+                className="glass-card bg-[#06151a]/90 rounded-3xl p-6 border border-teal-500/20 shadow-lg space-y-5 transition-all hover:border-teal-400/40"
               >
                 {/* Land Parcel Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-teal-900/40">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-forest-100 text-forest-700 flex items-center justify-center flex-shrink-0 border border-forest-200">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-950/80 text-teal-400 flex items-center justify-center flex-shrink-0 border border-teal-500/30">
                       <LandPlot className="w-6 h-6" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-extrabold text-slate-900 font-mono">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-md bg-teal-400 text-slate-950 font-mono text-xs font-black shadow-2xs">
+                          {parcel.landId}
+                        </span>
+                        <h3 className="text-lg font-extrabold text-white font-mono">
                           Survey No. {parcel.surveyNumber}
                         </h3>
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#030b0e] text-teal-200 border border-teal-900/60">
                           {parcel.ownershipType || 'Owned'} Land
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-300 mt-1">
                         {parcel.village ? `${parcel.village}, ` : ''}{parcel.district || 'Vijayawada'} • Total Area:{' '}
-                        <strong className="text-slate-800 font-semibold">{parcel.totalArea} {parcel.areaUnit}</strong>
+                        <strong className="text-white font-bold">{parcel.totalArea} {parcel.areaUnit}</strong>
                       </p>
                     </div>
                   </div>
 
                   <Link
                     to={`/farmer/crops/register?survey=${parcel.surveyNumber}`}
-                    className="px-3.5 py-2 bg-forest-50 hover:bg-forest-100 text-forest-800 text-xs font-bold rounded-xl border border-forest-200 transition-all flex items-center gap-1.5 shadow-xs"
+                    className="px-3.5 py-2 bg-[#081e25] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 transition-all flex items-center gap-1.5 shadow-xs"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3.5 h-3.5 text-teal-400" />
                     <span>+ Add Crop on this Land</span>
                   </Link>
                 </div>
 
                 {/* Land Allocation Bar */}
-                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5">
+                <div className="p-3 bg-[#030b0e] rounded-2xl border border-teal-900/60 space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-600">
-                      Cultivated: <strong className="text-forest-800">{cultivatedTotal.toFixed(1)} {parcel.areaUnit}</strong> across {parcel.crops.length} crop(s)
+                    <span className="text-slate-300">
+                      Cultivated: <strong className="text-teal-300 font-bold">{cultivatedTotal.toFixed(1)} {parcel.areaUnit}</strong> across {parcel.crops.length} crop(s)
                     </span>
-                    <span className="text-slate-500 font-mono text-[11px]">
+                    <span className="text-slate-400 font-mono text-[11px]">
                       {remaining > 0 ? `${remaining.toFixed(1)} ${parcel.areaUnit} unallocated` : 'Fully Allocated'}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden flex">
                     <div
-                      className="bg-forest-600 h-full rounded-full transition-all"
+                      className="bg-teal-400 h-full rounded-full transition-all"
                       style={{
                         width: `${Math.min(100, parcel.totalArea > 0 ? (cultivatedTotal / parcel.totalArea) * 100 : 0)}%`
                       }}
@@ -391,15 +662,15 @@ export default function DigitalFarmRecordsPage() {
                 {/* Multiple Crops List on this Parcel */}
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                    Crops Registered on Survey No. {parcel.surveyNumber} ({parcel.crops.length})
+                    Crops Registered on {parcel.landId} (Survey No. {parcel.surveyNumber}) — {parcel.crops.length}
                   </h4>
 
                   {parcel.crops.length === 0 ? (
-                    <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                    <div className="p-4 bg-amber-950/40 rounded-2xl border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between">
                       <span>No crops registered on this parcel for the selected filter.</span>
                       <Link
                         to={`/farmer/crops/register?survey=${parcel.surveyNumber}`}
-                        className="font-bold underline text-amber-900 ml-2"
+                        className="font-bold underline text-teal-300 ml-2"
                       >
                         Register a Crop Now
                       </Link>
@@ -410,34 +681,34 @@ export default function DigitalFarmRecordsPage() {
                         <div
                           key={crop._id}
                           onClick={() => handleCardClick(crop)}
-                          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-forest-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group space-y-3"
+                          className="p-4 rounded-2xl bg-[#041014] border border-teal-500/20 hover:border-teal-400/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group space-y-3"
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <h5 className="font-extrabold text-sm text-slate-900 group-hover:text-forest-700 transition-colors">
+                                <h5 className="font-extrabold text-sm text-white group-hover:text-teal-300 transition-colors">
                                   {crop.cropName}
                                 </h5>
-                                <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">
-                                  {crop.cropCategory || 'Cereals & Food Grains'}
+                                <span className="text-[10px] font-semibold text-teal-300/80 block mt-0.5">
+                                  {crop.cropCategory || 'Cereals'}
                                 </span>
                               </div>
                               <StatusBadge status={crop.status} />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 text-slate-600">
+                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-teal-900/40 text-slate-300">
                               <div>
                                 <span className="text-slate-400 block text-[10px]">Cultivated Area</span>
-                                <strong>{crop.cultivatedArea} {crop.areaUnit}</strong>
+                                <strong className="text-white">{crop.cultivatedArea} {crop.areaUnit}</strong>
                               </div>
                               <div>
                                 <span className="text-slate-400 block text-[10px]">Season</span>
-                                <strong>{crop.season} ({crop.year})</strong>
+                                <strong className="text-white">{crop.season} ({crop.year})</strong>
                               </div>
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-forest-700">
+                          <div className="pt-2 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
                             <span className="flex items-center gap-1">
                               <Eye className="w-3.5 h-3.5" /> View Details
                             </span>
@@ -455,7 +726,8 @@ export default function DigitalFarmRecordsPage() {
           })}
         </div>
       ) : (
-        /* All Crops Standard Grid View */
+
+        /* ================= 3. ALL CROPS STANDARD CARDS GRID ================= */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCrops.map((crop) => (
             <CropCard key={crop._id} crop={crop} onClick={() => handleCardClick(crop)} />
@@ -463,7 +735,7 @@ export default function DigitalFarmRecordsPage() {
         </div>
       )}
 
-      {/* Complete Crop Details Modal */}
+      {/* Complete Crop Details Modal (Pops up on row or button click) */}
       <CropDetailsModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -476,10 +748,17 @@ export default function DigitalFarmRecordsPage() {
         <Modal
           isOpen={addLandModalOpen}
           onClose={() => setAddLandModalOpen(false)}
-          title="Add New Land Parcel"
+          title="Add New Cadastral Land Parcel"
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCreateLandSubmit} className="space-y-4">
+            <div className="p-3 rounded-xl bg-forest-50 border border-forest-200 text-xs text-forest-800 flex items-start gap-2">
+              <Info className="w-4 h-4 text-forest-600 flex-shrink-0 mt-0.5" />
+              <span>
+                Each cadastral land plot will receive an official Unique Parcel ID (e.g. <strong>LND-XXXX</strong>). Survey number is recorded per local revenue records.
+              </span>
+            </div>
+
             {landModalError && (
               <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -502,7 +781,7 @@ export default function DigitalFarmRecordsPage() {
                 type="text"
                 value={newLandData.surveyNumber}
                 onChange={(e) => setNewLandData({ ...newLandData, surveyNumber: e.target.value })}
-                placeholder="e.g. 88/1 or 125/2"
+                placeholder="e.g. 99/3 or 125/2A"
                 required
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none font-mono font-bold"
               />

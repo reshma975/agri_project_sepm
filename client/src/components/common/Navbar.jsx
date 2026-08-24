@@ -15,7 +15,9 @@ import {
   Bot,
   Search,
   PlusCircle,
-  LandPlot
+  LandPlot,
+  LayoutDashboard,
+  Sparkles
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -51,22 +53,22 @@ export default function Navbar() {
   const getRoleBadge = () => {
     if (isFarmer) {
       return (
-        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-          👨‍🌾 Farmer
+        <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
+          <span>👨‍🌾</span> Farmer
         </span>
       );
     }
     if (isShopkeeper) {
       return (
-        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-          🏪 Shopkeeper
+        <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 shadow-xs">
+          <span>🏪</span> Shopkeeper
         </span>
       );
     }
     if (isOfficer) {
       return (
-        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-          🏛️ Officer
+        <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 shadow-xs">
+          <span>🏛️</span> Officer
         </span>
       );
     }
@@ -87,331 +89,433 @@ export default function Navbar() {
     return '/';
   };
 
+  const isNavActive = (path) => {
+    if (path === '/farmer/dashboard' || path === '/shopkeeper/dashboard' || path === '/officer/dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-40 bg-[#020506]/90 backdrop-blur-md border-b border-teal-500/15 shadow-lg transition-all">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          
           {/* Logo & Branding */}
-          <Link to={isAuthenticated ? getDashboardLink() : '/'} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-forest-600 group-hover:bg-forest-700 flex items-center justify-center text-white shadow-md shadow-forest-200 transition-all">
-              <Sprout className="w-6 h-6 animate-pulse-subtle" />
+          <Link
+            to={isAuthenticated ? getDashboardLink() : '/'}
+            className="flex items-center gap-2.5 group flex-shrink-0"
+          >
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-teal-400 text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.45)] transition-all group-hover:scale-105">
+              <Sprout className="w-5 h-5" />
             </div>
-            <div>
+            <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xl text-forest-900 tracking-tight">
-                  FarmSetu <span className="text-forest-600">🌾</span>
+                <span className="font-black text-lg sm:text-xl text-white tracking-tight leading-none">
+                  Farm<span className="text-[#2dd4bf] text-glow-subtle">Setu</span>
                 </span>
                 {getRoleBadge()}
               </div>
-              <p className="text-[10px] text-slate-500 font-medium hidden sm:block">
-                Connecting Farmers, Markets & Government
-              </p>
+              <span className="text-[10px] font-semibold text-slate-400 leading-tight hidden md:block">
+                Digital Agriculture Ecosystem
+              </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2">
             {!isAuthenticated && (
               <>
                 <Link
                   to="/"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                    location.pathname === '/' ? 'text-forest-700 bg-forest-50' : 'text-slate-600 hover:text-forest-700 hover:bg-slate-50'
+                  className={`px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all ${
+                    location.pathname === '/'
+                      ? 'text-[#2dd4bf] bg-[#06181d] border border-teal-500/30 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
+                      : 'text-slate-300 hover:text-white hover:bg-[#06181d]'
                   }`}
                 >
                   Home
                 </Link>
                 <a
                   href="/#features"
-                  className="px-3 py-2 text-sm font-semibold text-slate-600 hover:text-forest-700 hover:bg-slate-50 rounded-xl transition-colors"
+                  className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#06181d] rounded-full transition-all"
                 >
                   Features
                 </a>
                 <a
                   href="/#how-it-works"
-                  className="px-3 py-2 text-sm font-semibold text-slate-600 hover:text-forest-700 hover:bg-slate-50 rounded-xl transition-colors"
+                  className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#06181d] rounded-full transition-all"
                 >
                   How It Works
                 </a>
                 <Link
                   to="/select-role"
-                  className="ml-2 px-4 py-2 text-sm font-semibold text-forest-700 bg-forest-50 hover:bg-forest-100 rounded-xl border border-forest-200 transition-all"
+                  className="ml-2 px-4 py-1.5 text-xs sm:text-sm font-semibold text-teal-300 bg-[#06181d] hover:bg-[#0c242c] rounded-full border border-teal-500/30 transition-all"
                 >
                   Login
                 </Link>
                 <Link
                   to="/select-role"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-forest-600 hover:bg-forest-700 rounded-xl shadow-md shadow-forest-200 transition-all"
+                  className="px-5 py-1.5 text-xs sm:text-sm font-bold btn-glow-primary rounded-full"
                 >
                   Get Started →
                 </Link>
               </>
             )}
 
-            {/* Farmer Nav */}
+            {/* Farmer Navigation */}
             {isFarmer && (
               <>
                 <Link
                   to="/farmer/dashboard"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                    location.pathname === '/farmer/dashboard' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/dashboard')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  Dashboard
+                  <LayoutDashboard className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Dashboard</span>
                 </Link>
+                
                 <Link
                   to="/farmer/crops"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname.startsWith('/farmer/crops') ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/crops')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <LandPlot className="w-4 h-4" />
-                  Farm Records
+                  <LandPlot className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Farm Records</span>
                 </Link>
+
                 <Link
                   to="/farmer/shops"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname.startsWith('/farmer/shops') ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/shops')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Store className="w-4 h-4" />
-                  Shops & Stock
+                  <Store className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Shops & Stock</span>
                 </Link>
+
                 <Link
                   to="/farmer/government-updates"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/farmer/government-updates' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/government-updates')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Building2 className="w-4 h-4" />
-                  Govt Schemes
+                  <Building2 className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Govt Schemes</span>
                 </Link>
+
                 <Link
                   to="/farmer/weather"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/farmer/weather' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/weather')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <CloudSun className="w-4 h-4" />
-                  Weather
+                  <CloudSun className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Weather</span>
                 </Link>
+
                 <Link
                   to="/farmer/assistant"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/farmer/assistant' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/farmer/assistant')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Bot className="w-4 h-4" />
-                  AI Assistant
+                  <Bot className="w-3.5 h-3.5 text-teal-400" />
+                  <span>AI Assistant</span>
                 </Link>
               </>
             )}
 
-            {/* Shopkeeper Nav */}
+            {/* Shopkeeper Navigation */}
             {isShopkeeper && (
               <>
                 <Link
                   to="/shopkeeper/dashboard"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/shopkeeper/dashboard' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/shopkeeper/dashboard')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Store className="w-4 h-4" />
-                  My Shops
+                  <Store className="w-3.5 h-3.5 text-teal-400" />
+                  <span>My Shops & Stock</span>
                 </Link>
                 <Link
                   to="/shopkeeper/profile"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                    location.pathname === '/shopkeeper/profile' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/shopkeeper/profile')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  Shopkeeper Profile
+                  <User className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Shopkeeper Profile</span>
                 </Link>
               </>
             )}
 
-            {/* Officer Nav */}
+            {/* Officer Navigation */}
             {isOfficer && (
               <>
                 <Link
                   to="/officer/dashboard"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/officer/dashboard' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/officer/dashboard')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <FileCheck className="w-4 h-4" />
-                  Pending Verifications
+                  <FileCheck className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Pending Verifications</span>
                 </Link>
                 <Link
                   to="/officer/search"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/officer/search' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/officer/search')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Search className="w-4 h-4" />
-                  Search Farmer
+                  <Search className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Search Farmer</span>
                 </Link>
                 <Link
                   to="/officer/archive"
-                  className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 ${
-                    location.pathname === '/officer/archive' ? 'text-forest-800 bg-forest-100 font-bold' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/officer/archive')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  Check Verified
+                  <FileCheck className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Verified History</span>
                 </Link>
               </>
             )}
           </nav>
 
-          {/* User Profile Dropdown (Matches Wireframes 1, 3, 5) */}
-          {isAuthenticated && (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 p-1.5 pl-2.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all focus:outline-none focus:ring-2 focus:ring-forest-300"
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-forest-100 border border-forest-300 flex items-center justify-center">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-4 h-4 text-forest-700" />
-                  )}
-                </div>
-                <span className="text-xs font-bold text-slate-700 hidden sm:inline-block max-w-[100px] truncate">
-                  {user.name}
-                </span>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              </button>
-
-              {/* Wireframe Profile Dropdown Menu */}
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-slide-up">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Signed in as</p>
-                    <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
-                    <p className="text-xs text-slate-500 truncate">@{user.username}</p>
-                  </div>
-
-                  <div className="py-1">
-                    <Link
-                      to={getProfileLink()}
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-forest-50 hover:text-forest-700 transition-colors"
-                    >
-                      <User className="w-4 h-4 text-slate-400" />
-                      Profile
-                    </Link>
-
-                    {isOfficer && (
-                      <Link
-                        to="/officer/archive"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-forest-50 hover:text-forest-700 transition-colors"
-                      >
-                        <FileCheck className="w-4 h-4 text-slate-400" />
-                        Check Verified
-                      </Link>
+          {/* User Profile Menu & Mobile Toggle */}
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 p-1 pl-2 rounded-full bg-[#0b2127] hover:bg-[#0f2c34] border border-teal-900/50 transition-all focus:outline-none focus:ring-2 focus:ring-teal-400"
+                >
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-teal-900/60 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-3.5 h-3.5 text-teal-300" />
                     )}
+                  </div>
+                  <span className="text-xs font-bold text-slate-200 hidden sm:inline-block max-w-[120px] truncate">
+                    {user?.name}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-teal-400/80 mr-1" />
+                </button>
 
-                    <div className="px-4 py-1.5 text-[11px] text-slate-400 italic">
-                      FarmSetu v1.0 • Verified Access
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-60 bg-[#091b20] rounded-2xl shadow-2xl border border-teal-900/60 py-2 z-50 animate-slide-up">
+                    <div className="px-4 py-2.5 border-b border-teal-900/50">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Signed in as</p>
+                      <p className="text-xs font-bold text-white truncate mt-0.5">{user?.name}</p>
+                      <p className="text-[11px] text-teal-300/80 truncate">@{user?.username} • <span className="font-semibold text-teal-400">{user?.role}</span></p>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        to={getProfileLink()}
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-[#0e272f] hover:text-teal-300 transition-colors"
+                      >
+                        <User className="w-4 h-4 text-teal-400" />
+                        My Profile & Settings
+                      </Link>
+
+                      {isOfficer && (
+                        <Link
+                          to="/officer/archive"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-slate-200 hover:bg-[#0e272f] hover:text-teal-300 transition-colors"
+                        >
+                          <FileCheck className="w-4 h-4 text-teal-400" />
+                          Check Verified Records
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="border-t border-teal-900/50 pt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition-colors text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log Out
+                      </button>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div className="border-t border-slate-100 pt-1">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Log Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center gap-2">
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100"
+              className="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-[#0c2228] lg:hidden"
+              aria-label="Toggle navigation"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 text-teal-300" /> : <Menu className="w-5 h-5 text-teal-300" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-6 space-y-2 animate-fade-in shadow-lg">
+        <div className="lg:hidden border-t border-teal-900/50 bg-[#08171c] px-4 pt-3 pb-6 space-y-2 animate-fade-in shadow-xl">
           {!isAuthenticated ? (
             <>
-              <Link to="/" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
+              <Link to="/" className="block px-3 py-2 text-sm font-semibold text-slate-200 rounded-xl hover:bg-[#0c2228]">
                 Home
               </Link>
-              <Link to="/select-role" className="block px-3 py-2 text-base font-semibold text-forest-700 bg-forest-50 rounded-xl">
+              <Link to="/select-role" className="block px-3 py-2 text-sm font-semibold text-teal-300 bg-[#0c2830] rounded-xl border border-teal-500/30">
                 Login / Register
               </Link>
             </>
           ) : (
             <>
-              <Link to={getDashboardLink()} className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
+              <Link
+                to={getDashboardLink()}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+              >
+                <LayoutDashboard className="w-4 h-4 text-teal-400" />
                 Dashboard
               </Link>
+
               {isFarmer && (
                 <>
-                  <Link to="/farmer/crops" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🌾 Digital Farm Records
+                  <Link
+                    to="/farmer/crops"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <LandPlot className="w-4 h-4 text-teal-400" />
+                    Digital Farm Records
                   </Link>
-                  <Link to="/farmer/crops/register" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    ✍️ Register New Crop
+                  <Link
+                    to="/farmer/crops/register"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <PlusCircle className="w-4 h-4 text-teal-400" />
+                    Register New Land & Crop
                   </Link>
-                  <Link to="/farmer/shops" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🏪 Agricultural Shops
+                  <Link
+                    to="/farmer/shops"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Store className="w-4 h-4 text-teal-400" />
+                    Agricultural Shops & Stock
                   </Link>
-                  <Link to="/farmer/government-updates" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🏛️ Government Updates
+                  <Link
+                    to="/farmer/government-updates"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Building2 className="w-4 h-4 text-teal-400" />
+                    Government Schemes
                   </Link>
-                  <Link to="/farmer/weather" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🌦️ Weather Forecast
+                  <Link
+                    to="/farmer/weather"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <CloudSun className="w-4 h-4 text-teal-400" />
+                    Weather Forecast
                   </Link>
-                  <Link to="/farmer/assistant" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🤖 Voice & AI Assistant
+                  <Link
+                    to="/farmer/assistant"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Bot className="w-4 h-4 text-teal-400" />
+                    Voice & AI Assistant
                   </Link>
                 </>
               )}
+
               {isShopkeeper && (
                 <>
-                  <Link to="/shopkeeper/dashboard" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🏪 My Shops
+                  <Link
+                    to="/shopkeeper/dashboard"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Store className="w-4 h-4 text-teal-400" />
+                    My Shops & Stock
+                  </Link>
+                  <Link
+                    to="/shopkeeper/profile"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <User className="w-4 h-4 text-teal-400" />
+                    Shopkeeper Profile
                   </Link>
                 </>
               )}
+
               {isOfficer && (
                 <>
-                  <Link to="/officer/dashboard" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    📋 Pending Verifications
+                  <Link
+                    to="/officer/dashboard"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <FileCheck className="w-4 h-4 text-teal-400" />
+                    Pending Verifications
                   </Link>
-                  <Link to="/officer/search" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    🔍 Search Farmer
+                  <Link
+                    to="/officer/search"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Search className="w-4 h-4 text-teal-400" />
+                    Search Farmer Records
                   </Link>
-                  <Link to="/officer/archive" className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                    ✅ Check Verified
+                  <Link
+                    to="/officer/archive"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <FileCheck className="w-4 h-4 text-teal-400" />
+                    Verified History
                   </Link>
                 </>
               )}
-              <Link to={getProfileLink()} className="block px-3 py-2 text-base font-semibold text-slate-700 rounded-xl hover:bg-slate-50">
-                👤 My Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-3 py-2 text-base font-semibold text-rose-600 rounded-xl hover:bg-rose-50"
-              >
-                🚪 Log Out
-              </button>
+
+              <div className="pt-2 border-t border-teal-900/50 space-y-1">
+                <Link
+                  to={getProfileLink()}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                >
+                  <User className="w-4 h-4 text-teal-400" />
+                  My Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-rose-400 rounded-xl hover:bg-rose-950/40 text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Log Out
+                </button>
+              </div>
             </>
           )}
         </div>

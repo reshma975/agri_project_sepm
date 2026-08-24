@@ -112,9 +112,9 @@ export default function CropReviewPage() {
       <div className="flex items-center justify-between">
         <Link
           to="/officer/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors p-2 rounded-xl bg-slate-100 hover:bg-slate-200"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 transition-all shadow-2xs"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Avoid Accidental Changes
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
         </Link>
 
         <StatusBadge status={crop.status} />

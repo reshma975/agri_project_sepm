@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getShops,
+  getShopLocations,
   getMyShops,
   getShopById,
   createShop,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 // Public & Farmer routes
 router.get('/', getShops);
+router.get('/locations', getShopLocations);
 router.get('/my-shops', requireAuth, requireRole('SHOPKEEPER'), getMyShops);
 router.get('/:id', getShopById);
 router.post('/:id/reviews', requireAuth, addShopReview);

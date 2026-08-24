@@ -121,7 +121,7 @@ export const loginUser = async (req, res) => {
     }
 
     const cleanIdentifier = identifier.trim();
-    const query = {
+    const userSearchQuery = {
       $or: [
         { email: cleanIdentifier.toLowerCase() },
         { username: cleanIdentifier.toLowerCase() },
@@ -129,20 +129,34 @@ export const loginUser = async (req, res) => {
       ]
     };
 
-    if (role) {
-      query.role = role;
+    // 1. Check if user exists in the system
+    const existingUser = await User.findOne(userSearchQuery);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account registered with this username, mobile number, or email. Please register first.'
+      });
     }
 
-    const user = await User.findOne(query);
-
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials or incorrect role selected' });
+    // 2. Check if user role matches the current login portal
+    if (role && existingUser.role !== role) {
+      const roleLabel = existingUser.role === 'FARMER' ? 'Farmer' : existingUser.role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
+      return res.status(403).json({
+        success: false,
+        message: `This account is registered as a ${roleLabel}. Please sign in through the ${roleLabel} portal.`
+      });
     }
 
-    const isMatch = await user.matchPassword(password);
+    // 3. Check password
+    const isMatch = await existingUser.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password. Please check your password and try again.'
+      });
     }
+
+    const user = existingUser;
 
     // Load role profile
     let profile = null;
@@ -310,6 +324,51 @@ export const changePassword = async (req, res) => {
     await user.save();
 
     return res.status(200).json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reset password using username, phone, or email
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+  try {
+    const { identifier, newPassword, role } = req.body;
+
+    if (!identifier || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide your registered identifier and new password' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    }
+
+    const cleanId = identifier.trim();
+    const query = {
+      $or: [
+        { email: cleanId.toLowerCase() },
+        { username: cleanId.toLowerCase() },
+        { phone: cleanId }
+      ]
+    };
+    if (role) {
+      query.role = role;
+    }
+
+    const user = await User.findOne(query);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No registered user found with these details.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Password reset successfully for ${user.name}. You can now sign in with your new password.`
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
