@@ -181,11 +181,13 @@ export const processAgriculturalQuery = async (query = '', farmerContext = {}) =
 
   // 1. If GEMINI_API_KEY is provided in .env, query Google Gemini LLM
   const geminiApiKey = process.env.GEMINI_API_KEY;
+  const geminiModelName = (process.env.GEMINI_MODEL && process.env.GEMINI_MODEL.trim()) ? process.env.GEMINI_MODEL.trim() : 'gemini-2.0-flash';
+
   if (geminiApiKey && geminiApiKey.trim() !== '' && !geminiApiKey.includes('mock') && !geminiApiKey.includes('your_')) {
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey.trim());
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: geminiModelName,
         systemInstruction: `You are FarmSetu AI, an expert agricultural advisor and agronomist empowering Indian farmers.
 Provide concise, highly accurate, and practical farming advice in friendly bullet points with emojis.
 Cover:
@@ -211,7 +213,7 @@ Keep the language simple, respectful, and easy for farmers to understand.`
             'What is the recommended fertilizer schedule?',
             'Available government subsidies for this crop'
           ],
-          topic: 'FarmSetu AI (Powered by Google Gemini)'
+          topic: `FarmSetu AI (${geminiModelName})`
         };
       }
     } catch (geminiError) {
@@ -242,12 +244,12 @@ Keep the language simple, respectful, and easy for farmers to understand.`
     return {
       answer: `🐛 **Integrated Pest & Disease Management Advisory**
 
-• **Identify the Pest Type:**
-  1. **Sucking Pests (Aphids, Jassids, Whitefly, Thrips):** Cause leaf curling, sticky honeydew, and yellowing.
+• **Identify the Pest Type:
+  1. **Sucking Pests (Aphids, Jassids, Whitefly, Thrips):Cause leaf curling, sticky honeydew, and yellowing.
      *Remedy:* Spray Neem Oil 1500 ppm (5 ml/L) or Acetamiprid 20 SP (0.2 g/L) / Thiamethoxam 25 WG (0.3 g/L). Install yellow/blue sticky traps (15 traps/acre).
-  2. **Boring & Chewing Pests (Stem borer, Bollworm, Fruit borer):** Cause dead hearts, bored holes, and dropping of flowers/fruits.
-     *Remedy:* Spray Chlorantraniliprole 18.5 SC (0.3 ml/L) or Emamectin Benzoate 5 SG (0.5 g/L). Install sex pheromone traps (5–8 traps/acre).
-  3. **Fungal Diseases (Leaf spots, Blight, Powdery mildew):**
+  2. Boring & Chewing Pests (Stem borer, Bollworm, Fruit borer): Cause dead hearts, bored holes, and dropping of flowers/fruits.
+     Remedy: Spray Chlorantraniliprole 18.5 SC (0.3 ml/L) or Emamectin Benzoate 5 SG (0.5 g/L). Install sex pheromone traps (5–8 traps/acre).
+  3. Fungal Diseases (Leaf spots, Blight, Powdery mildew):
      *Remedy:* Spray Mancozeb 75 WP (2.5 g/L) or Azoxystrobin + Difenoconazole (1 ml/L).
 
 • **Spraying Precaution:** Spray during early morning (before 9 AM) or late afternoon (after 4 PM). Avoid spraying during rain forecasts or windy conditions.`,

@@ -3,6 +3,19 @@ import apiClient from '../../api/apiClient';
 import { CloudRain, Wind, Droplets, AlertTriangle, Sparkles, MapPin, ArrowRight, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const formatShortLocation = (loc) => {
+  if (!loc) return 'Vijayawada';
+  const parts = loc.split(',').map((p) => p.trim()).filter(Boolean);
+  let first = parts[0] || 'Vijayawada';
+  first = first.replace(/\bvillage\b/gi, '').replace(/\bmandal\b/gi, '').trim();
+  if (!first) first = parts[0] || 'Vijayawada';
+  return first
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function WeatherBanner({ location = 'Vijayawada, Andhra Pradesh' }) {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,22 +52,22 @@ export default function WeatherBanner({ location = 'Vijayawada, Andhra Pradesh' 
 
   return (
     <div
-      className={`w-full rounded-3xl p-6 sm:p-7 shadow-xl transition-all relative overflow-hidden text-white ${
+      className={`w-full rounded-3xl p-6 sm:p-7 shadow-xl transition-all relative overflow-hidden text-white border border-slate-700 ${
         isSevere
-          ? 'bg-gradient-to-br from-amber-950 via-rose-950 to-slate-950 border border-rose-500/40 shadow-rose-950/30'
-          : 'bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-900 border border-emerald-500/20 shadow-forest-950/40'
+          ? 'bg-gradient-to-br from-amber-950 via-rose-950 to-[#06151a]'
+          : 'bg-gradient-to-br from-[#07242c] via-[#06181e] to-[#040e12]'
       }`}
     >
       {/* Decorative Glow Elements */}
-      <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute left-1/3 bottom-0 translate-y-12 w-64 h-64 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute left-1/3 bottom-0 translate-y-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
       <div className="relative z-10 space-y-5">
         {/* Top Header: Location + Status Badge */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-emerald-300 font-medium">
             <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-semibold text-white">{weather.location}</span>
+            <span className="font-semibold text-white">{formatShortLocation(weather.location)}</span>
             <span className="text-white/40">•</span>
             <span className="text-emerald-200">{weather.expectedTime || 'Next 24-48 hours clear'}</span>
           </div>
@@ -65,12 +78,12 @@ export default function WeatherBanner({ location = 'Vijayawada, Andhra Pradesh' 
           </div>
         </div>
 
-        {/* 1. BIG ATTRACTIVE QUOTE / ADVISORY (FIRST) */}
-        <div className="relative pl-3 border-l-4 border-emerald-400/80">
-          <div className="flex items-start gap-2.5">
-            <Quote className="w-6 h-6 text-emerald-400/70 flex-shrink-0 mt-1" />
-            <h2 className="text-xl sm:text-2xl md:text-2xl font-extrabold text-white tracking-tight leading-snug drop-shadow-sm">
-              {isSevere && <AlertTriangle className="w-6 h-6 text-amber-400 inline mr-2 -mt-1 animate-bounce" />}
+        {/* 1. CONCISE IMPACTFUL ADVISORY QUOTE */}
+        <div className="relative pl-3.5 border-l-3 border-teal-400 py-0.5">
+          <div className="flex items-center gap-2.5">
+            <Quote className="w-4 h-4 text-teal-400 flex-shrink-0" />
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight leading-snug">
+              {isSevere && <AlertTriangle className="w-4 h-4 text-amber-400 inline mr-1.5 -mt-0.5 animate-bounce" />}
               {weather.comment}
             </h2>
           </div>

@@ -181,17 +181,17 @@ export default function ShopDiscoveryPage() {
       )}
 
       {/* Search & Filter Bar */}
-      <div className="rounded-3xl p-4 sm:p-5 bg-white space-y-4 shadow-md border border-slate-200">
+      <div className="rounded-3xl p-4 sm:p-5 bg-[#06151a]/95 space-y-4 shadow-xl border border-slate-700">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           {/* Search Input */}
           <div className="relative flex-1 w-full">
-            <Search className="w-5 h-5 text-forest-700 absolute left-4 top-3.5" />
+            <Search className="w-5 h-5 text-teal-400 absolute left-4 top-3.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products (e.g. Neem Oil, Urea, DAP, Cotton Seeds, Knapsack Sprayer)..."
-              className="w-full pl-11 pr-4 py-3 text-sm text-slate-900 font-bold bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-forest-600 focus:ring-2 focus:ring-forest-200 rounded-2xl outline-none placeholder:text-slate-500 placeholder:font-medium transition-all shadow-inner"
+              className="w-full pl-11 pr-4 py-3 text-sm text-white font-bold bg-[#030b0e] border border-slate-700 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 rounded-2xl outline-none placeholder:text-slate-500 placeholder:font-medium transition-all shadow-inner"
             />
           </div>
 
@@ -199,60 +199,60 @@ export default function ShopDiscoveryPage() {
           <button
             type="button"
             onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
-            className={`px-5 py-3 rounded-2xl text-xs font-bold border-2 transition-all flex items-center gap-2 flex-shrink-0 shadow-xs ${
+            className={`px-5 py-3 rounded-2xl text-xs font-bold border transition-all flex items-center gap-2 flex-shrink-0 shadow-sm cursor-pointer ${
               filterDrawerOpen || locationFilter !== 'All' || categoryFilter !== 'All' || maxPrice || minRating
-                ? 'bg-forest-100 text-forest-900 border-forest-500 ring-2 ring-forest-300/40'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                ? 'bg-teal-950/80 text-teal-300 border-teal-500/50 ring-2 ring-teal-400/20'
+                : 'bg-[#030b0e] hover:bg-[#0c242c] text-white border-slate-700'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4 text-forest-700" />
+            <SlidersHorizontal className="w-4 h-4 text-teal-400" />
             <span>Filters {(locationFilter !== 'All' || categoryFilter !== 'All') ? '• Active' : ''}</span>
           </button>
         </div>
 
         {/* Filter Drawer */}
         {filterDrawerOpen && (
-          <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-4 animate-fade-in text-xs">
+          <div className="pt-4 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-4 gap-4 animate-fade-in text-xs">
             <div>
-              <label className="block font-bold text-slate-800 uppercase tracking-wider mb-1.5 text-[10px]">Product Category</label>
+              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Product Category</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:border-forest-600 outline-none font-bold text-slate-900 text-xs shadow-2xs cursor-pointer"
+                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
               >
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c) => <option key={c} value={c} className="bg-[#06151a] text-white">{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block font-bold text-slate-800 uppercase tracking-wider mb-1.5 text-[10px]">Shop Location</label>
+              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Shop Location</label>
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:border-forest-600 outline-none font-bold text-slate-900 text-xs shadow-2xs cursor-pointer"
+                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
               >
-                {locations.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
+                {locations.map((loc) => <option key={loc} value={loc} className="bg-[#06151a] text-white">{loc}</option>)}
               </select>
             </div>
             <div>
-              <label className="block font-bold text-slate-800 uppercase tracking-wider mb-1.5 text-[10px]">Max Price (₹)</label>
+              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Max Price (₹)</label>
               <input
                 type="number"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="e.g. 1500"
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:border-forest-600 outline-none font-bold text-slate-900 text-xs shadow-2xs"
+                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-800 uppercase tracking-wider mb-1.5 text-[10px]">Min Rating</label>
+              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Min Rating</label>
               <select
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:border-forest-600 outline-none font-bold text-slate-900 text-xs shadow-2xs cursor-pointer"
+                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
               >
-                <option value="">Any Rating</option>
-                <option value="4">⭐ 4.0 & above</option>
-                <option value="4.5">⭐ 4.5 & above</option>
+                <option value="" className="bg-[#06151a] text-white">Any Rating</option>
+                <option value="4" className="bg-[#06151a] text-white">⭐ 4.0 & above</option>
+                <option value="4.5" className="bg-[#06151a] text-white">⭐ 4.5 & above</option>
               </select>
             </div>
           </div>
@@ -260,17 +260,17 @@ export default function ShopDiscoveryPage() {
 
         {/* Active Filters Summary */}
         {(searchQuery || locationFilter !== 'All' || categoryFilter !== 'All' || maxPrice || minRating) && (
-          <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
+          <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-700">
             <span>
               Showing results for:{' '}
-              {categoryFilter !== 'All' && <strong className="text-forest-700 font-bold">{categoryFilter} • </strong>}
-              {locationFilter !== 'All' && <strong className="text-forest-700 font-bold">{locationFilter} • </strong>}
-              {searchQuery && <strong className="text-forest-700 font-bold">"{searchQuery}"</strong>}
+              {categoryFilter !== 'All' && <strong className="text-teal-400 font-bold">{categoryFilter} • </strong>}
+              {locationFilter !== 'All' && <strong className="text-teal-400 font-bold">{locationFilter} • </strong>}
+              {searchQuery && <strong className="text-teal-400 font-bold">"{searchQuery}"</strong>}
             </span>
             <button
               type="button"
               onClick={handleResetFilters}
-              className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" /> Reset All Filters
             </button>
@@ -278,13 +278,13 @@ export default function ShopDiscoveryPage() {
         )}
 
         {/* View Switcher Tabs */}
-        <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+        <div className="pt-3 border-t border-slate-700 flex items-center gap-2">
           <button
             onClick={() => setActiveTab('PRODUCTS')}
             className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
               activeTab === 'PRODUCTS'
-                ? 'bg-forest-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-[#030b0e] hover:bg-[#0c242c] text-slate-300'
             }`}
           >
             Product Availability ({products.length})
@@ -293,8 +293,8 @@ export default function ShopDiscoveryPage() {
             onClick={() => setActiveTab('SHOPS')}
             className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
               activeTab === 'SHOPS'
-                ? 'bg-forest-600 text-white shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'bg-[#030b0e] hover:bg-[#0c242c] text-slate-300'
             }`}
           >
             Agro Shops ({shops.length})
@@ -348,12 +348,12 @@ export default function ShopDiscoveryPage() {
                 return (
                   <div
                     key={item._id}
-                    className="glass-card rounded-3xl p-5 border border-teal-500/20 bg-[#06151a]/90 flex flex-col justify-between group transition-all hover:border-teal-400/50 shadow-lg"
+                    className="glass-card rounded-3xl p-5 border border-slate-700 bg-[#06151a]/95 flex flex-col justify-between group transition-all hover:border-teal-400/50 shadow-xl"
                   >
                     <div className="space-y-3">
                       {/* Product Header */}
                       <div className="flex items-start gap-3">
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-900 flex-shrink-0 border border-teal-500/20">
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-900 flex-shrink-0 border border-slate-700">
                           <img
                             src={item.imageUrl || prod.imageUrl || 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=600&q=80'}
                             alt={item.customName || prod.name}
@@ -365,11 +365,11 @@ export default function ShopDiscoveryPage() {
                             {item.customName || prod.name}
                           </h4>
                           <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                            <span className="inline-block text-[11px] font-semibold text-teal-200 bg-teal-950/80 border border-teal-500/30 px-2 py-0.5 rounded-md">
+                            <span className="inline-block text-[11px] font-semibold text-slate-300 bg-[#030b0e] border border-slate-700 px-2 py-0.5 rounded-md">
                               {prod.category || 'General'}
                             </span>
                             {isNearby(shop.location || shop.address) && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-300 bg-teal-900/60 border border-teal-400/40 px-2 py-0.5 rounded-md">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-300 bg-teal-950/80 border border-teal-700 px-2 py-0.5 rounded-md">
                                 📍 Near Your Farm
                               </span>
                             )}
@@ -378,24 +378,24 @@ export default function ShopDiscoveryPage() {
                       </div>
 
                       {/* Pricing & Live Stock Status */}
-                      <div className="p-3 bg-white/95 rounded-2xl border border-slate-200 flex items-center justify-between shadow-2xs">
+                      <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex items-center justify-between shadow-2xs">
                         <div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Price</span>
-                          <span className="text-base font-black text-slate-900">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+                          <span className="text-base font-black text-white">
                             {formatCurrency(item.price)}
-                            <span className="text-xs font-medium text-slate-600">/{item.unit}</span>
+                            <span className="text-xs font-medium text-slate-500">/{item.unit}</span>
                           </span>
                         </div>
 
                         <div className="text-right">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Availability</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Availability</span>
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                               item.status === 'Out of Stock' || item.status === 'Empty'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-900'
                                 : item.status === 'Low Stock'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                ? 'bg-amber-950/80 text-amber-300 border-amber-900'
+                                : 'bg-emerald-950/80 text-emerald-300 border-emerald-900'
                             }`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -415,14 +415,14 @@ export default function ShopDiscoveryPage() {
                           {shop.shopName}
                         </p>
                         <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <MapPin className="w-3.5 h-3.5 text-slate-500" />
                           {shop.location} • {shop.address}
                         </p>
                       </div>
                     </div>
 
                     {/* Open Shop Link */}
-                    <div className="mt-4 pt-3 border-t border-teal-500/20 flex items-center justify-between">
+                    <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between">
                       <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                         {shop.ratingAverage?.toFixed(1) || '4.5'}
@@ -458,7 +458,7 @@ export default function ShopDiscoveryPage() {
                 <Link
                   key={shop._id}
                   to={`/farmer/shops/${shop._id}`}
-                  className="glass-card rounded-3xl overflow-hidden border border-teal-500/20 hover:border-teal-400/50 bg-[#06151a]/90 group transition-all shadow-lg"
+                  className="glass-card rounded-3xl overflow-hidden border border-slate-700 hover:border-teal-400 bg-[#06151a]/95 group transition-all shadow-xl"
                 >
                   <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                     <img
@@ -467,11 +467,11 @@ export default function ShopDiscoveryPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {isNearby(shop.location || shop.address) && (
-                      <div className="absolute top-3 left-3 bg-teal-950/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-teal-300 border border-teal-500/40 flex items-center gap-1 shadow-md">
+                      <div className="absolute top-3 left-3 bg-[#030b0e]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-teal-300 border border-slate-700 flex items-center gap-1 shadow-md">
                         📍 Near Your Farm
                       </div>
                     )}
-                    <div className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-300 border border-teal-500/30 flex items-center gap-1 shadow-md">
+                    <div className="absolute top-3 right-3 bg-[#030b0e]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-300 border border-slate-700 flex items-center gap-1 shadow-md">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span>{shop.ratingAverage?.toFixed(1) || '4.5'}</span>
                     </div>
@@ -481,14 +481,14 @@ export default function ShopDiscoveryPage() {
                     <h3 className="font-extrabold text-lg text-white group-hover:text-teal-300 transition-colors truncate">
                       {shop.shopName}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-teal-400">
-                      <MapPin className="w-3.5 h-3.5 text-forest-600 flex-shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-teal-300">
+                      <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
                       <span>{shop.location}</span>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                       {shop.address}
                     </p>
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-forest-700">
+                    <div className="pt-3 border-t border-slate-700 flex items-center justify-between text-xs font-bold text-teal-300">
                       <span>Browse Store Inventory</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>

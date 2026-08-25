@@ -41,69 +41,69 @@ export default function ReviewActionModal({ isOpen, onClose, application, onActi
         )}
 
         {/* Application summary */}
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1">
-          <p className="font-bold text-slate-800">
+        <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl text-xs space-y-1">
+          <p className="font-extrabold text-white">
             {application.cropName} • Survey #{application.surveyNumber}
           </p>
-          <p className="text-slate-500">
+          <p className="text-slate-300">
             Farmer: {application.farmerId?.userId?.name} ({application.farmerId?.farmerId}) • {application.cultivatedArea} {application.areaUnit}
           </p>
         </div>
 
         {/* Action Selector (3 Buttons from Wireframe 5: Verify, Return, Reject) */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
             Select Decision Action *
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setActionType('VERIFY')}
-              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
+              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                 actionType === 'VERIFY'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-500 ring-2 ring-emerald-200'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60 ring-2 ring-emerald-500/30'
+                  : 'bg-[#030b0e] text-slate-300 border-slate-700 hover:bg-[#0c242c]'
               }`}
             >
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               <span>✅ Verify & Approve</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActionType('RETURN')}
-              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
+              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                 actionType === 'RETURN'
-                  ? 'bg-orange-50 text-orange-800 border-orange-500 ring-2 ring-orange-200'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 ring-2 ring-amber-500/30'
+                  : 'bg-[#030b0e] text-slate-300 border-slate-700 hover:bg-[#0c242c]'
               }`}
             >
-              <RotateCcw className="w-5 h-5 text-orange-600" />
+              <RotateCcw className="w-5 h-5 text-amber-400" />
               <span>↩️ Return for Correction</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActionType('REJECT')}
-              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
+              className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                 actionType === 'REJECT'
-                  ? 'bg-rose-50 text-rose-800 border-rose-500 ring-2 ring-rose-200'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-rose-950/80 text-rose-300 border-rose-500/60 ring-2 ring-rose-500/30'
+                  : 'bg-[#030b0e] text-slate-300 border-slate-700 hover:bg-[#0c242c]'
               }`}
             >
-              <XCircle className="w-5 h-5 text-rose-600" />
+              <XCircle className="w-5 h-5 text-rose-400" />
               <span>❌ Reject</span>
             </button>
           </div>
         </div>
 
-        {/* Reason / Comment Field (Mandatory for Return / Reject as in Section 23) */}
+        {/* Reason / Comment Field */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
             {actionType === 'VERIFY' ? 'Officer Verification Note (Optional)' : 'Reason / Clarification Note (Mandatory) *'}
           </label>
           <div className="relative">
-            <MessageSquare className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            <MessageSquare className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
             <textarea
               rows={3}
               value={comment}
@@ -116,29 +116,29 @@ export default function ReviewActionModal({ isOpen, onClose, application, onActi
                   : 'e.g. Survey number not registered under designated village boundaries.'
               }
               required={actionType !== 'VERIFY'}
-              className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+              className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
             />
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+            className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#030b0e] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className={`px-6 py-2.5 text-sm font-bold text-white rounded-2xl transition-all shadow-md disabled:opacity-50 ${
+            className={`px-6 py-2.5 text-xs font-black rounded-2xl transition-all shadow-md disabled:opacity-50 cursor-pointer ${
               actionType === 'VERIFY'
-                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'
+                ? 'btn-glow-primary text-slate-950'
                 : actionType === 'RETURN'
-                ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200'
-                : 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
+                ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black'
+                : 'bg-rose-600 hover:bg-rose-700 text-white font-black'
             }`}
           >
             {loading

@@ -47,23 +47,23 @@ export default function ExportModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="📥 Export Official Crop Records" maxWidth="max-w-md">
       <div className="space-y-4">
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-slate-300 leading-relaxed">
           Download or print verified farmer crop records within your designated jurisdiction. Contains verified survey boundaries, cultivated area, and verification audit timestamps.
         </p>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
             Select Agricultural Year
           </label>
           <select
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+            className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 outline-none transition-all cursor-pointer"
           >
-            <option value="2026">2026 (Current Year)</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="All">All Years Archive</option>
+            <option value="2026" className="bg-[#06151a] text-white">2026 (Current Year)</option>
+            <option value="2025" className="bg-[#06151a] text-white">2025</option>
+            <option value="2024" className="bg-[#06151a] text-white">2024</option>
+            <option value="All" className="bg-[#06151a] text-white">All Years Archive</option>
           </select>
         </div>
 
@@ -71,25 +71,25 @@ export default function ExportModal({ isOpen, onClose }) {
           <button
             onClick={handleDownloadCSV}
             disabled={loading}
-            className="p-3 bg-forest-50 hover:bg-forest-100 text-forest-800 border border-forest-200 rounded-2xl text-xs font-bold flex flex-col items-center gap-2 transition-all shadow-xs disabled:opacity-50"
+            className="p-3 bg-[#030b0e] hover:bg-[#0c242c] text-teal-300 border border-slate-700 rounded-2xl text-xs font-bold flex flex-col items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
-            <FileSpreadsheet className="w-5 h-5 text-forest-600" />
+            <FileSpreadsheet className="w-5 h-5 text-teal-400" />
             <span>Download CSV Data</span>
           </button>
 
           <button
             onClick={handlePrint}
-            className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-2xl text-xs font-bold flex flex-col items-center gap-2 transition-all shadow-xs"
+            className="p-3 bg-[#030b0e] hover:bg-[#0c242c] text-slate-300 hover:text-white border border-slate-700 rounded-2xl text-xs font-bold flex flex-col items-center gap-2 transition-all shadow-xs cursor-pointer"
           >
-            <Printer className="w-5 h-5 text-slate-600" />
+            <Printer className="w-5 h-5 text-slate-400" />
             <span>Print Report View</span>
           </button>
         </div>
 
-        <div className="flex justify-end pt-3 border-t border-slate-100">
+        <div className="flex justify-end pt-3 border-t border-slate-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+            className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#030b0e] hover:bg-[#0c242c] border border-slate-700 rounded-xl cursor-pointer"
           >
             Close
           </button>

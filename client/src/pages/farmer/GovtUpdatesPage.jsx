@@ -77,9 +77,9 @@ export default function GovtUpdatesPage() {
 
       {/* Section 42: Personalized "Recommended for You" Banner */}
       {recommended.length > 0 && selectedCategory === 'All' && !searchQuery && (
-        <div className="bg-gradient-to-r from-forest-800 to-emerald-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
-            <Sparkles className="w-4 h-4" />
+        <div className="bg-[#06151a]/95 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4 border border-slate-700">
+          <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
+            <Sparkles className="w-4 h-4 text-teal-400" />
             <span>Recommended for You (Based on Paddy Crop & Andhra Pradesh)</span>
           </div>
 
@@ -87,27 +87,27 @@ export default function GovtUpdatesPage() {
             {recommended.map((rec) => (
               <div
                 key={rec._id}
-                className="bg-white/10 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/15 space-y-2 hover:bg-white/15 transition-all"
+                className="bg-[#030b0e] p-4 sm:p-5 rounded-2xl border border-slate-700 space-y-2 hover:border-teal-400 transition-all shadow-md"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-emerald-300 bg-white/10 px-2 py-0.5 rounded-full uppercase">
+                  <span className="text-[10px] font-bold text-teal-300 bg-[#06151a] px-2.5 py-0.5 rounded-full uppercase border border-slate-700">
                     {rec.category}
                   </span>
-                  <span className="text-[11px] text-slate-200">
+                  <span className="text-[11px] text-slate-300">
                     Deadline: {rec.deadline || 'Ongoing'}
                   </span>
                 </div>
-                <h4 className="font-bold text-base text-white">{rec.title}</h4>
-                <p className="text-xs text-emerald-100 line-clamp-2 leading-relaxed">
+                <h4 className="font-extrabold text-base text-white">{rec.title}</h4>
+                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                   {rec.description}
                 </p>
-                <div className="pt-2 flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-slate-300">Source: {rec.source}</span>
+                <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-700">
+                  <span className="text-[11px] text-slate-400">Source: {rec.source}</span>
                   <a
                     href={rec.officialUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold text-emerald-300 hover:text-white flex items-center gap-1"
+                    className="font-bold text-teal-300 hover:text-white flex items-center gap-1 cursor-pointer"
                   >
                     Official Portal <ExternalLink className="w-3.5 h-3.5" />
                   </a>
@@ -119,30 +119,30 @@ export default function GovtUpdatesPage() {
       )}
 
       {/* Filter & Search Bar */}
-      <div className="glass-card rounded-2xl p-4 bg-white space-y-3 border border-slate-200">
+      <div className="glass-card rounded-3xl p-5 bg-[#06151a]/95 space-y-4 border border-slate-700 shadow-xl">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search schemes, subsidies, fertilizers, or insurance announcements..."
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none"
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#030b0e] border border-slate-700 text-white rounded-xl focus:border-teal-400 outline-none placeholder:text-slate-500 font-bold"
             />
           </div>
         </div>
 
         {/* Category Filter Chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-700">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-forest-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'bg-[#030b0e] hover:bg-[#0c242c] text-slate-300 border border-slate-700'
               }`}
             >
               {cat}
@@ -155,7 +155,7 @@ export default function GovtUpdatesPage() {
       {loading ? (
         <LoadingSpinner message="Loading government scheme updates..." />
       ) : updates.length === 0 ? (
-        <div className="text-center py-12 p-4 bg-white rounded-3xl border border-slate-200 text-slate-500 text-xs">
+        <div className="text-center py-12 p-4 bg-[#06151a]/90 rounded-3xl border border-slate-700 text-slate-300 text-xs shadow-xl">
           No announcements found matching this category.
         </div>
       ) : (
@@ -163,13 +163,13 @@ export default function GovtUpdatesPage() {
           {updates.map((item) => (
             <div
               key={item._id}
-              className="glass-card rounded-3xl p-6 border border-slate-200 flex flex-col justify-between space-y-4 hover:border-forest-400 transition-all"
+              className="glass-card bg-[#06151a]/95 rounded-3xl p-6 border border-slate-700 flex flex-col justify-between space-y-4 hover:border-teal-400 transition-all shadow-xl"
             >
               <div className="space-y-3">
                 {/* Meta header */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-forest-700 bg-forest-50 px-2.5 py-0.5 rounded-full border border-forest-200">
-                    <Tag className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-slate-700">
+                    <Tag className="w-3 h-3 text-teal-400" />
                     {item.category}
                   </span>
                   <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -178,23 +178,23 @@ export default function GovtUpdatesPage() {
                   </span>
                 </div>
 
-                <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
+                <h3 className="text-lg font-extrabold text-white leading-snug">
                   {item.title}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                   {item.description}
                 </p>
 
                 {/* Key Benefits List */}
                 {item.keyBenefits?.length > 0 && (
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5 text-xs">
-                    <strong className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                  <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 space-y-1.5 text-xs">
+                    <strong className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
                       Key Scheme Benefits:
                     </strong>
                     {item.keyBenefits.map((b, bIdx) => (
-                      <div key={bIdx} className="flex items-center gap-2 text-slate-700">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-forest-600 flex-shrink-0" />
+                      <div key={bIdx} className="flex items-center gap-2 text-slate-200">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
                         <span>{b}</span>
                       </div>
                     ))}
@@ -202,18 +202,18 @@ export default function GovtUpdatesPage() {
                 )}
               </div>
 
-              {/* Source and official notification link (Section 40) */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              {/* Source and official notification link */}
+              <div className="pt-4 border-t border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Official Source</span>
-                  <p className="text-[11px] font-semibold text-slate-700">{item.source}</p>
+                  <p className="text-[11px] font-semibold text-slate-300">{item.source}</p>
                 </div>
 
                 <a
                   href={item.officialUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 text-xs flex-shrink-0"
+                  className="px-4 py-2 btn-glow-primary text-slate-950 font-black rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 text-xs flex-shrink-0 cursor-pointer"
                 >
                   <span>Read Official Notification</span>
                   <ExternalLink className="w-3.5 h-3.5" />

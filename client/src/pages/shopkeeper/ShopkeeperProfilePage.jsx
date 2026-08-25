@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import UserAvatar from '../../components/common/UserAvatar';
 import {
   User,
   Phone,
@@ -104,12 +105,8 @@ export default function ShopkeeperProfilePage() {
         <form onSubmit={handleSave} className="space-y-5">
           {/* Avatar */}
           <div className="flex items-center gap-4 pb-5 border-b border-teal-900/40">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-950 border-2 border-teal-400/60 flex items-center justify-center text-teal-300 shadow-md flex-shrink-0">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-8 h-8" />
-              )}
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-950 border-2 border-teal-400/60 flex items-center justify-center flex-shrink-0 shadow-md">
+              <UserAvatar user={user} showBadge={true} className="w-16 h-16" />
             </div>
             <div>
               <h3 className="font-extrabold text-lg text-white">{user?.name}</h3>

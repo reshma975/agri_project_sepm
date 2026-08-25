@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { Sprout, User, Lock, ArrowRight, AlertCircle, ArrowLeft, KeyRound, CheckCircle2, X } from 'lucide-react';
+import { Sprout, User, Lock, ArrowRight, AlertCircle, ArrowLeft, KeyRound, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
+import PasswordStrengthIndicator, { checkPasswordRules } from '../components/common/PasswordStrengthIndicator';
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,6 +22,8 @@ export default function LoginPage() {
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
@@ -62,8 +66,9 @@ export default function LoginPage() {
       return setForgotError('New passwords do not match');
     }
 
-    if (newPassword.length < 6) {
-      return setForgotError('Password must be at least 6 characters');
+    const { isAllMet } = checkPasswordRules(newPassword);
+    if (!isAllMet) {
+      return setForgotError('Please ensure your new password satisfies all security requirements shown below.');
     }
 
     try {
@@ -187,13 +192,20 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   required
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all font-mono"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -215,10 +227,10 @@ export default function LoginPage() {
               className="w-full py-3 px-4 btn-glow-primary text-slate-950 font-black rounded-full flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer shadow-lg shadow-teal-500/25"
             >
               {loading ? (
-                'Signing in...'
+                'Authenticating...'
               ) : (
                 <>
-                  <span>Sign In as {selectedRole === 'FARMER' ? 'Farmer' : selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer'}</span>
+                  <span>Sign in to {selectedRole === 'FARMER' ? 'Farmer' : selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer'} Portal</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -298,31 +310,54 @@ export default function LoginPage() {
 
               <div>
                 <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                  New Password (min. 6 characters) *
+                  New Password (min. 8 characters) *
                 </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                  className="w-full px-3.5 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type={showForgotNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min. 8 chars, 1 uppercase, 1 symbol"
+                    required
+                    className="w-full pl-3.5 pr-9 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                    className="absolute right-2.5 top-2 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                  >
+                    {showForgotNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
                   Confirm New Password *
                 </label>
-                <input
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Re-enter new password"
-                  required
-                  className="w-full px-3.5 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type={showForgotConfirmPassword ? 'text' : 'password'}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    required
+                    className="w-full pl-3.5 pr-9 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}
+                    className="absolute right-2.5 top-2 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                  >
+                    {showForgotConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Password strength checklist */}
+              {newPassword && (
+                <PasswordStrengthIndicator password={newPassword} />
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button

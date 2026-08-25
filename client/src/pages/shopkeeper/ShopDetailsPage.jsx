@@ -175,12 +175,12 @@ export default function ShopDetailsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Back Action (Wireframe 1: "Go back to My Shops") */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+      {/* Top Back Action */}
       <div className="flex items-center justify-between">
         <Link
           to="/shopkeeper/dashboard"
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-all shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-teal-300 bg-[#06151a]/90 hover:bg-[#0c242c] border border-slate-700 transition-all shadow-sm"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to My Shops
         </Link>
@@ -188,24 +188,24 @@ export default function ShopDetailsPage() {
         <button
           type="button"
           onClick={() => setDeleteShopConfirmOpen(true)}
-          className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 p-2 rounded-xl hover:bg-rose-50 transition-colors"
+          className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 p-2 rounded-xl bg-[#06151a]/90 hover:bg-rose-950/40 border border-slate-700 transition-colors cursor-pointer"
         >
           <Trash2 className="w-4 h-4" />
           Delete Shop
         </button>
       </div>
 
-      {/* Shop Details Header (Wireframe 1 layout: Image, Location (big font), Specific Add (small font), Rating) */}
-      <div className="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-md">
+      {/* Shop Details Header */}
+      <div className="glass-card bg-[#06151a]/90 rounded-3xl overflow-hidden border border-slate-700 shadow-xl">
         {/* Banner image */}
-        <div className="relative h-60 w-full bg-slate-200">
+        <div className="relative h-60 w-full bg-slate-900">
           <img
             src={shop.imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=1200&q=80'}
             alt={shop.shopName}
             className="w-full h-full object-cover"
           />
-          {/* Rating Badge (Wireframe 1) */}
-          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-extrabold text-slate-800 flex items-center gap-1.5 shadow-lg border border-slate-100">
+          {/* Rating Badge */}
+          <div className="absolute top-4 right-4 bg-[#030b0e]/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-extrabold text-white flex items-center gap-1.5 shadow-lg border border-slate-700">
             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
             <span>Rating: {shop.ratingAverage?.toFixed(1) || '4.5'}</span>
             <span className="text-[10px] text-slate-400 font-normal">({shop.ratingCount || 12})</span>
@@ -213,29 +213,29 @@ export default function ShopDetailsPage() {
         </div>
 
         {/* Content & Edit triggers */}
-        <div className="p-6 sm:p-8 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="p-6 sm:p-8 bg-[#06151a]/95 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           {!isEditingHeader ? (
             <div className="space-y-1.5 flex-1">
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white">
                 {shop.shopName}
               </h2>
 
-              {/* Location (big font as annotated in wireframe 1) */}
-              <div className="flex items-center gap-2 text-lg sm:text-xl font-black text-forest-800">
-                <MapPin className="w-5 h-5 text-forest-600 flex-shrink-0" />
+              {/* Location */}
+              <div className="flex items-center gap-2 text-lg sm:text-xl font-black text-teal-300">
+                <MapPin className="w-5 h-5 text-teal-400 flex-shrink-0" />
                 <span>{shop.location}</span>
                 <button
                   type="button"
                   onClick={() => setIsEditingHeader(true)}
                   title="Edit Location & Address"
-                  className="p-1 text-slate-400 hover:text-amber-600 rounded-lg hover:bg-slate-100 transition-colors text-xs"
+                  className="p-1 text-slate-400 hover:text-teal-300 rounded-lg hover:bg-[#0c242c] transition-colors text-xs cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Specific Add (small font as annotated in wireframe 1) */}
-              <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+              {/* Specific Address */}
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                 {shop.address}
               </p>
             </div>
@@ -246,34 +246,34 @@ export default function ShopDetailsPage() {
                 value={headerData.shopName}
                 onChange={(e) => setHeaderData({ ...headerData, shopName: e.target.value })}
                 placeholder="Shop Name"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                className="w-full px-3 py-2 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-xl outline-none"
               />
               <input
                 type="text"
                 value={headerData.location}
                 onChange={(e) => setHeaderData({ ...headerData, location: e.target.value })}
-                placeholder="Location / City (Big Font)"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                placeholder="Location / City"
+                className="w-full px-3 py-2 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-xl outline-none"
               />
               <textarea
                 rows={2}
                 value={headerData.address}
                 onChange={(e) => setHeaderData({ ...headerData, address: e.target.value })}
-                placeholder="Specific Address (Small Font)"
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                placeholder="Specific Address"
+                className="w-full px-3 py-2 text-xs bg-[#030b0e] border border-slate-700 text-white rounded-xl outline-none"
               />
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={handleSaveHeader}
-                  className="px-4 py-1.5 bg-forest-600 hover:bg-forest-700 text-white font-bold rounded-xl text-xs flex items-center gap-1"
+                  className="px-4 py-1.5 btn-glow-primary text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" /> Save Details
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditingHeader(false)}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs"
+                  className="px-3 py-1.5 bg-[#030b0e] hover:bg-[#0c242c] text-slate-300 border border-slate-700 rounded-xl text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -281,26 +281,26 @@ export default function ShopDetailsPage() {
             </div>
           )}
 
-          {/* Add New Product Button (Wireframe 1: (+) Add New Product) */}
+          {/* Add New Product Button */}
           <button
             type="button"
             onClick={() => setAddProductOpen(true)}
-            className="w-full sm:w-auto px-6 py-3.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-extrabold rounded-2xl shadow-lg shadow-amber-200 transition-all flex items-center justify-center gap-2 flex-shrink-0"
+            className="w-full sm:w-auto px-6 py-3.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-full shadow-lg transition-all flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5 text-slate-950" />
             <span>Add New Product</span>
           </button>
         </div>
       </div>
 
-      {/* Products Section (Wireframe 1: "Products") */}
+      {/* Products Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-            <Package className="w-5 h-5 text-amber-600" />
+          <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+            <Package className="w-5 h-5 text-teal-400" />
             Products Inventory ({products.length})
           </h3>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-300">
             Real-time stock statuses visible to farmers
           </span>
         </div>

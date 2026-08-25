@@ -4,6 +4,7 @@ import { FarmerProfile } from '../models/FarmerProfile.js';
 import { OfficerProfile } from '../models/OfficerProfile.js';
 import { ShopkeeperProfile } from '../models/ShopkeeperProfile.js';
 import { generateToken } from '../middleware/authMiddleware.js';
+import { validatePasswordSecurity } from '../utils/passwordValidator.js';
 
 // @desc    Register a new user (Farmer / Shopkeeper)
 // @route   POST /api/auth/register
@@ -14,6 +15,16 @@ export const registerUser = async (req, res) => {
 
     if (!name || !username || !password || !role) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    // Enforce Password Security Rules
+    const pwdValidation = validatePasswordSecurity(password);
+    if (!pwdValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: pwdValidation.message,
+        errors: pwdValidation.errors
+      });
     }
 
     // For non-farmers (e.g. Shopkeeper/Officer), email is mandatory. For farmers, it is optional.
@@ -55,7 +66,11 @@ export const registerUser = async (req, res) => {
       phone: phone ? phone.trim() : '',
       passwordHash,
       role,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`
+      avatar: role === 'FARMER'
+        ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(username)}&backgroundColor=064e3b,0f766e,047857&skinColor=9e5622,763900,ecad80,f2d3b1`
+        : role === 'SHOPKEEPER'
+        ? `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(username)}&backgroundColor=78350f,92400e,b45309`
+        : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(username)}&backgroundColor=0e3a44,134e4a,0f766e`
     });
 
     // Create associated profile
@@ -305,8 +320,21 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide both current and new passwords' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    if (oldPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as your current password. Please choose a different password.'
+      });
+    }
+
+    // Enforce Password Security Rules
+    const pwdValidation = validatePasswordSecurity(newPassword);
+    if (!pwdValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: pwdValidation.message,
+        errors: pwdValidation.errors
+      });
     }
 
     const user = await User.findById(req.user._id);
@@ -317,6 +345,14 @@ export const changePassword = async (req, res) => {
     const isMatch = await user.matchPassword(oldPassword);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Incorrect current password' });
+    }
+
+    const isSameAsCurrent = await user.matchPassword(newPassword);
+    if (isSameAsCurrent) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as your current password. Please choose a different password.'
+      });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -340,8 +376,14 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide your registered identifier and new password' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    // Enforce Password Security Rules
+    const pwdValidation = validatePasswordSecurity(newPassword);
+    if (!pwdValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: pwdValidation.message,
+        errors: pwdValidation.errors
+      });
     }
 
     const cleanId = identifier.trim();

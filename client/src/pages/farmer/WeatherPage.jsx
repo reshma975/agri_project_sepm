@@ -14,15 +14,87 @@ import {
   CheckCircle2,
   Sprout,
   ShieldAlert,
-  ArrowLeft
+  ArrowLeft,
+  Quote
 } from 'lucide-react';
 
+const formatShortLocation = (loc) => {
+  if (!loc) return 'Vijayawada';
+  const parts = loc.split(',').map((p) => p.trim()).filter(Boolean);
+  let first = parts[0] || 'Vijayawada';
+  first = first.replace(/\bvillage\b/gi, '').replace(/\bmandal\b/gi, '').trim();
+  if (!first) first = parts[0] || 'Vijayawada';
+  return first
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function WeatherPage() {
-  const [location, setLocation] = useState('Vijayawada, Andhra Pradesh');
+  const [location, setLocation] = useState('');
+  const [locationOptions, setLocationOptions] = useState([]);
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Fetch Farmer Profile & Lands to get registered database locations
+  useEffect(() => {
+    const loadFarmerLocations = async () => {
+      try {
+        const [profileRes, landsRes] = await Promise.all([
+          apiClient.get('/farmers/profile').catch(() => ({ data: {} })),
+          apiClient.get('/farmers/lands').catch(() => ({ data: {} })),
+        ]);
+
+        const profile = profileRes.data?.profile || {};
+        const lands = landsRes.data?.lands || [];
+
+        // Primary location from farmer profile signup data
+        const primaryLoc = [
+          profile.village,
+          profile.mandal,
+          profile.district,
+          profile.state || 'Andhra Pradesh',
+        ]
+          .filter(Boolean)
+          .join(', ') || 'Vijayawada, Andhra Pradesh';
+
+        const shortPrimary = formatShortLocation(primaryLoc);
+
+        const options = [
+          {
+            label: shortPrimary,
+            value: primaryLoc,
+          },
+        ];
+
+        // Add additional land parcel locations if different
+        lands.forEach((l) => {
+          if (l.village) {
+            const parcelLoc = [l.village, l.mandal, l.district, 'Andhra Pradesh'].filter(Boolean).join(', ');
+            const shortParcel = formatShortLocation(l.village);
+            if (!options.some((o) => o.value.toLowerCase() === parcelLoc.toLowerCase())) {
+              options.push({
+                label: `${shortParcel} (Survey ${l.surveyNumber})`,
+                value: parcelLoc,
+              });
+            }
+          }
+        });
+
+        setLocationOptions(options);
+        setLocation(primaryLoc);
+      } catch (err) {
+        console.error('Error fetching farmer profile for weather:', err);
+        setLocation('Vijayawada, Andhra Pradesh');
+      }
+    };
+
+    loadFarmerLocations();
+  }, []);
+
   const fetchWeather = async () => {
+    if (!location) return;
     try {
       setLoading(true);
       const res = await apiClient.get(`/weather?location=${encodeURIComponent(location)}`);
@@ -30,18 +102,20 @@ export default function WeatherPage() {
         setWeather(res.data.weather);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching weather:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchWeather();
+    if (location) {
+      fetchWeather();
+    }
   }, [location]);
 
-  if (loading) {
-    return <LoadingSpinner message="Fetching live agricultural weather forecast..." fullScreen />;
+  if (loading && !weather) {
+    return <LoadingSpinner message="Fetching live agricultural weather forecast for your location..." fullScreen />;
   }
 
   const isSevere = weather?.alertType === 'SEVERE';
@@ -66,33 +140,40 @@ export default function WeatherPage() {
           </p>
         </div>
 
-        {/* Location Selector */}
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 shadow-xs">
-          <MapPin className="w-4 h-4 text-forest-600" />
-          <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="text-xs font-bold text-slate-800 bg-transparent outline-none cursor-pointer"
-          >
-            <option value="Vijayawada, Andhra Pradesh">Vijayawada, AP</option>
-            <option value="Guntur, Andhra Pradesh">Guntur, AP</option>
-            <option value="Mangalagiri, Andhra Pradesh">Mangalagiri, AP</option>
-            <option value="Tenali, Andhra Pradesh">Tenali, AP</option>
-          </select>
+        {/* Dynamic Location Display / Selector */}
+        <div className="flex items-center gap-2 bg-[#06151a]/95 px-4 py-2 rounded-2xl border border-slate-700 shadow-sm">
+          <MapPin className="w-4 h-4 text-teal-400 flex-shrink-0" />
+          {locationOptions.length > 1 ? (
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="text-xs font-bold text-teal-300 bg-transparent outline-none cursor-pointer"
+            >
+              {locationOptions.map((opt, idx) => (
+                <option key={idx} value={opt.value} className="bg-[#06151a] text-white">
+                  {opt.label || opt.value}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs font-bold text-teal-300">
+              {formatShortLocation(location)}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Main Condition Card (Section 38: Good Weather vs Severe Alert) */}
+      {/* Main Condition Card */}
       <div
         className={`rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden ${
           isSevere
-            ? 'bg-gradient-to-r from-rose-900 via-amber-900 to-slate-900 border border-rose-500'
-            : 'bg-gradient-to-r from-forest-800 via-forest-900 to-emerald-950 border border-forest-700'
+            ? 'bg-gradient-to-r from-rose-950 via-amber-950 to-[#06151a] border border-rose-600'
+            : 'bg-[#06151a]/95 border border-slate-700'
         }`}
       >
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-bold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#030b0e] border border-slate-700 text-xs font-bold">
               {isSevere ? (
                 <>
                   <ShieldAlert className="w-4 h-4 text-amber-300 animate-pulse" />
@@ -100,8 +181,8 @@ export default function WeatherPage() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-emerald-300" />
-                  <span>☀️ Optimal Farming Conditions</span>
+                  <Sparkles className="w-4 h-4 text-teal-300" />
+                  <span className="text-teal-300">☀️ Optimal Farming Conditions</span>
                 </>
               )}
             </div>
@@ -109,32 +190,33 @@ export default function WeatherPage() {
             <div className="flex items-center gap-4">
               <span className="text-5xl sm:text-6xl">{weather?.emoji}</span>
               <div>
-                <h2 className="text-4xl sm:text-5xl font-extrabold">{weather?.temperature}°C</h2>
+                <h2 className="text-4xl sm:text-5xl font-extrabold text-white">{weather?.temperature}°C</h2>
                 <p className="text-base text-slate-200 font-semibold">{weather?.condition}</p>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
-              {weather?.comment}
-            </p>
+            <div className="pt-1 flex items-center gap-2 text-xs sm:text-sm text-slate-200 font-semibold bg-[#030b0e]/70 px-3.5 py-2 rounded-xl border border-slate-700/60 max-w-xl">
+              <Quote className="w-4 h-4 text-teal-400 flex-shrink-0" />
+              <span>{weather?.comment}</span>
+            </div>
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 text-xs">
+          <div className="grid grid-cols-2 gap-3 w-full md:w-auto bg-[#030b0e] p-4 rounded-2xl border border-slate-700 text-xs">
             <div>
-              <span className="text-slate-300 block">Humidity</span>
+              <span className="text-slate-400 block">Humidity</span>
               <strong className="text-base text-white">{weather?.humidity}%</strong>
             </div>
             <div>
-              <span className="text-slate-300 block">Rain Probability</span>
+              <span className="text-slate-400 block">Rain Probability</span>
               <strong className="text-base text-white">{weather?.rainProbability}</strong>
             </div>
             <div>
-              <span className="text-slate-300 block">Wind Velocity</span>
+              <span className="text-slate-400 block">Wind Velocity</span>
               <strong className="text-base text-white">{weather?.windSpeed}</strong>
             </div>
             <div>
-              <span className="text-slate-300 block">Feels Like</span>
+              <span className="text-slate-400 block">Feels Like</span>
               <strong className="text-base text-white">{weather?.feelsLike || 32}°C</strong>
             </div>
           </div>
@@ -144,32 +226,32 @@ export default function WeatherPage() {
       {/* Field Activity Recommendations */}
       {weather?.advisory && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+          <div className="glass-card rounded-2xl p-5 border border-slate-700 bg-[#06151a]/95 space-y-2 shadow-xl hover:border-teal-400 transition-all">
             <h4 className="font-black text-sm text-white flex items-center gap-2">
               <Droplets className="w-4 h-4 text-sky-400" />
               <span className="text-sky-300">Irrigation Advisory</span>
             </h4>
-            <p className="text-xs text-slate-200 font-medium leading-relaxed">
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
               {weather.advisory.irrigation}
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+          <div className="glass-card rounded-2xl p-5 border border-slate-700 bg-[#06151a]/95 space-y-2 shadow-xl hover:border-teal-400 transition-all">
             <h4 className="font-black text-sm text-white flex items-center gap-2">
               <Wind className="w-4 h-4 text-teal-400" />
               <span className="text-teal-300">Pesticide Spraying Guide</span>
             </h4>
-            <p className="text-xs text-slate-200 font-medium leading-relaxed">
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
               {weather.advisory.pesticideSpraying}
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg">
+          <div className="glass-card rounded-2xl p-5 border border-slate-700 bg-[#06151a]/95 space-y-2 shadow-xl hover:border-teal-400 transition-all">
             <h4 className="font-black text-sm text-white flex items-center gap-2">
               <Sprout className="w-4 h-4 text-emerald-400" />
               <span className="text-emerald-300">Fertilizer Application</span>
             </h4>
-            <p className="text-xs text-slate-200 font-medium leading-relaxed">
+            <p className="text-xs text-slate-300 font-medium leading-relaxed">
               {weather.advisory.fertilizerApplication}
             </p>
           </div>
@@ -187,13 +269,13 @@ export default function WeatherPage() {
           {weather?.forecast?.map((day, idx) => (
             <div
               key={idx}
-              className="glass-card rounded-2xl p-4 text-center border border-teal-500/20 bg-[#06151a]/90 space-y-2 shadow-lg hover:border-teal-400/50 transition-all"
+              className="glass-card rounded-2xl p-4 text-center border border-slate-700 bg-[#06151a]/95 space-y-2 shadow-xl hover:border-teal-400 transition-all"
             >
               <span className="text-xs font-bold text-teal-300 block">{day.day}</span>
               <span className="text-3xl block my-1">{day.emoji}</span>
               <strong className="text-sm font-black text-white block">{day.temp}</strong>
               <p className="text-xs font-medium text-slate-300">{day.condition}</p>
-              <span className="inline-block text-[11px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
+              <span className="inline-block text-[11px] font-bold text-cyan-300 bg-[#030b0e] border border-slate-700 px-2.5 py-0.5 rounded-full">
                 Rain: {day.rain}
               </span>
             </div>

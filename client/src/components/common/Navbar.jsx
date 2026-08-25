@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import UserAvatar from './UserAvatar';
 import {
   Sprout,
   Store,
@@ -314,19 +315,15 @@ export default function Navbar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 p-1 pl-2 rounded-full bg-[#0b2127] hover:bg-[#0f2c34] border border-teal-900/50 transition-all focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full bg-[#0b2127] hover:bg-[#0f2c34] border border-teal-900/50 transition-all focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-full overflow-hidden bg-teal-900/60 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-3.5 h-3.5 text-teal-300" />
-                    )}
+                  <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                    <UserAvatar user={user} showBadge={true} className="w-7 h-7" />
                   </div>
                   <span className="text-xs font-bold text-slate-200 hidden sm:inline-block max-w-[120px] truncate">
                     {user?.name}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-teal-400/80 mr-1" />
+                  <ChevronDown className="w-3.5 h-3.5 text-teal-400/80 mr-0.5" />
                 </button>
 
                 {/* Dropdown Menu */}

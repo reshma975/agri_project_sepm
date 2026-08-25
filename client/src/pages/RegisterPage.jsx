@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sprout, User, Mail, Phone, Lock, MapPin, Store, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Sprout, User, Mail, Phone, Lock, MapPin, Store, ArrowRight, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import PasswordStrengthIndicator, { checkPasswordRules } from '../components/common/PasswordStrengthIndicator';
 
 export default function RegisterPage() {
   const [searchParams] = useSearchParams();
@@ -22,6 +23,8 @@ export default function RegisterPage() {
     businessName: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,8 +42,9 @@ export default function RegisterPage() {
       return setError('Passwords do not match');
     }
 
-    if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters');
+    const { isAllMet } = checkPasswordRules(formData.password);
+    if (!isAllMet) {
+      return setError('Please make sure your password satisfies all security requirements shown below.');
     }
 
     setLoading(true);
@@ -235,14 +239,21 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3.5" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="At least 6 chars"
+                    placeholder="Min. 8 chars, 1 uppercase, 1 symbol"
                     required
-                    className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all"
+                    className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all font-mono"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -253,17 +264,29 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3.5" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Repeat password"
                     required
-                    className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all"
+                    className="w-full pl-10 pr-10 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all font-mono"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
             </div>
+
+            {/* Real-time Password Security Criteria & Strength Indicator */}
+            {formData.password && (
+              <PasswordStrengthIndicator password={formData.password} />
+            )}
 
             <button
               type="submit"

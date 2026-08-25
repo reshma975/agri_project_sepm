@@ -85,20 +85,20 @@ export default function OfficerDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header Bar (Wireframe 5: "Hi, Username") */}
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Hi, {user?.name || user?.username || 'Officer'} 🏛️
             </h1>
-            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-[#030b0e] text-teal-300 border border-slate-700">
               {officer.designation || 'Agricultural Officer (AAO)'}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-forest-600" />
-            Assigned Area: <strong className="text-slate-800">{officer.assignedArea || 'Vijayawada Mandal'}</strong> • License #{officer.licenseNumber || 'AP-AGRI-OFF-2024'}
+          <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1 flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-teal-400" />
+            Assigned Area: <strong className="text-white">{officer.assignedArea || 'Vijayawada Mandal'}</strong> • License #{officer.licenseNumber || 'AP-AGRI-OFF-2024'}
           </p>
         </div>
 
@@ -106,18 +106,18 @@ export default function OfficerDashboard() {
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
           <Link
             to="/officer/search"
-            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-2xl border border-slate-200 shadow-xs transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-[#030b0e] hover:bg-[#0c242c] text-white text-xs sm:text-sm font-bold rounded-2xl border border-slate-700 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
           >
-            <Search className="w-4 h-4 text-slate-500" />
+            <Search className="w-4 h-4 text-teal-400" />
             <span>Search Farmer</span>
           </Link>
 
           <button
             type="button"
             onClick={() => setExportModalOpen(true)}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-blue-200 transition-all flex items-center gap-2"
+            className="px-4 py-2.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4 text-slate-950" />
             <span>Export Reports</span>
           </button>
         </div>
@@ -125,66 +125,66 @@ export default function OfficerDashboard() {
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card rounded-2xl p-5 border border-amber-200 bg-amber-50/40 space-y-1">
-          <div className="flex items-center justify-between text-xs font-bold text-amber-800">
+        <div className="glass-card bg-[#06151a]/95 rounded-2xl p-5 border border-slate-700 space-y-1 shadow-xl">
+          <div className="flex items-center justify-between text-xs font-bold text-amber-300">
             <span>Pending Review</span>
-            <Clock className="w-4 h-4 text-amber-600" />
+            <Clock className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-amber-950">{stats.pending}</p>
-          <span className="text-[11px] text-amber-700 font-medium">Awaiting field verification</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.pending}</p>
+          <span className="text-[11px] text-slate-400 font-medium">Awaiting field verification</span>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 border border-emerald-200 bg-emerald-50/40 space-y-1">
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
+        <div className="glass-card bg-[#06151a]/95 rounded-2xl p-5 border border-slate-700 space-y-1 shadow-xl">
+          <div className="flex items-center justify-between text-xs font-bold text-teal-300">
             <span>Verified & Approved</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 className="w-4 h-4 text-teal-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-emerald-950">{stats.verified}</p>
-          <span className="text-[11px] text-emerald-700 font-medium">Passed official survey audit</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.verified}</p>
+          <span className="text-[11px] text-slate-400 font-medium">Passed official survey audit</span>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 border border-orange-200 bg-orange-50/40 space-y-1">
-          <div className="flex items-center justify-between text-xs font-bold text-orange-800">
+        <div className="glass-card bg-[#06151a]/95 rounded-2xl p-5 border border-slate-700 space-y-1 shadow-xl">
+          <div className="flex items-center justify-between text-xs font-bold text-amber-300">
             <span>Returned for Correction</span>
-            <RotateCcw className="w-4 h-4 text-orange-600" />
+            <RotateCcw className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-orange-950">{stats.returned}</p>
-          <span className="text-[11px] text-orange-700 font-medium">Sent notes to farmers</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.returned}</p>
+          <span className="text-[11px] text-slate-400 font-medium">Sent notes to farmers</span>
         </div>
 
-        <div className="glass-card rounded-2xl p-5 border border-rose-200 bg-rose-50/40 space-y-1">
-          <div className="flex items-center justify-between text-xs font-bold text-rose-800">
+        <div className="glass-card bg-[#06151a]/95 rounded-2xl p-5 border border-slate-700 space-y-1 shadow-xl">
+          <div className="flex items-center justify-between text-xs font-bold text-rose-300">
             <span>Rejected</span>
-            <XCircle className="w-4 h-4 text-rose-600" />
+            <XCircle className="w-4 h-4 text-rose-400" />
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-rose-950">{stats.rejected}</p>
-          <span className="text-[11px] text-rose-700 font-medium">Non-compliant records</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.rejected}</p>
+          <span className="text-[11px] text-slate-400 font-medium">Non-compliant records</span>
         </div>
       </div>
 
-      {/* Main Section: Pending Verifications (Wireframe 5) */}
+      {/* Main Section: Pending Verifications */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-              <FileCheck className="w-6 h-6 text-forest-600" />
+            <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+              <FileCheck className="w-6 h-6 text-teal-400" />
               Pending Crop Verifications Queue
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               * Officer receives digital applications related to their assigned area jurisdiction.
             </p>
           </div>
 
-          {/* Area Filter Selector (Wireframe 5: Filter to Filter Area) */}
-          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-blue-600" />
+          {/* Area Filter Selector */}
+          <div className="flex items-center gap-1.5 bg-[#030b0e] px-3.5 py-2 rounded-2xl border border-slate-700 text-xs font-bold text-white shadow-xs">
+            <Filter className="w-3.5 h-3.5 text-teal-400" />
             <select
               value={filterArea}
               onChange={(e) => setFilterArea(e.target.value)}
-              className="bg-transparent outline-none cursor-pointer"
+              className="bg-transparent outline-none cursor-pointer text-white"
             >
-              <option value="assigned">My Assigned Area ({officer.district || 'Vijayawada'})</option>
-              <option value="all">All District Regions</option>
+              <option value="assigned" className="bg-[#06151a] text-white">My Assigned Area ({officer.district || 'Vijayawada'})</option>
+              <option value="all" className="bg-[#06151a] text-white">All District Regions</option>
             </select>
           </div>
         </div>

@@ -8,32 +8,32 @@ export default function VerificationQueueItem({ application, onReview }) {
   const profile = application.farmerId || {};
 
   return (
-    <div className="glass-card rounded-2xl p-4 sm:p-5 border border-slate-200 hover:border-forest-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="glass-card bg-[#06151a]/95 rounded-3xl p-4 sm:p-5 border border-slate-700 hover:border-teal-400 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
       {/* Left: Farmer & Application Details */}
       <div className="flex items-start gap-3.5">
-        <div className="w-12 h-12 rounded-2xl bg-forest-100 text-forest-700 flex items-center justify-center flex-shrink-0 border border-forest-200">
+        <div className="w-12 h-12 rounded-2xl bg-[#030b0e] text-teal-400 flex items-center justify-center flex-shrink-0 border border-slate-700">
           <Sprout className="w-6 h-6" />
         </div>
 
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="font-extrabold text-base text-slate-800">
+            <h4 className="font-extrabold text-base text-white">
               {farmer.name || 'Farmer'}
             </h4>
-            <span className="text-xs font-mono font-bold text-forest-700 bg-forest-50 px-2 py-0.5 rounded-md border border-forest-200">
+            <span className="text-xs font-mono font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-md border border-slate-700">
               {profile.farmerId || 'FMR-ID'}
             </span>
             <StatusBadge status={application.status} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-forest-600" />
+              <MapPin className="w-3.5 h-3.5 text-teal-400" />
               {profile.village || 'Village'}, {profile.district || 'District'}
             </span>
             <span>•</span>
-            <span className="font-bold text-slate-700">
-              Crop: {application.cropName} ({application.cultivatedArea} {application.areaUnit})
+            <span className="font-bold text-white">
+              Crop: <span className="text-teal-300">{application.cropName}</span> ({application.cultivatedArea} {application.areaUnit})
             </span>
             <span>•</span>
             <span>Survey: #{application.surveyNumber}</span>
@@ -46,14 +46,14 @@ export default function VerificationQueueItem({ application, onReview }) {
         </div>
       </div>
 
-      {/* Right: Review Action Button (Wireframe 5) */}
+      {/* Right: Review Action Button */}
       <button
         onClick={() => onReview(application)}
-        className="w-full sm:w-auto px-4 py-2.5 bg-forest-600 hover:bg-forest-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-forest-200 transition-all flex items-center justify-center gap-2 flex-shrink-0"
+        className="w-full sm:w-auto px-5 py-2.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
       >
-        <FileCheck className="w-4 h-4" />
+        <FileCheck className="w-4 h-4 text-slate-950" />
         Review Application
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight className="w-4 h-4 text-slate-950" />
       </button>
     </div>
   );

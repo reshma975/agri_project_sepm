@@ -32,6 +32,32 @@ async function runTests() {
     const health = await api('/health');
     assert(health.data.status === 'online', '1. Server Health Check endpoint returns online');
 
+    // 1.1 Password Security Validation Tests
+    const weakRegister = await api('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Test Weak',
+        username: 'test_weak_user',
+        phone: '9999900001',
+        password: 'weak',
+        role: 'FARMER',
+      }),
+    });
+    assert(weakRegister.status === 400 && weakRegister.data.message.includes('security requirements'), '1.1 Password security rejects short/weak passwords');
+
+    const strongRegister = await api('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Verified Farmer User',
+        username: `farmer_${Date.now().toString().slice(-4)}`,
+        phone: `98480${Math.floor(10000 + Math.random() * 90000)}`,
+        password: 'Farmer@2026!Secure',
+        role: 'FARMER',
+        village: 'Kankipadu',
+      }),
+    });
+    assert(strongRegister.status === 201 && strongRegister.data.token, '1.2 Password security accepts strong compliant passwords');
+
     // 2. Farmer Auth & Profile
     const farmerLogin = await api('/auth/login', {
       method: 'POST',
@@ -43,6 +69,31 @@ async function runTests() {
     });
     assert(farmerLogin.data.success && farmerLogin.data.token, '2. Farmer Login returns valid JWT token');
     const farmerToken = farmerLogin.data.token;
+
+    // 2.1 Test Land Parcel Creation with Optional Crop & Duration
+    const testSurveyNo = `TST-${Date.now().toString().slice(-4)}`;
+    const newLandParcel = await api('/farmers/lands', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${farmerToken}` },
+      body: JSON.stringify({
+        surveyNumber: testSurveyNo,
+        totalArea: 3.5,
+        village: 'Kankipadu',
+        mandal: 'Penamaluru',
+        district: 'Vijayawada',
+        ownershipType: 'Owned',
+        currentCrop: 'Chilli (Guntur Teja)',
+        cropCategory: 'Vegetables',
+        estimatedDurationMonths: 6,
+      }),
+    });
+    assert(
+      newLandParcel.data.success &&
+      newLandParcel.data.land.surveyNumber === testSurveyNo &&
+      newLandParcel.data.land.estimatedDurationMonths === 6 &&
+      newLandParcel.data.registeredCrop !== null,
+      '2.1 Create Land Parcel with optional Crop & Estimated Duration (6 Months) auto-registers crop'
+    );
 
     const farmerProfile = await api('/farmers/profile', {
       headers: { Authorization: `Bearer ${farmerToken}` },

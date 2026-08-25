@@ -140,7 +140,7 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs flex items-center gap-2">
+        <div className="p-3.5 bg-rose-950/60 border border-rose-800/60 text-rose-300 rounded-2xl text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
@@ -155,11 +155,11 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
           return (
             <div
               key={doc.key}
-              className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl gap-3 transition-all border ${
+              className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl gap-3 transition-all border border-slate-700 ${
                 isUploaded
-                  ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300'
-                  : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-forest-300'
-              } shadow-xs`}
+                  ? 'bg-[#06151a]/90 shadow-md'
+                  : 'bg-[#030b0e] shadow-sm'
+              }`}
             >
               {/* Native file input */}
               <input
@@ -172,22 +172,22 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
 
               <div className="flex items-start gap-3.5">
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 border border-slate-700 ${
                     isUploaded
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-forest-100 text-forest-700'
+                      ? 'bg-teal-950/80 text-teal-300'
+                      : 'bg-slate-900 text-slate-400'
                   }`}
                 >
-                  {isUploaded ? <FileCheck className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                  {isUploaded ? <FileCheck className="w-5 h-5 text-teal-400" /> : <FileText className="w-5 h-5 text-slate-400" />}
                 </div>
 
                 <div>
-                  <h5 className="text-xs sm:text-sm font-bold text-slate-900">{doc.label}</h5>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{doc.description}</p>
+                  <h5 className="text-xs sm:text-sm font-extrabold text-white">{doc.label}</h5>
+                  <p className="text-[11px] text-slate-300 mt-0.5">{doc.description}</p>
 
                   {isUploaded ? (
                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                      <span className="text-xs font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-xs">
+                      <span className="text-xs font-mono font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-lg border border-slate-700 shadow-xs">
                         📎 {currentDoc.fileName}
                       </span>
                       {currentDoc.fileSize && (
@@ -211,15 +211,15 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                     <button
                       type="button"
                       onClick={() => openPreview(doc.key, doc.label, currentDoc)}
-                      className="px-3.5 py-1.5 text-xs font-bold text-forest-700 bg-white hover:bg-forest-50 border border-forest-300 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+                      className="px-3.5 py-1.5 text-xs font-bold text-teal-300 bg-[#030b0e] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                       title="Click to view and inspect uploaded document"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-teal-400" />
                       <span>View</span>
                     </button>
 
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-xl border border-emerald-300">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-300 bg-teal-950/80 px-2.5 py-1 rounded-xl border border-slate-700">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
                       Uploaded
                     </span>
                   </>
@@ -229,10 +229,10 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                   type="button"
                   onClick={() => handleBrowseClick(doc.key)}
                   disabled={isThisUploading}
-                  className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 shadow-xs ${
+                  className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5 shadow-xs cursor-pointer ${
                     isUploaded
-                      ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      : 'bg-forest-600 hover:bg-forest-700 text-white border-forest-600 shadow-forest-100'
+                      ? 'bg-[#030b0e] text-slate-300 hover:text-white hover:bg-[#0c242c]'
+                      : 'btn-glow-primary text-slate-950 font-black'
                   }`}
                 >
                   {isThisUploading ? (
@@ -242,7 +242,7 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                     </>
                   ) : isUploaded ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                      <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
                       <span>Replace</span>
                     </>
                   ) : (
@@ -268,16 +268,16 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
         >
           <div className="space-y-4">
             {/* Header info */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200 gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-forest-100 text-forest-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#06151a] text-teal-400 border border-slate-700 flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="text-xs sm:text-sm font-extrabold text-slate-900">{previewDoc.fileName}</h5>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                  <h5 className="text-xs sm:text-sm font-extrabold text-white">{previewDoc.fileName}</h5>
+                  <p className="text-[11px] text-slate-300 font-mono mt-0.5">
                     {previewDoc.fileSize ? `Size: ${previewDoc.fileSize} • ` : ''}Status:{' '}
-                    <span className="text-emerald-600 font-bold">{previewDoc.status || 'Verified & Uploaded'}</span>
+                    <span className="text-teal-300 font-bold">{previewDoc.status || 'Verified & Uploaded'}</span>
                   </p>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                   <a
                     href={previewDoc.fileData}
                     download={previewDoc.fileName}
-                    className="px-3.5 py-1.5 bg-forest-600 hover:bg-forest-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+                    className="px-3.5 py-1.5 btn-glow-primary text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Download</span>
@@ -302,9 +302,9 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                         );
                       }
                     }}
-                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1"
+                    className="px-3.5 py-1.5 bg-[#06151a] border border-slate-700 hover:bg-[#0c242c] text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3.5 h-3.5 text-teal-400" />
                     <span>Open in Tab</span>
                   </button>
                 </div>
@@ -312,15 +312,15 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
             </div>
 
             {/* Document Content View Area */}
-            <div className="p-4 bg-slate-900/5 rounded-2xl border border-slate-200 min-h-[320px] flex items-center justify-center overflow-hidden">
+            <div className="p-4 bg-[#030b0e] rounded-2xl border border-slate-700 min-h-[320px] flex items-center justify-center overflow-hidden">
               {previewDoc.fileData && previewDoc.fileData.startsWith('data:image/') ? (
                 <div className="space-y-2 text-center w-full">
                   <img
                     src={previewDoc.fileData}
                     alt={previewDoc.fileName}
-                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-white"
+                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700"
                   />
-                  <span className="text-[11px] text-slate-500 font-semibold block">
+                  <span className="text-[11px] text-slate-400 font-semibold block">
                     Image Document Preview
                   </span>
                 </div>
@@ -329,7 +329,7 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                   <iframe
                     src={previewDoc.fileData}
                     title="PDF Document Preview"
-                    className="w-full h-[480px] rounded-xl border border-slate-300 bg-white shadow-inner"
+                    className="w-full h-[480px] rounded-xl border border-slate-700 bg-[#06151a]"
                   />
                 </div>
               ) : previewDoc.fileData ? (
@@ -337,31 +337,31 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
                   <iframe
                     src={previewDoc.fileData}
                     title="Document Preview"
-                    className="w-full h-[400px] rounded-xl border border-slate-300 bg-white"
+                    className="w-full h-[400px] rounded-xl border border-slate-700 bg-[#06151a]"
                   />
                 </div>
               ) : (
                 /* Fallback preview for seeded demonstration records */
-                <div className="p-8 text-center space-y-3 bg-white rounded-2xl border border-slate-200 shadow-sm max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-3xl bg-forest-100 text-forest-700 mx-auto flex items-center justify-center shadow-xs">
-                    <FileCheck className="w-8 h-8" />
+                <div className="p-8 text-center space-y-3 bg-[#06151a] rounded-2xl border border-slate-700 shadow-md max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-3xl bg-teal-950/80 text-teal-300 border border-slate-700 mx-auto flex items-center justify-center shadow-xs">
+                    <FileCheck className="w-8 h-8 text-teal-400" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-900">{previewDoc.label}</h4>
-                    <p className="text-xs text-slate-500 font-mono mt-1">{previewDoc.fileName}</p>
+                    <h4 className="font-extrabold text-sm text-white">{previewDoc.label}</h4>
+                    <p className="text-xs text-slate-300 font-mono mt-1">{previewDoc.fileName}</p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <p className="text-xs text-slate-300 leading-relaxed bg-[#030b0e] p-3 rounded-xl border border-slate-700">
                     Official digital copy verified by Agricultural Department. To replace with a new file from your device, click "Replace".
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-slate-100">
+            <div className="flex justify-end pt-2 border-t border-slate-700">
               <button
                 type="button"
                 onClick={() => setPreviewDoc(null)}
-                className="px-5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                className="px-5 py-2 text-xs font-bold text-slate-300 bg-[#030b0e] hover:bg-[#07171d] border border-slate-700 rounded-xl transition-colors cursor-pointer"
               >
                 Close Preview
               </button>

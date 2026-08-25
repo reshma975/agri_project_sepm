@@ -24,7 +24,18 @@ import {
   X
 } from 'lucide-react';
 
-export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated }) {
+const toDateInputValue = (d) => {
+  if (!d) return '';
+  const dateObj = new Date(d);
+  if (isNaN(dateObj.getTime())) return '';
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated, readOnly = false }) {
+  const [displayCrop, setDisplayCrop] = useState(crop);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -48,17 +59,18 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
     comment: ''
   });
 
-  // Sync form state with crop prop
+  // Sync state when crop prop changes
   useEffect(() => {
     if (crop) {
+      setDisplayCrop(crop);
       setFormData({
         cropName: crop.cropName || '',
         cropCategory: crop.cropCategory || 'Cereals',
         cultivatedArea: crop.cultivatedArea !== undefined ? crop.cultivatedArea.toString() : '',
         season: crop.season || 'Kharif',
         year: crop.year ? crop.year.toString() : new Date().getFullYear().toString(),
-        sowingDate: crop.sowingDate ? new Date(crop.sowingDate).toISOString().split('T')[0] : '',
-        harvestDate: crop.harvestDate ? new Date(crop.harvestDate).toISOString().split('T')[0] : '',
+        sowingDate: toDateInputValue(crop.sowingDate),
+        harvestDate: toDateInputValue(crop.harvestDate),
         irrigationType: crop.irrigationType || 'Borewell',
         fertilizersUsed: crop.fertilizersUsed || '',
         pesticidesUsed: crop.pesticidesUsed || '',
@@ -73,11 +85,11 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
     }
   }, [crop, isOpen]);
 
-  if (!crop) return null;
+  if (!displayCrop) return null;
 
-  const isDraft = crop.status === 'DRAFT';
-  const isReturned = crop.status === 'RETURNED_FOR_CORRECTION';
-  const canEdit = isDraft || isReturned;
+  const isDraft = displayCrop.status === 'DRAFT';
+  const isReturned = displayCrop.status === 'RETURNED_FOR_CORRECTION';
+  const canEdit = !readOnly;
 
   // Handle direct submission (from Draft or Returned) or saving draft edits
   const handleSaveOrSubmit = async (shouldSubmit = false) => {
@@ -87,12 +99,12 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
 
     try {
       const payload = {
-        cropName: formData.cropName.trim() || crop.cropName,
+        cropName: formData.cropName.trim() || displayCrop.cropName,
         cropCategory: formData.cropCategory,
-        cultivatedArea: parseFloat(formData.cultivatedArea) || crop.cultivatedArea,
+        cultivatedArea: parseFloat(formData.cultivatedArea) || displayCrop.cultivatedArea,
         season: formData.season,
-        year: parseInt(formData.year, 10) || crop.year,
-        sowingDate: formData.sowingDate ? new Date(formData.sowingDate) : crop.sowingDate,
+        year: parseInt(formData.year, 10) || displayCrop.year,
+        sowingDate: formData.sowingDate ? new Date(formData.sowingDate) : displayCrop.sowingDate,
         harvestDate: formData.harvestDate ? new Date(formData.harvestDate) : null,
         irrigationType: formData.irrigationType,
         fertilizersUsed: formData.fertilizersUsed,
@@ -106,9 +118,28 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
         resubmitComment: formData.comment || (isReturned ? 'Corrected details and resubmitted by farmer' : undefined)
       };
 
-      const res = await apiClient.put(`/farmers/crops/${crop._id}`, payload);
+      const res = await apiClient.put(`/farmers/crops/${displayCrop._id}`, payload);
 
       if (res.data.success) {
+        const savedCrop = res.data.crop;
+        setDisplayCrop(savedCrop);
+        setFormData({
+          cropName: savedCrop.cropName || '',
+          cropCategory: savedCrop.cropCategory || 'Cereals',
+          cultivatedArea: savedCrop.cultivatedArea !== undefined ? savedCrop.cultivatedArea.toString() : '',
+          season: savedCrop.season || 'Kharif',
+          year: savedCrop.year ? savedCrop.year.toString() : new Date().getFullYear().toString(),
+          sowingDate: toDateInputValue(savedCrop.sowingDate),
+          harvestDate: toDateInputValue(savedCrop.harvestDate),
+          irrigationType: savedCrop.irrigationType || 'Borewell',
+          fertilizersUsed: savedCrop.fertilizersUsed || '',
+          pesticidesUsed: savedCrop.pesticidesUsed || '',
+          expectedHarvest: savedCrop.expectedHarvest || '',
+          actualHarvest: savedCrop.actualHarvest || '',
+          priceSold: savedCrop.priceSold || '',
+          comment: ''
+        });
+
         if (shouldSubmit) {
           try {
             confetti({
@@ -121,11 +152,11 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
           }
           setMessage('🎉 Crop successfully submitted for Government Officer verification!');
         } else {
-          setMessage('✅ Draft crop details updated successfully!');
+          setMessage('✅ Crop details updated successfully!');
         }
 
         setIsEditing(false);
-        if (onCropUpdated) onCropUpdated(res.data.crop);
+        if (onCropUpdated) onCropUpdated(savedCrop);
 
         setTimeout(() => {
           setMessage('');
@@ -146,56 +177,69 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Crop Entry Details — ${crop.cropName}`}
+      title={`Crop Entry Details — ${displayCrop.cropName}`}
       maxWidth="max-w-2xl"
     >
       <div className="space-y-6">
         {/* Top Header Summary */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-forest-50/80 rounded-2xl border border-forest-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-[#030b0e] rounded-2xl border border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-forest-600 text-white flex items-center justify-center shadow-sm flex-shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#06151a] text-teal-400 border border-slate-700 flex items-center justify-center shadow-sm flex-shrink-0">
               <Sprout className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800">{crop.cropName}</h3>
-              <p className="text-xs text-slate-500 font-mono">
-                Reg ID: {crop.registrationId} • Year: {crop.year} • {crop.season} Season
+              <h3 className="text-lg font-extrabold text-white">{displayCrop.cropName}</h3>
+              <p className="text-xs text-slate-300 font-mono">
+                Reg ID: {displayCrop.registrationId} • Year: {displayCrop.year} • {displayCrop.season} Season
               </p>
             </div>
           </div>
-          <StatusBadge status={crop.status} />
+
+          <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+            {!readOnly && !isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-3 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-slate-700 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer hover:border-teal-400"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-teal-400" />
+                <span>Edit Details</span>
+              </button>
+            )}
+            <StatusBadge status={displayCrop.status} />
+          </div>
         </div>
 
         {/* Success / Error Notifications */}
         {message && (
-          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs sm:text-sm border border-emerald-200 flex items-center gap-2 animate-fade-in font-medium">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <div className="p-3 bg-emerald-950/60 text-emerald-300 rounded-xl text-xs sm:text-sm border border-emerald-800/60 flex items-center gap-2 animate-fade-in font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span>{message}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="p-3 bg-rose-50 text-rose-700 rounded-xl text-xs sm:text-sm border border-rose-200 flex items-center gap-2 animate-fade-in">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <div className="p-3 bg-rose-950/60 text-rose-300 rounded-xl text-xs sm:text-sm border border-rose-800/60 flex items-center gap-2 animate-fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* DRAFT CALLOUT BANNER WITH ACTIONS */}
         {isDraft && !isEditing && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-emerald-50/50 border border-amber-200/90 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-[#06151a]/90 border border-slate-700 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-xl bg-[#030b0e] text-amber-300 border border-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                   <span>Saved as Draft</span>
-                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-md border border-slate-700">
                     Not Submitted Yet
                   </span>
                 </h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                   Government officers will only review this crop once you submit it. You can edit details now or submit whenever you're ready.
                 </p>
               </div>
@@ -205,9 +249,9 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-initial px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-xs transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#030b0e] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5 text-forest-700" />
+                <Edit3 className="w-3.5 h-3.5 text-teal-400" />
                 <span>Edit Draft</span>
               </button>
 
@@ -215,7 +259,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                 type="button"
                 onClick={() => handleSaveOrSubmit(true)}
                 disabled={loading}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl shadow-md shadow-forest-200 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="flex-1 sm:flex-initial px-4 py-2 btn-glow-primary text-slate-950 text-xs font-black rounded-full shadow-md transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{loading ? 'Submitting...' : 'Submit Now'}</span>
@@ -226,15 +270,15 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
 
         {/* RETURNED FOR CORRECTION BANNER */}
         {isReturned && !isEditing && (
-          <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-amber-950/50 border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-orange-950 flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-orange-600" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-400" />
                 <span>Returned by Agriculture Officer</span>
               </h4>
-              {crop.officerComment && (
-                <p className="text-xs text-orange-800 font-medium italic">
-                  "{crop.officerComment}"
+              {displayCrop.officerComment && (
+                <p className="text-xs text-slate-300 font-medium italic">
+                  "{displayCrop.officerComment}"
                 </p>
               )}
             </div>
@@ -242,7 +286,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-1.5 self-end sm:self-center"
+              className="px-4 py-2 bg-[#030b0e] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-slate-700 shadow-sm transition-colors flex items-center gap-1.5 self-end sm:self-center cursor-pointer"
             >
               <Edit3 className="w-4 h-4" />
               <span>Edit & Resubmit</span>
@@ -254,123 +298,123 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
         {!isEditing && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* 1. Crop & Category */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 1. Crop Category
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <Sprout className="w-4 h-4 text-forest-600 flex-shrink-0" />
-                <span>{crop.cropCategory || 'Cereals'}</span>
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <Sprout className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                <span>{displayCrop.cropCategory || 'Cereals'}</span>
               </p>
-              <p className="text-[10px] text-slate-400 font-medium">
-                Crop Name: <strong className="text-slate-700">{crop.cropName}</strong>
+              <p className="text-[10px] text-slate-300 font-medium">
+                Crop Name: <strong className="text-teal-300">{displayCrop.cropName}</strong>
               </p>
             </div>
 
             {/* 2. Land Parcel & Survey No */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 2. Land Parcel & Survey Number
               </span>
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-forest-600 flex-shrink-0" />
-                  <span>Survey No. {crop.surveyNumber}</span>
+                <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                  <span>Survey No. {displayCrop.surveyNumber}</span>
                 </p>
-                {crop.landId?.landId && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-forest-100 text-forest-800 font-mono font-bold border border-forest-200">
-                    {crop.landId.landId}
+                {displayCrop.landId?.landId && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#06151a] text-teal-300 font-mono font-bold border border-slate-700">
+                    {displayCrop.landId.landId}
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-slate-400 font-medium">
-                Location: {crop.landId?.village || 'Village'}, {crop.landId?.district || 'Vijayawada'}
+              <p className="text-[10px] text-slate-300 font-medium">
+                Location: {displayCrop.landId?.village || 'Village'}, {displayCrop.landId?.district || 'Vijayawada'}
               </p>
             </div>
 
             {/* 3. Cultivated Area & Total Land */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 3. Land Cultivated
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-forest-600" />
-                {crop.cultivatedArea} {crop.areaUnit || 'Acres'} (Total Parcel: {crop.totalLandArea || crop.cultivatedArea} {crop.areaUnit || 'Acres'})
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-teal-400" />
+                {displayCrop.cultivatedArea} {displayCrop.areaUnit || 'Acres'} (Total Parcel: {displayCrop.totalLandArea || displayCrop.cultivatedArea} {displayCrop.areaUnit || 'Acres'})
               </p>
             </div>
 
             {/* 4. Ownership Type */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 4. Land Status / Tenure
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-forest-600" />
-                {crop.ownershipType || 'Owned'} Land
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-teal-400" />
+                {displayCrop.ownershipType || 'Owned'} Land
               </p>
             </div>
 
             {/* 5. Start Date (Sowing Date) */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 5. Start Date (Sowing)
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-forest-600" />
-                {formatDate(crop.sowingDate)}
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-teal-400" />
+                {formatDate(displayCrop.sowingDate)}
               </p>
             </div>
 
             {/* 6. End Date (Harvest Date) */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 6. End Date (Harvest)
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-forest-600" />
-                {crop.harvestDate ? formatDate(crop.harvestDate) : 'In Progress (Estimated 120 Days)'}
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-teal-400" />
+                {displayCrop.harvestDate ? formatDate(displayCrop.harvestDate) : 'In Progress (Estimated 120 Days)'}
               </p>
             </div>
 
             {/* 7. Fertilizers & Pesticides */}
-            <div className="sm:col-span-2 p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <div className="sm:col-span-2 p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-2">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 7. Fertilizers & Pesticides Used
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="flex items-start gap-2 text-slate-700 bg-slate-50 p-2 rounded-lg">
-                  <FlaskConical className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>Fertilizers: {crop.fertilizersUsed || 'Urea (2 Bags), DAP (1 Bag), Potash (1 Bag)'}</span>
+                <div className="flex items-start gap-2 text-slate-200 bg-[#06151a] p-2.5 rounded-xl border border-slate-700">
+                  <FlaskConical className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                  <span>Fertilizers: {displayCrop.fertilizersUsed || 'Urea (2 Bags), DAP (1 Bag), Potash (1 Bag)'}</span>
                 </div>
-                <div className="flex items-start gap-2 text-slate-700 bg-slate-50 p-2 rounded-lg">
-                  <Bug className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
-                  <span>Pesticides: {crop.pesticidesUsed || 'Organic Neem Oil, Chlorpyrifos'}</span>
+                <div className="flex items-start gap-2 text-slate-200 bg-[#06151a] p-2.5 rounded-xl border border-slate-700">
+                  <Bug className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>Pesticides: {displayCrop.pesticidesUsed || 'Organic Neem Oil, Chlorpyrifos'}</span>
                 </div>
               </div>
             </div>
 
             {/* 8. Harvest Output */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 8. Final Harvest
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <Scale className="w-4 h-4 text-forest-600" />
-                {crop.actualHarvest || 'Nil (In Progress)'}
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <Scale className="w-4 h-4 text-teal-400" />
+                {displayCrop.actualHarvest || 'Nil (In Progress)'}
                 <span className="text-xs text-slate-400 font-normal ml-1">
-                  (Exp: {crop.expectedHarvest || '35 Quintals'})
+                  (Exp: {displayCrop.expectedHarvest || '35 Quintals'})
                 </span>
               </p>
             </div>
 
             {/* 9. Price Sold */}
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-1">
+            <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 shadow-sm space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 9. Price Sold
               </span>
-              <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                <IndianRupee className="w-4 h-4 text-forest-600" />
-                {crop.priceSold || 'Pending Sale'}
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                <IndianRupee className="w-4 h-4 text-teal-400" />
+                {displayCrop.priceSold || 'Pending Sale'}
               </p>
             </div>
           </div>
@@ -383,17 +427,21 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
               e.preventDefault();
               handleSaveOrSubmit(isReturned);
             }}
-            className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 animate-fade-in"
+            className="p-5 rounded-2xl bg-[#030b0e] border border-slate-700 space-y-4 animate-fade-in"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Edit3 className="w-4 h-4 text-forest-600" />
-                {isDraft ? 'Edit Draft Details' : 'Edit & Resubmit Application'}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
+                <Edit3 className="w-4 h-4 text-teal-400" />
+                {isDraft
+                  ? 'Edit Draft Details'
+                  : isReturned
+                  ? 'Edit & Resubmit Application'
+                  : 'Edit Crop Details'}
               </h4>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="text-xs text-slate-500 hover:text-slate-700 font-semibold flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-white font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" /> Cancel
               </button>
@@ -402,24 +450,24 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* Crop Name */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Crop Name *</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Crop Name *</label>
                 <input
                   type="text"
                   value={formData.cropName}
                   onChange={(e) => setFormData({ ...formData, cropName: e.target.value })}
                   required
                   placeholder="e.g. Chilli, Paddy (BPT 5204)"
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500 font-semibold"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400 font-semibold"
                 />
               </div>
 
               {/* Crop Category */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Crop Category</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Crop Category</label>
                 <select
                   value={formData.cropCategory}
                   onChange={(e) => setFormData({ ...formData, cropCategory: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400 cursor-pointer"
                 >
                   <option value="Cereals">Cereals (Paddy, Wheat, Maize)</option>
                   <option value="Pulses">Pulses (Red Gram, Black Gram)</option>
@@ -434,7 +482,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
 
               {/* Cultivated Area */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Cultivated Area (Acres) *</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Cultivated Area (Acres) *</label>
                 <input
                   type="number"
                   step="0.1"
@@ -443,18 +491,18 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                   onChange={(e) => setFormData({ ...formData, cultivatedArea: e.target.value })}
                   required
                   placeholder="e.g. 2.0"
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500 font-semibold"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400 font-semibold"
                 />
               </div>
 
               {/* Season & Year */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Season</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Season</label>
                   <select
                     value={formData.season}
                     onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                    className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400 cursor-pointer"
                   >
                     <option value="Kharif">Kharif</option>
                     <option value="Rabi">Rabi</option>
@@ -463,78 +511,78 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Year</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Year</label>
                   <input
                     type="number"
                     value={formData.year}
                     onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                    className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
                   />
                 </div>
               </div>
 
               {/* Sowing Date */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Sowing Start Date</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Sowing Start Date</label>
                 <input
                   type="date"
                   value={formData.sowingDate}
                   onChange={(e) => setFormData({ ...formData, sowingDate: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
                 />
               </div>
 
               {/* Harvest Date */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Harvest / End Date</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Harvest / End Date</label>
                 <input
                   type="date"
                   value={formData.harvestDate}
                   onChange={(e) => setFormData({ ...formData, harvestDate: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
                 />
               </div>
 
               {/* Fertilizers Used */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Fertilizers Note</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Fertilizers Note</label>
                 <input
                   type="text"
                   value={formData.fertilizersUsed}
                   onChange={(e) => setFormData({ ...formData, fertilizersUsed: e.target.value })}
                   placeholder="e.g. Urea (2 Bags), DAP (1 Bag)"
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
                 />
               </div>
 
               {/* Pesticides Used */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Pesticides Note</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Pesticides Note</label>
                 <input
                   type="text"
                   value={formData.pesticidesUsed}
                   onChange={(e) => setFormData({ ...formData, pesticidesUsed: e.target.value })}
                   placeholder="e.g. Organic Neem Oil, Chlorpyrifos"
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                  className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
                 />
               </div>
             </div>
 
             {/* Expected Harvest */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Expected Harvest Output</label>
+              <label className="block text-xs font-bold text-slate-300 mb-1">Expected Harvest Output</label>
               <input
                 type="text"
                 value={formData.expectedHarvest}
                 onChange={(e) => setFormData({ ...formData, expectedHarvest: e.target.value })}
                 placeholder="e.g. 35 Quintals"
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
               />
             </div>
 
             {/* Correction or Submission Comment */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-slate-300 mb-1">
                 {isReturned ? 'Correction Note for Officer *' : 'Optional Submission Note'}
               </label>
               <input
@@ -542,16 +590,16 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                 value={formData.comment}
                 onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
                 placeholder={isReturned ? 'e.g. Updated cultivated area per patta record' : 'e.g. Sown on survey parcel 125/2'}
-                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-forest-500"
+                className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
               />
             </div>
 
             {/* Edit Mode Buttons */}
-            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-slate-700">
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+                className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -561,37 +609,51 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                   type="button"
                   onClick={() => handleSaveOrSubmit(false)}
                   disabled={loading}
-                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-slate-700 shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
-                  <Save className="w-3.5 h-3.5 text-forest-600" />
+                  <Save className="w-3.5 h-3.5 text-teal-400" />
                   <span>{loading ? 'Saving...' : 'Save as Draft'}</span>
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => handleSaveOrSubmit(true)}
-                disabled={loading}
-                className="px-5 py-2 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl shadow-md shadow-forest-200 transition-all flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>
-                  {loading
-                    ? 'Submitting...'
-                    : isReturned
-                    ? 'Submit Correction to Officer'
-                    : 'Submit for Verification'}
-                </span>
-              </button>
+              {!isDraft && !isReturned && (
+                <button
+                  type="button"
+                  onClick={() => handleSaveOrSubmit(false)}
+                  disabled={loading}
+                  className="px-5 py-2 btn-glow-primary text-slate-950 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{loading ? 'Saving Changes...' : 'Save Changes'}</span>
+                </button>
+              )}
+
+              {(isDraft || isReturned) && (
+                <button
+                  type="button"
+                  onClick={() => handleSaveOrSubmit(true)}
+                  disabled={loading}
+                  className="px-5 py-2 btn-glow-primary text-slate-950 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    {loading
+                      ? 'Submitting...'
+                      : isReturned
+                      ? 'Submit Correction to Officer'
+                      : 'Submit for Verification'}
+                  </span>
+                </button>
+              )}
             </div>
           </form>
         )}
 
         {/* Modal Bottom Bar */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-700">
           <div>
             {isDraft && !isEditing && (
-              <span className="text-[11px] text-slate-400 font-medium">
+              <span className="text-[11px] text-slate-300 font-medium">
                 Tip: You can submit this draft at any time.
               </span>
             )}
@@ -603,7 +665,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
                 type="button"
                 onClick={() => handleSaveOrSubmit(true)}
                 disabled={loading}
-                className="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white text-xs font-bold rounded-xl shadow-md shadow-forest-200 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 btn-glow-primary text-slate-950 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit for Verification</span>
@@ -613,7 +675,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated 
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#030b0e] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-colors cursor-pointer"
             >
               Close Details
             </button>

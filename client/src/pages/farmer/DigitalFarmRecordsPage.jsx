@@ -54,7 +54,10 @@ export default function DigitalFarmRecordsPage() {
     village: 'Kankipadu',
     mandal: 'Penamaluru',
     district: 'Vijayawada',
-    ownershipType: 'Owned'
+    ownershipType: 'Owned',
+    currentCrop: '',
+    cropCategory: 'Cereals',
+    estimatedDurationMonths: '',
   });
   const [landSaving, setLandSaving] = useState(false);
   const [landModalError, setLandModalError] = useState('');
@@ -96,6 +99,7 @@ export default function DigitalFarmRecordsPage() {
 
   const handleCropUpdated = (updatedCrop) => {
     setCrops((prev) => prev.map((c) => (c._id === updatedCrop._id ? updatedCrop : c)));
+    setSelectedCrop(updatedCrop);
   };
 
   const handleCreateLandSubmit = async (e) => {
@@ -118,11 +122,18 @@ export default function DigitalFarmRecordsPage() {
         village: newLandData.village,
         mandal: newLandData.mandal,
         district: newLandData.district,
-        ownershipType: newLandData.ownershipType
+        ownershipType: newLandData.ownershipType,
+        currentCrop: newLandData.currentCrop?.trim() || '',
+        cropCategory: newLandData.cropCategory || 'Cereals',
+        estimatedDurationMonths: newLandData.estimatedDurationMonths ? parseInt(newLandData.estimatedDurationMonths, 10) : undefined,
       });
 
       if (res.data.success) {
-        setLandModalSuccess(`Land Parcel (${res.data.land.landId || 'New'} • Survey No. ${res.data.land.surveyNumber}) added successfully!`);
+        setLandModalSuccess(
+          `Land Parcel (${res.data.land.landId || 'New'} • Survey No. ${res.data.land.surveyNumber}) added successfully!${
+            res.data.registeredCrop ? ` Initial crop (${res.data.registeredCrop.cropName}) also registered!` : ''
+          }`
+        );
         fetchRecords();
         setTimeout(() => {
           setAddLandModalOpen(false);
@@ -133,9 +144,12 @@ export default function DigitalFarmRecordsPage() {
             village: 'Kankipadu',
             mandal: 'Penamaluru',
             district: 'Vijayawada',
-            ownershipType: 'Owned'
+            ownershipType: 'Owned',
+            currentCrop: '',
+            cropCategory: 'Cereals',
+            estimatedDurationMonths: '',
           });
-        }, 1200);
+        }, 1300);
       }
     } catch (err) {
       setLandModalError(err.response?.data?.message || 'Failed to add land parcel');
@@ -254,10 +268,10 @@ export default function DigitalFarmRecordsPage() {
               setLandModalSuccess('');
               setAddLandModalOpen(true);
             }}
-            className="px-4 py-2.5 bg-[#06171c]/90 hover:bg-[#0c242c] border border-teal-500/30 text-teal-300 text-xs sm:text-sm font-bold rounded-2xl shadow-sm transition-all flex items-center gap-2 hover:border-teal-400"
+            className="px-4 py-2.5 bg-[#06171c]/90 hover:bg-[#0c242c] border border-teal-500/30 text-teal-300 text-xs sm:text-sm font-bold rounded-2xl shadow-sm transition-all flex items-center gap-2 hover:border-teal-400 cursor-pointer"
           >
             <LandPlot className="w-4 h-4 text-teal-400" />
-            + Add Land Parcel
+            Add Land Parcel / Crop
           </button>
 
           <Link
@@ -265,7 +279,7 @@ export default function DigitalFarmRecordsPage() {
             className="px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            + Register Land & Crop
+            Register Land & Crop
           </Link>
         </div>
       </div>
@@ -473,10 +487,8 @@ export default function DigitalFarmRecordsPage() {
       ) : filteredCrops.length === 0 && parcelList.length === 0 ? (
         <EmptyState
           icon={Sprout}
-          title="No crop registrations found"
-          description="You have no crop entries recorded at this time. Start by registering your current Kharif or Rabi crop to maintain your digital farm records."
-          actionText="+ Register New Crop"
-          onAction={() => navigate('/farmer/crops/register')}
+          title="No crop entries found"
+          description="You have no crop entries recorded at this time. Start by adding your current Kharif or Rabi crop to maintain your digital farm records."
         />
       ) : viewMode === 'table' ? (
         
@@ -486,7 +498,7 @@ export default function DigitalFarmRecordsPage() {
             <div className="flex items-center gap-2">
               <Table className="w-4 h-4 text-teal-400" />
               <h2 className="text-sm font-extrabold text-white">
-                Registered Crops & Survey Records ({filteredCrops.length})
+                Farm Crops & Survey Records ({filteredCrops.length})
               </h2>
             </div>
             <span className="text-[11px] text-teal-300 font-medium">
@@ -497,12 +509,6 @@ export default function DigitalFarmRecordsPage() {
           {filteredCrops.length === 0 ? (
             <div className="glass-card bg-[#06151a]/90 rounded-3xl border border-teal-500/20 p-8 text-center space-y-3 shadow-lg">
               <p className="text-sm text-slate-300">No crop entries match the current filter criteria.</p>
-              <Link
-                to="/farmer/crops/register"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs font-black rounded-xl shadow-md transition-all"
-              >
-                <Plus className="w-4 h-4" /> Register Crop Now
-              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -583,7 +589,7 @@ export default function DigitalFarmRecordsPage() {
                         className="px-4 py-2 bg-[#081e25] hover:bg-teal-400 hover:text-slate-950 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 transition-all inline-flex items-center gap-1.5 shadow-2xs group-hover:border-teal-400 cursor-pointer"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>View Details</span>
+                        <span>View / Edit Crop Details</span>
                       </button>
                     </div>
                   </div>
@@ -628,34 +634,6 @@ export default function DigitalFarmRecordsPage() {
                         <strong className="text-white font-bold">{parcel.totalArea} {parcel.areaUnit}</strong>
                       </p>
                     </div>
-                  </div>
-
-                  <Link
-                    to={`/farmer/crops/register?survey=${parcel.surveyNumber}`}
-                    className="px-3.5 py-2 bg-[#081e25] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 transition-all flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-teal-400" />
-                    <span>+ Add Crop on this Land</span>
-                  </Link>
-                </div>
-
-                {/* Land Allocation Bar */}
-                <div className="p-3 bg-[#030b0e] rounded-2xl border border-teal-900/60 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-300">
-                      Cultivated: <strong className="text-teal-300 font-bold">{cultivatedTotal.toFixed(1)} {parcel.areaUnit}</strong> across {parcel.crops.length} crop(s)
-                    </span>
-                    <span className="text-slate-400 font-mono text-[11px]">
-                      {remaining > 0 ? `${remaining.toFixed(1)} ${parcel.areaUnit} unallocated` : 'Fully Allocated'}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden flex">
-                    <div
-                      className="bg-teal-400 h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, parcel.totalArea > 0 ? (cultivatedTotal / parcel.totalArea) * 100 : 0)}%`
-                      }}
-                    />
                   </div>
                 </div>
 
@@ -710,7 +688,7 @@ export default function DigitalFarmRecordsPage() {
 
                           <div className="pt-2 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
                             <span className="flex items-center gap-1">
-                              <Eye className="w-3.5 h-3.5" /> View Details
+                              <Eye className="w-3.5 h-3.5" /> View / Edit Crop Details
                             </span>
                             <span className="text-[10px] font-mono text-slate-400">
                               {crop.registrationId}
@@ -748,7 +726,7 @@ export default function DigitalFarmRecordsPage() {
         <Modal
           isOpen={addLandModalOpen}
           onClose={() => setAddLandModalOpen(false)}
-          title="Add New Cadastral Land Parcel"
+          title="Add New Land Parcel / Crop"
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCreateLandSubmit} className="space-y-4">
@@ -858,6 +836,77 @@ export default function DigitalFarmRecordsPage() {
                   placeholder="e.g. Vijayawada"
                   className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-forest-500 outline-none"
                 />
+              </div>
+            </div>
+
+            {/* Optional Crop on Parcel & Estimated Duration */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-emerald-900 flex items-center gap-1.5">
+                  <Sprout className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Crop on Parcel (Optional)</span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                  Optional
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Current Crop Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newLandData.currentCrop}
+                    onChange={(e) => setNewLandData({ ...newLandData, currentCrop: e.target.value })}
+                    placeholder="e.g. Paddy (BPT 5204) or Guava"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Estimated Duration (Months)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={newLandData.estimatedDurationMonths}
+                    onChange={(e) => setNewLandData({ ...newLandData, estimatedDurationMonths: e.target.value })}
+                    placeholder="e.g. 4 or 6 months"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Quick suggestions */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-500 font-bold">Quick suggestions:</span>
+                {[
+                  { name: 'Paddy', dur: '4' },
+                  { name: 'Guava', dur: '12' },
+                  { name: 'Cotton', dur: '6' },
+                  { name: 'Chilli', dur: '5' },
+                  { name: 'Red Gram', dur: '6' },
+                  { name: 'Groundnut', dur: '4' }
+                ].map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() =>
+                      setNewLandData({
+                        ...newLandData,
+                        currentCrop: item.name,
+                        estimatedDurationMonths: item.dur
+                      })
+                    }
+                    className="text-[10px] font-bold text-emerald-800 bg-white hover:bg-emerald-100/80 px-2 py-0.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                  >
+                    + {item.name} ({item.dur}m)
+                  </button>
+                ))}
               </div>
             </div>
 

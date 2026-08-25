@@ -54,43 +54,43 @@ export default function ShopkeeperDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header Bar (Wireframe 1: My Shops + Filter + Add New Shop button) */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Store className="w-8 h-8 text-amber-600" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <Store className="w-8 h-8 text-teal-400" />
             My Shops 🏪
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5">
             Manage your registered fertilizer, seed, and farm machinery store branches.
           </p>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          {/* Location Filter Dropdown (Wireframe 1: "Filter to filter based on location") */}
-          <div className="flex items-center gap-1.5 bg-white px-3.5 py-2 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-amber-600" />
+          {/* Location Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-[#06151a]/90 px-3.5 py-2 rounded-2xl border border-slate-700 shadow-sm text-xs font-bold text-white">
+            <Filter className="w-3.5 h-3.5 text-teal-400" />
             <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
-              className="bg-transparent outline-none cursor-pointer"
+              className="bg-transparent outline-none cursor-pointer text-white"
             >
               {locations.map((loc) => (
-                <option key={loc} value={loc}>
+                <option key={loc} value={loc} className="bg-[#06151a] text-white">
                   {loc === 'All' ? 'All Locations' : loc}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Add New Shop Button (Wireframe 1: (+) Add New Shop) */}
+          {/* Add New Shop Button */}
           <button
             type="button"
             onClick={() => setAddModalOpen(true)}
-            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md shadow-amber-200 transition-all flex items-center gap-2 flex-shrink-0"
+            className="px-5 py-2.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-full shadow-lg transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-slate-950" />
             <span>Add New Shop</span>
           </button>
         </div>

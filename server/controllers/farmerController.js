@@ -82,18 +82,127 @@ export const createLand = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Farmer profile not found' });
     }
 
-    const { surveyNumber, village, mandal, district, totalArea, areaUnit, ownershipType } = req.body;
+    const {
+      surveyNumber,
+      village,
+      mandal,
+      district,
+      totalArea,
+      areaUnit,
+      ownershipType,
+      currentCrop,
+      cropCategory,
+      estimatedDurationMonths,
+      season
+    } = req.body;
+
+    const targetSurvey = (surveyNumber || '').trim();
+    if (!targetSurvey) {
+      return res.status(400).json({ success: false, message: 'Survey number is required' });
+    }
+
+    // Check if this land parcel survey number already exists for this farmer
+    const existingLand = await Land.findOne({ farmerId: profile._id, surveyNumber: targetSurvey });
+    if (existingLand) {
+      if (!currentCrop || !currentCrop.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: `Land parcel with Survey No. ${targetSurvey} is already registered. To add a crop to this parcel, please provide the crop name below.`
+        });
+      }
+
+      // Check if this exact crop is already registered on this land parcel
+      const duplicateCrop = await CropRegistration.findOne({
+        farmerId: profile._id,
+        $or: [
+          { landId: existingLand._id, cropName: { $regex: new RegExp(`^${currentCrop.trim()}$`, 'i') } },
+          { surveyNumber: targetSurvey, cropName: { $regex: new RegExp(`^${currentCrop.trim()}$`, 'i') } }
+        ]
+      });
+
+      if (duplicateCrop) {
+        return res.status(400).json({
+          success: false,
+          message: `Crop "${currentCrop.trim()}" is already registered on Survey No. ${targetSurvey}. You can add other distinct crops to this parcel.`
+        });
+      }
+
+      // Register the new crop on this existing land parcel
+      const registeredCrop = await CropRegistration.create({
+        farmerId: profile._id,
+        landId: existingLand._id,
+        cropName: currentCrop.trim(),
+        cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
+        surveyNumber: existingLand.surveyNumber,
+        cultivatedArea: Number(totalArea) || existingLand.totalArea || 1,
+        totalLandArea: existingLand.totalArea || Number(totalArea) || 1,
+        areaUnit: existingLand.areaUnit || areaUnit || 'Acres',
+        ownershipType: existingLand.ownershipType || ownershipType || 'Owned',
+        season: season || 'Kharif',
+        year: new Date().getFullYear(),
+        sowingDate: new Date(),
+        irrigationType: 'Borewell',
+        status: 'SUBMITTED',
+        submittedAt: new Date()
+      });
+
+      await CropRegistrationHistory.create({
+        registrationId: registeredCrop._id,
+        action: 'SUBMITTED',
+        comment: `New crop "${currentCrop.trim()}" added to Survey No. ${targetSurvey}`,
+        officerName: 'Farmer Self-Submission'
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `Crop "${currentCrop.trim()}" added to Survey No. ${targetSurvey} successfully!`,
+        land: existingLand,
+        registeredCrop
+      });
+    }
 
     const land = await Land.create({
       farmerId: profile._id,
-      surveyNumber,
+      surveyNumber: targetSurvey,
       village: village || profile.village || 'Vijayawada',
       mandal: mandal || profile.mandal || '',
       district: district || profile.district || 'Vijayawada',
       totalArea: Number(totalArea) || 1,
       areaUnit: areaUnit || 'Acres',
-      ownershipType: ownershipType || 'Owned'
+      ownershipType: ownershipType || 'Owned',
+      currentCrop: currentCrop ? currentCrop.trim() : '',
+      cropCategory: cropCategory || (currentCrop ? 'Cereals' : 'None'),
+      estimatedDurationMonths: estimatedDurationMonths ? Number(estimatedDurationMonths) : null,
     });
+
+    // If an initial crop was provided, auto-register this crop under the new land parcel
+    let registeredCrop = null;
+    if (currentCrop && currentCrop.trim()) {
+      registeredCrop = await CropRegistration.create({
+        farmerId: profile._id,
+        landId: land._id,
+        cropName: currentCrop.trim(),
+        cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
+        surveyNumber: land.surveyNumber,
+        cultivatedArea: Number(totalArea) || 1,
+        totalLandArea: Number(totalArea) || 1,
+        areaUnit: areaUnit || 'Acres',
+        ownershipType: ownershipType || 'Owned',
+        season: season || 'Kharif',
+        year: new Date().getFullYear(),
+        sowingDate: new Date(),
+        irrigationType: 'Borewell',
+        status: 'SUBMITTED',
+        submittedAt: new Date()
+      });
+
+      await CropRegistrationHistory.create({
+        registrationId: registeredCrop._id,
+        action: 'SUBMITTED',
+        comment: `Crop recorded during cadastral land parcel registration (Duration: ${estimatedDurationMonths ? estimatedDurationMonths + ' Months' : 'Seasonal'})`,
+        officerName: 'Farmer Self-Submission'
+      });
+    }
 
     // Update total land area in farmer profile
     const allLands = await Land.find({ farmerId: profile._id });
@@ -101,7 +210,12 @@ export const createLand = async (req, res) => {
     profile.totalLandArea = totalAreaSum;
     await profile.save();
 
-    return res.status(201).json({ success: true, land });
+    return res.status(201).json({
+      success: true,
+      message: `Land parcel Survey No. ${land.surveyNumber} created successfully!`,
+      land,
+      registeredCrop
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -317,29 +431,48 @@ export const updateCrop = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Crop registration not found' });
     }
 
-    const allowedStatuses = ['DRAFT', 'RETURNED_FOR_CORRECTION'];
-    if (!allowedStatuses.includes(crop.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'This application cannot be edited in its current status'
-      });
-    }
+    const {
+      cropName,
+      cropCategory,
+      surveyNumber,
+      cultivatedArea,
+      areaUnit,
+      ownershipType,
+      season,
+      year,
+      sowingDate,
+      harvestDate,
+      irrigationType,
+      fertilizersUsed,
+      pesticidesUsed,
+      expectedHarvest,
+      actualHarvest,
+      priceSold,
+      submit,
+      resubmit,
+      submitComment,
+      resubmitComment
+    } = req.body;
 
-    const fields = [
-      'cropName', 'cropCategory', 'surveyNumber', 'cultivatedArea',
-      'areaUnit', 'ownershipType', 'season', 'year', 'sowingDate',
-      'harvestDate', 'irrigationType', 'fertilizersUsed', 'pesticidesUsed',
-      'expectedHarvest', 'actualHarvest', 'priceSold'
-    ];
-
-    fields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        crop[field] = req.body[field];
-      }
-    });
+    if (cropName !== undefined && cropName.trim()) crop.cropName = cropName.trim();
+    if (cropCategory !== undefined) crop.cropCategory = cropCategory;
+    if (surveyNumber !== undefined && surveyNumber.trim()) crop.surveyNumber = surveyNumber.trim();
+    if (cultivatedArea !== undefined && !isNaN(Number(cultivatedArea))) crop.cultivatedArea = Number(cultivatedArea);
+    if (areaUnit !== undefined) crop.areaUnit = areaUnit;
+    if (ownershipType !== undefined) crop.ownershipType = ownershipType;
+    if (season !== undefined) crop.season = season;
+    if (year !== undefined && !isNaN(Number(year))) crop.year = Number(year);
+    if (sowingDate !== undefined) crop.sowingDate = sowingDate ? new Date(sowingDate) : crop.sowingDate;
+    if (harvestDate !== undefined) crop.harvestDate = harvestDate ? new Date(harvestDate) : null;
+    if (irrigationType !== undefined) crop.irrigationType = irrigationType;
+    if (fertilizersUsed !== undefined) crop.fertilizersUsed = fertilizersUsed;
+    if (pesticidesUsed !== undefined) crop.pesticidesUsed = pesticidesUsed;
+    if (expectedHarvest !== undefined) crop.expectedHarvest = expectedHarvest;
+    if (actualHarvest !== undefined) crop.actualHarvest = actualHarvest;
+    if (priceSold !== undefined) crop.priceSold = priceSold;
 
     const isDraft = crop.status === 'DRAFT';
-    const isSubmitting = req.body.submit || req.body.resubmit;
+    const isSubmitting = submit || resubmit;
 
     if (isSubmitting) {
       crop.status = 'SUBMITTED';
@@ -349,8 +482,8 @@ export const updateCrop = async (req, res) => {
         registrationId: crop._id,
         action: isDraft ? 'SUBMITTED' : 'RESUBMITTED',
         comment: isDraft
-          ? (req.body.submitComment || 'Draft submitted digitally by farmer for officer verification')
-          : (req.body.resubmitComment || 'Corrected and resubmitted by farmer'),
+          ? (submitComment || 'Draft submitted digitally by farmer for officer verification')
+          : (resubmitComment || 'Corrected and resubmitted by farmer'),
         officerName: isDraft ? 'Farmer Self-Submission' : 'Farmer Resubmission'
       });
 
@@ -367,9 +500,17 @@ export const updateCrop = async (req, res) => {
         comment: 'Draft details updated by farmer',
         officerName: 'Farmer Self-Submission'
       });
+    } else {
+      await CropRegistrationHistory.create({
+        registrationId: crop._id,
+        action: 'UPDATED',
+        comment: 'Crop details updated by farmer',
+        officerName: 'Farmer Self-Submission'
+      });
     }
 
     await crop.save();
+    await crop.populate('landId');
 
     const responseMessage = isSubmitting
       ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully!')

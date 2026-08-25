@@ -44,6 +44,14 @@ export default function FarmerDashboard() {
   const profile = profileData?.profile || user?.profile || {};
   const stats = profileData?.stats || { totalCrops: 2, verifiedCrops: 1, pendingCrops: 1 };
 
+  // Extract farmer location from profile database
+  const farmerLocation = [
+    profile.village,
+    profile.mandal,
+    profile.district,
+    profile.state
+  ].filter(Boolean).join(', ') || `${profile.district || 'Vijayawada'}, Andhra Pradesh`;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header Bar */}
@@ -73,8 +81,8 @@ export default function FarmerDashboard() {
         </div>
       </div>
 
-      {/* 1. Top Weather Banner */}
-      <WeatherBanner location={`${profile.district || 'Vijayawada'}, Andhra Pradesh`} />
+      {/* 1. Top Weather Banner (Uses Registered Profile Location) */}
+      <WeatherBanner location={farmerLocation} />
 
       {/* 2. Four Core Feature Cards (Matches Picture 2 Style!) */}
       <div>

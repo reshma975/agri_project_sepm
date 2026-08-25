@@ -83,15 +83,15 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
     <Modal isOpen={isOpen} onClose={onClose} title="✏️ Edit Product Details" maxWidth="max-w-lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-700 rounded-xl text-xs border border-rose-200 flex items-center gap-2">
+          <div className="p-3 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Product Name
+          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+            Product Name *
           </label>
           <input
             type="text"
@@ -99,23 +99,23 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+            className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
               Category
             </label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+              className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all cursor-pointer"
             >
               {categories.map((c) => (
-                <option key={c.value} value={c.value}>
+                <option key={c.value} value={c.value} className="bg-[#06151a] text-white">
                   {c.label}
                 </option>
               ))}
@@ -123,17 +123,17 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Stock Status (Dropdown)
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              Stock Status
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all font-semibold"
+              className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all font-semibold cursor-pointer"
             >
               {statuses.map((st) => (
-                <option key={st} value={st}>
+                <option key={st} value={st} className="bg-[#06151a] text-white">
                   {st}
                 </option>
               ))}
@@ -143,11 +143,11 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Price (₹)
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              Price (₹) *
             </label>
             <div className="relative">
-              <IndianRupee className="w-4 h-4 text-forest-600 absolute left-3.5 top-3.5" />
+              <IndianRupee className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
               <input
                 type="number"
                 name="price"
@@ -155,17 +155,17 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
                 value={formData.price}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Stock Quantity
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              Stock Quantity *
             </label>
             <div className="relative">
-              <Layers className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <Layers className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
               <input
                 type="number"
                 name="quantity"
@@ -173,7 +173,7 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
                 value={formData.quantity}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-forest-500 focus:ring-2 focus:ring-forest-200 outline-none transition-all"
+                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
               />
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
 
         {/* Product Photo Upload Section */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
             Product Photo (Upload from Device or Select Preset)
           </label>
 
@@ -194,9 +194,9 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
           />
 
           {formData.imageUrl ? (
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="flex items-center justify-between p-3 bg-[#030b0e] rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex-shrink-0">
+                <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0">
                   <img
                     src={formData.imageUrl}
                     alt="Product Preview"
@@ -204,9 +204,9 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
                   />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">Photo Attached</span>
-                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Ready for display
+                  <span className="text-xs font-bold text-white block">Photo Attached</span>
+                  <span className="text-[11px] text-teal-300 font-semibold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-teal-400" /> Ready for display
                   </span>
                 </div>
               </div>
@@ -215,14 +215,14 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 text-xs font-bold text-forest-700 bg-white hover:bg-forest-50 border border-forest-300 rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06181d] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" /> Change Photo
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                   title="Remove Photo"
                 >
                   <X className="w-4 h-4" />
@@ -233,13 +233,13 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
             <div className="space-y-2.5">
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="p-5 border-2 border-dashed border-slate-300 hover:border-forest-500 bg-slate-50 hover:bg-forest-50/40 rounded-2xl text-center cursor-pointer transition-all space-y-1.5 group"
+                className="p-5 border-2 border-dashed border-slate-700 hover:border-teal-400 bg-[#030b0e] hover:bg-[#05151c] rounded-2xl text-center cursor-pointer transition-all space-y-1.5 group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white text-forest-600 mx-auto flex items-center justify-center border border-slate-200 shadow-xs group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-[#06151a] text-teal-400 mx-auto flex items-center justify-center border border-slate-700 shadow-xs group-hover:scale-105 transition-transform">
                   <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">
+                  <p className="text-xs font-bold text-white">
                     Click to upload photo from your phone or computer
                   </p>
                   <p className="text-[11px] text-slate-400">
@@ -250,14 +250,14 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
 
               <div className="flex items-center gap-1.5 flex-wrap pt-1">
                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500" /> Quick Presets:
+                  <Sparkles className="w-3 h-3 text-amber-400" /> Quick Presets:
                 </span>
                 {samplePresets.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setFormData({ ...formData, imageUrl: preset.url })}
-                    className="text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-forest-100 hover:text-forest-800 px-2.5 py-1 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                    className="text-[11px] font-semibold text-slate-300 bg-[#030b0e] hover:bg-[#0c242c] hover:text-teal-300 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors cursor-pointer"
                   >
                     {preset.label}
                   </button>
@@ -267,18 +267,18 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-700">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors"
+            className="px-4 py-2.5 text-sm font-semibold text-slate-400 hover:text-white bg-[#030b0e] hover:bg-[#07171d] border border-slate-700 rounded-2xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 text-sm font-bold text-white bg-forest-600 hover:bg-forest-700 rounded-2xl transition-all shadow-md shadow-forest-200 disabled:opacity-50 cursor-pointer"
+            className="px-6 py-2.5 text-sm font-black text-slate-950 btn-glow-primary rounded-full transition-all shadow-md disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>

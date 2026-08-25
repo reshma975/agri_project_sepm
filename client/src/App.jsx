@@ -99,6 +99,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/farmer/farm-records"
+            element={
+              <ProtectedRoute allowedRoles={['FARMER']}>
+                <DigitalFarmRecordsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/farmer/crops/register"
             element={
               <ProtectedRoute allowedRoles={['FARMER']}>

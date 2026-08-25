@@ -60,7 +60,7 @@ export default function CropCard({ crop, onClick }) {
       )}
 
       <div className="mt-3.5 flex items-center justify-between text-xs font-bold text-teal-400 group-hover:translate-x-1 transition-transform">
-        <span>View Complete Details</span>
+        <span>View / Edit Crop Details</span>
         <ChevronRight className="w-4 h-4" />
       </div>
     </div>
