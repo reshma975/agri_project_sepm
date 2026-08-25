@@ -14,9 +14,15 @@ import { GovernmentUpdate } from '../models/GovernmentUpdate.js';
 
 export const seedDatabase = async () => {
   try {
+    // Non-destructive backward compatibility migration for existing database records
+    await User.updateMany(
+      { $or: [{ roles: { $exists: false } }, { roles: { $size: 0 } }] },
+      [{ $set: { roles: { $cond: [{ $ifNull: ['$role', false] }, ['$role'], ['FARMER']] } } }]
+    );
+
     const existingUsers = await User.countDocuments();
     if (existingUsers > 0) {
-      console.log('🌾 Database already contains data. Skipping initial seeding.');
+      console.log('🌾 Database already contains data. Ensured multi-role schema compatibility.');
       return;
     }
 
@@ -48,8 +54,9 @@ export const seedDatabase = async () => {
       name: 'Ramesh Patel',
       username: 'ramesh_farmer',
       email: 'farmer@farmsetu.com',
-      phone: '+91 98480 11223',
+      phone: '+919848011223',
       passwordHash: farmerPasswordHash,
+      roles: ['FARMER'],
       role: 'FARMER',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
     });
@@ -58,8 +65,9 @@ export const seedDatabase = async () => {
       name: 'Suresh Kumar',
       username: 'suresh_agro',
       email: 'shopkeeper@farmsetu.com',
-      phone: '+91 98480 44556',
+      phone: '+919848044556',
       passwordHash: shopkeeperPasswordHash,
+      roles: ['SHOPKEEPER'],
       role: 'SHOPKEEPER',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
     });
@@ -68,11 +76,13 @@ export const seedDatabase = async () => {
       name: 'Dr. V. Sharma',
       username: 'officer_vsharma',
       email: 'officer@farmsetu.com',
-      phone: '+91 98480 77889',
+      phone: '+919848077889',
       passwordHash: officerPasswordHash,
+      roles: ['OFFICER'],
       role: 'OFFICER',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
     });
+
 
     // 2. Create Role Profiles
     const farmerProfile = await FarmerProfile.create({

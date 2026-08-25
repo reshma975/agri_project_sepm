@@ -184,12 +184,14 @@ export const updateShop = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to edit this shop' });
     }
 
-    const { shopName, location, address, imageUrl, phone } = req.body;
+    const { shopName, location, address, imageUrl, phone, timings } = req.body;
     if (shopName) shop.shopName = shopName;
     if (location) shop.location = location;
     if (address) shop.address = address;
     if (imageUrl) shop.imageUrl = imageUrl;
     if (phone) shop.phone = phone;
+    if (timings) shop.timings = timings;
+
 
     await shop.save();
     return res.status(200).json({ success: true, message: 'Shop updated successfully', shop });

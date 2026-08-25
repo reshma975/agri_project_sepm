@@ -43,7 +43,8 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || 'Login failed. Please check your credentials.'
+        message: err.response?.data?.message || 'Login failed. Please check your credentials.',
+        availableRoles: err.response?.data?.availableRoles
       };
     }
   };
@@ -55,13 +56,33 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('farmsetu_token', res.data.token);
         setToken(res.data.token);
         setUser(res.data.user);
-        return { success: true, user: res.data.user };
+        return { success: true, user: res.data.user, message: res.data.message };
       }
       return { success: false, message: res.data.message || 'Registration failed' };
     } catch (err) {
       return {
         success: false,
-        message: err.response?.data?.message || 'Registration failed. Please check details.'
+        message: err.response?.data?.message || 'Registration failed. Please check details.',
+        accountExists: err.response?.data?.accountExists,
+        alreadyHasRole: err.response?.data?.alreadyHasRole
+      };
+    }
+  };
+
+  const switchRole = async (targetRole) => {
+    try {
+      const res = await apiClient.post('/auth/switch-role', { targetRole });
+      if (res.data.success) {
+        localStorage.setItem('farmsetu_token', res.data.token);
+        setToken(res.data.token);
+        setUser(res.data.user);
+        return { success: true, user: res.data.user, message: res.data.message };
+      }
+      return { success: false, message: res.data.message || 'Failed to switch role' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to switch role'
       };
     }
   };
@@ -111,6 +132,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const userRoles = user?.roles && user.roles.length > 0 ? user.roles : (user?.role ? [user.role] : []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -119,14 +142,21 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        switchRole,
         logout,
         updateProfile,
         changePassword,
         refreshUser,
         isAuthenticated: !!user,
+        activeRole: user?.role,
+        roles: userRoles,
+        hasMultipleRoles: userRoles.length > 1,
         isFarmer: user?.role === 'FARMER',
         isShopkeeper: user?.role === 'SHOPKEEPER',
         isOfficer: user?.role === 'OFFICER',
+        hasFarmerRole: userRoles.includes('FARMER'),
+        hasShopkeeperRole: userRoles.includes('SHOPKEEPER'),
+        hasOfficerRole: userRoles.includes('OFFICER'),
       }}
     >
       {children}

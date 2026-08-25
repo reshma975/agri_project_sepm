@@ -18,11 +18,15 @@ import {
   PlusCircle,
   LandPlot,
   LayoutDashboard,
-  Sparkles
+  Sparkles,
+  ArrowRight,
+  Package
 } from 'lucide-react';
 
+
 export default function Navbar() {
-  const { user, isAuthenticated, isFarmer, isShopkeeper, isOfficer, logout } = useAuth();
+  const { user, isAuthenticated, isFarmer, isShopkeeper, isOfficer, switchRole, logout } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -256,6 +260,17 @@ export default function Navbar() {
                   <span>My Shops & Stock</span>
                 </Link>
                 <Link
+                  to="/shopkeeper/products"
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive('/shopkeeper/products') || isNavActive('/shopkeeper/inventory')
+                      ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
+                  }`}
+                >
+                  <Package className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Products Inventory</span>
+                </Link>
+                <Link
                   to="/shopkeeper/profile"
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
                     isNavActive('/shopkeeper/profile')
@@ -268,6 +283,7 @@ export default function Navbar() {
                 </Link>
               </>
             )}
+
 
             {/* Officer Navigation */}
             {isOfficer && (
@@ -356,6 +372,39 @@ export default function Navbar() {
                         </Link>
                       )}
                     </div>
+
+                    {/* Multi-role Switcher */}
+                    {user?.roles && user.roles.length > 1 && (
+                      <div className="px-3 py-2 bg-[#06151a] mx-2 rounded-xl border border-teal-900/60 my-1">
+                        <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-teal-400" /> Switch Role Portal
+                        </p>
+                        <div className="space-y-1">
+                          {user.roles.map((r) => {
+                            if (r === user.role) return null;
+                            return (
+                              <button
+                                key={r}
+                                type="button"
+                                onClick={async () => {
+                                  setDropdownOpen(false);
+                                  const res = await switchRole(r);
+                                  if (res.success) {
+                                    if (r === 'FARMER') navigate('/farmer/dashboard');
+                                    else if (r === 'SHOPKEEPER') navigate('/shopkeeper/dashboard');
+                                    else if (r === 'OFFICER') navigate('/officer/dashboard');
+                                  }
+                                }}
+                                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-teal-300 hover:bg-teal-950/80 hover:text-white transition-all cursor-pointer border border-teal-500/30"
+                              >
+                                <span>{r === 'FARMER' ? '👨‍🌾 Farmer Dashboard' : r === 'SHOPKEEPER' ? '🏪 Shopkeeper Portal' : '🏛️ Officer Portal'}</span>
+                                <ArrowRight className="w-3 h-3 text-teal-400" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="border-t border-teal-900/50 pt-1">
                       <button
@@ -462,6 +511,13 @@ export default function Navbar() {
                     My Shops & Stock
                   </Link>
                   <Link
+                    to="/shopkeeper/products"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
+                  >
+                    <Package className="w-4 h-4 text-teal-400" />
+                    Products Inventory
+                  </Link>
+                  <Link
                     to="/shopkeeper/profile"
                     className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
                   >
@@ -470,6 +526,7 @@ export default function Navbar() {
                   </Link>
                 </>
               )}
+
 
               {isOfficer && (
                 <>

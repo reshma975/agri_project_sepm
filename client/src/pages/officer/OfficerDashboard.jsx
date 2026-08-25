@@ -83,6 +83,14 @@ export default function OfficerDashboard() {
   const stats = dashboardData?.stats || { pending: 0, verified: 0, returned: 0, rejected: 0 };
   const applications = dashboardData?.pendingApplications || [];
 
+  const officerAssignedLocation =
+    officer.assignedArea ||
+    (officer.mandal ? `${officer.mandal} Mandal${officer.district ? `, ${officer.district}` : ''}` : '') ||
+    officer.district ||
+    user?.profile?.district ||
+    user?.profile?.assignedArea ||
+    'Assigned Jurisdiction';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header Bar */}
@@ -98,7 +106,7 @@ export default function OfficerDashboard() {
           </div>
           <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1 flex items-center gap-1.5">
             <MapPin className="w-4 h-4 text-teal-400" />
-            Assigned Area: <strong className="text-white">{officer.assignedArea || 'Vijayawada Mandal'}</strong> • License #{officer.licenseNumber || 'AP-AGRI-OFF-2024'}
+            Assigned Area: <strong className="text-white">{officerAssignedLocation}</strong> • License #{officer.licenseNumber || 'AP-AGRI-OFF-2024'}
           </p>
         </div>
 
@@ -183,11 +191,16 @@ export default function OfficerDashboard() {
               onChange={(e) => setFilterArea(e.target.value)}
               className="bg-transparent outline-none cursor-pointer text-white"
             >
-              <option value="assigned" className="bg-[#06151a] text-white">My Assigned Area ({officer.district || 'Vijayawada'})</option>
-              <option value="all" className="bg-[#06151a] text-white">All District Regions</option>
+              <option value="assigned" className="bg-[#06151a] text-white">
+                My Assigned Area ({officerAssignedLocation})
+              </option>
+              <option value="all" className="bg-[#06151a] text-white">
+                All District Regions
+              </option>
             </select>
           </div>
         </div>
+
 
         {/* Applications Queue */}
         {loading ? (

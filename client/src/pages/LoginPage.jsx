@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { Sprout, User, Lock, ArrowRight, AlertCircle, ArrowLeft, KeyRound, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
+import { Sprout, User, Lock, ArrowRight, AlertCircle, ArrowLeft, KeyRound, CheckCircle2, X, Eye, EyeOff, Store, ShieldCheck } from 'lucide-react';
 import PasswordStrengthIndicator, { checkPasswordRules } from '../components/common/PasswordStrengthIndicator';
 
 export default function LoginPage() {
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [availableRoles, setAvailableRoles] = useState([]);
   const [successMsg, setSuccessMsg] = useState('');
 
   // Forgot password modal state
@@ -42,6 +43,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setAvailableRoles([]);
     setSuccessMsg('');
     setLoading(true);
 
@@ -54,6 +56,9 @@ export default function LoginPage() {
       else if (selectedRole === 'OFFICER') navigate('/officer/dashboard');
     } else {
       setError(res.message || 'Login failed. Please check your credentials.');
+      if (res.availableRoles && res.availableRoles.length > 0) {
+        setAvailableRoles(res.availableRoles);
+      }
     }
   };
 
@@ -118,13 +123,45 @@ export default function LoginPage() {
           <span className="text-[11px] text-slate-400 font-medium">FarmSetu Secure Portal</span>
         </div>
 
+        {/* Role Selector Segment */}
+        <div className="flex items-center justify-center gap-1.5 p-1 bg-[#06151a]/95 rounded-2xl border border-slate-700 shadow-md">
+          <button
+            type="button"
+            onClick={() => { setSelectedRole('FARMER'); setError(''); }}
+            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              selectedRole === 'FARMER'
+                ? 'bg-emerald-500 text-slate-950 shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-[#0c242c]'
+            }`}
+          >
+            <Sprout className="w-3.5 h-3.5" /> Farmer
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSelectedRole('SHOPKEEPER'); setError(''); }}
+            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              selectedRole === 'SHOPKEEPER'
+                ? 'bg-amber-400 text-slate-950 shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-[#0c242c]'
+            }`}
+          >
+            <Store className="w-3.5 h-3.5" /> Shopkeeper
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSelectedRole('OFFICER'); setError(''); }}
+            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              selectedRole === 'OFFICER'
+                ? 'bg-cyan-400 text-slate-950 shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-[#0c242c]'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" /> Officer
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-1">
-          <div className="flex justify-center mb-1">
-            <div className="w-10 h-10 rounded-xl bg-teal-400 text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.5)]">
-              <Sprout className="w-6 h-6" />
-            </div>
-          </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#2dd4bf] text-glow-teal tracking-tight">
             {selectedRole === 'FARMER' && 'Sign in as Farmer 👨‍🌾'}
             {selectedRole === 'SHOPKEEPER' && 'Sign in as Shopkeeper 🏪'}
@@ -141,9 +178,26 @@ export default function LoginPage() {
         <div className="glass-panel rounded-3xl p-5 sm:p-6 shadow-2xl border border-teal-500/20 bg-[#051419]/90">
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {error && (
-              <div className="p-2.5 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{error}</span>
+              <div className="p-3 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+                {availableRoles.length > 0 && (
+                  <div className="pt-2 border-t border-rose-800/40 flex flex-wrap gap-2 items-center">
+                    <span className="text-[11px] text-slate-300 font-semibold">Switch to your registered portal:</span>
+                    {availableRoles.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => { setSelectedRole(r); setError(''); setAvailableRoles([]); }}
+                        className="px-2.5 py-1 bg-teal-500/20 hover:bg-teal-500/40 text-teal-300 rounded-lg text-[11px] font-bold border border-teal-500/40 cursor-pointer"
+                      >
+                        Sign in as {r === 'FARMER' ? 'Farmer 👨‍🌾' : r === 'SHOPKEEPER' ? 'Shopkeeper 🏪' : 'Officer 🏛️'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -230,29 +284,26 @@ export default function LoginPage() {
                 'Authenticating...'
               ) : (
                 <>
-                  <span>Sign in to {selectedRole === 'FARMER' ? 'Farmer' : selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer'} Portal</span>
+                  <span>Sign in as {selectedRole === 'FARMER' ? 'Farmer' : selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Registration link for farmers/shopkeepers */}
-          {selectedRole !== 'OFFICER' ? (
-            <div className="mt-4 pt-3.5 border-t border-teal-900/40 text-center text-xs text-slate-400">
-              <span>Don't have an account yet? </span>
+          {/* Registration link for all roles (Farmer, Shopkeeper, Officer) */}
+          <div className="mt-4 pt-3.5 border-t border-teal-900/40 text-center text-xs text-slate-400 space-y-1">
+            <p>
+              <span>Don't have this role registered yet? </span>
               <Link
                 to={`/register?role=${selectedRole}`}
                 className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
               >
-                Register as {selectedRole === 'FARMER' ? 'Farmer' : 'Shopkeeper'}
+                Register as {selectedRole === 'FARMER' ? 'Farmer' : selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer'}
               </Link>
-            </div>
-          ) : (
-            <div className="mt-4 pt-3.5 border-t border-teal-900/40 text-center text-[11px] text-slate-400">
-              🏛️ Government Officer accounts are authorized by District Agriculture Dept.
-            </div>
-          )}
+            </p>
+          </div>
+
         </div>
       </div>
 
@@ -279,61 +330,63 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <form onSubmit={handleForgotPasswordSubmit} className="space-y-3.5 text-xs">
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-3.5">
               {forgotError && (
-                <div className="p-2.5 bg-rose-950/60 text-rose-300 rounded-xl border border-rose-800/60 flex items-center gap-2">
+                <div className="p-2.5 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{forgotError}</span>
                 </div>
               )}
 
               {forgotSuccess && (
-                <div className="p-2.5 bg-emerald-950/60 text-emerald-300 rounded-xl border border-emerald-500/40 flex items-center gap-2">
+                <div className="p-2.5 bg-emerald-950/60 text-emerald-300 rounded-xl text-xs border border-emerald-500/40 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
                   <span>{forgotSuccess}</span>
                 </div>
               )}
 
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                  Registered Username, Phone, or Email *
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Registered Username, Phone, or Email
                 </label>
                 <input
                   type="text"
                   value={forgotIdentifier}
                   onChange={(e) => setForgotIdentifier(e.target.value)}
-                  placeholder="e.g. 9848012345 or username"
+                  placeholder="Enter registered username, phone, or email"
                   required
-                  className="w-full px-3.5 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                  New Password (min. 8 characters) *
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  New Password
                 </label>
                 <div className="relative">
                   <input
                     type={showForgotNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min. 8 chars, 1 uppercase, 1 symbol"
+                    placeholder="Enter new strong password"
                     required
-                    className="w-full pl-3.5 pr-9 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
+                    className="w-full pl-3.5 pr-10 py-2.5 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
-                    className="absolute right-2.5 top-2 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
                   >
                     {showForgotNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
+              <PasswordStrengthIndicator password={newPassword} />
+
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                  Confirm New Password *
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Confirm New Password
                 </label>
                 <div className="relative">
                   <input
@@ -342,39 +395,25 @@ export default function LoginPage() {
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     placeholder="Re-enter new password"
                     required
-                    className="w-full pl-3.5 pr-9 py-2 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
+                    className="w-full pl-3.5 pr-10 py-2.5 text-xs bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:border-teal-400 outline-none font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}
-                    className="absolute right-2.5 top-2 text-slate-400 hover:text-teal-300 transition-colors cursor-pointer"
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
                   >
                     {showForgotConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
-              {/* Password strength checklist */}
-              {newPassword && (
-                <PasswordStrengthIndicator password={newPassword} />
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForgotModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white bg-[#030b0e] rounded-xl border border-teal-900/60 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={forgotLoading}
-                  className="px-5 py-2 text-xs font-black text-slate-950 bg-teal-400 hover:bg-teal-300 rounded-xl shadow-md shadow-teal-500/25 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {forgotLoading ? 'Updating Password...' : 'Save New Password'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className="w-full py-2.5 px-4 btn-glow-primary text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                {forgotLoading ? 'Updating Password...' : 'Save New Password'}
+              </button>
             </form>
           </div>
         </div>

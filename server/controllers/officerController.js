@@ -280,16 +280,21 @@ export const searchFarmers = async (req, res) => {
 
     const q = query.trim();
 
-    // Find users matching name, phone, or email
+    // Find users matching name, phone, or email that possess the FARMER role
     const users = await User.find({
-      role: 'FARMER',
-      $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } },
-        { username: { $regex: q, $options: 'i' } }
+      $and: [
+        { $or: [{ roles: 'FARMER' }, { role: 'FARMER' }] },
+        {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { phone: { $regex: q, $options: 'i' } },
+            { email: { $regex: q, $options: 'i' } },
+            { username: { $regex: q, $options: 'i' } }
+          ]
+        }
       ]
     }).select('name email phone username avatar');
+
 
     const userIds = users.map(u => u._id);
 

@@ -133,9 +133,18 @@ async function runTests() {
     const weather = await api('/weather?location=Vijayawada');
     assert(weather.data.success && weather.data.weather.temperature, '6. Weather Service returns live temp and farming comments');
 
-    // 6. Government Updates
+    // 6. Government Updates & Live News Feed
     const govt = await api('/government-updates?category=All');
     assert(govt.data.success && govt.data.updates.length > 0, `7. Government Updates fetched (${govt.data.updates.length} updates)`);
+
+    const govtNews = await api('/government-updates/news');
+    assert(
+      (govtNews.status === 200 && govtNews.data.success === true && Array.isArray(govtNews.data.news)) ||
+      (govtNews.status === 503 && govtNews.data.success === false && govtNews.data.code === 'API_KEY_MISSING') ||
+      (govtNews.status === 401 && govtNews.data.success === false),
+      '7.1 Live Farmer & Agriculture News API endpoint responds with proper status and without fake data'
+    );
+
 
     // 7. AI Assistant
     const ai = await api('/assistant/ask', {

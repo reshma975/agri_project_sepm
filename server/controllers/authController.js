@@ -6,15 +6,38 @@ import { ShopkeeperProfile } from '../models/ShopkeeperProfile.js';
 import { generateToken } from '../middleware/authMiddleware.js';
 import { validatePasswordSecurity } from '../utils/passwordValidator.js';
 
-// @desc    Register a new user (Farmer / Shopkeeper)
+// Helper to normalize phone numbers (strip spaces and dashes)
+const normalizePhone = (phone) => {
+  if (!phone) return '';
+  return phone.trim().replace(/[\s\-]/g, '');
+};
+
+// @desc    Register a new user or add a new role to an existing user account
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
     const { name, username, email, phone, password, role, village, mandal, district, state, address, businessName } = req.body;
 
-    if (!name || !username || !password || !role) {
+    if (!name || !password || !role) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    if (!['FARMER', 'SHOPKEEPER', 'OFFICER'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role specified' });
+    }
+
+    const cleanEmail = email && email.trim() ? email.toLowerCase().trim() : undefined;
+    const cleanPhone = normalizePhone(phone);
+    const cleanUsername = username ? username.toLowerCase().trim() : undefined;
+
+    if (!cleanPhone) {
+      return res.status(400).json({ success: false, message: 'Phone number is required' });
+    }
+
+    // For non-farmers (e.g. Shopkeeper/Officer), email is mandatory. For farmers, it is optional.
+    if (role !== 'FARMER' && !cleanEmail) {
+      return res.status(400).json({ success: false, message: 'Email address is required for business/officer accounts' });
     }
 
     // Enforce Password Security Rules
@@ -27,50 +50,153 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // For non-farmers (e.g. Shopkeeper/Officer), email is mandatory. For farmers, it is optional.
-    if (role !== 'FARMER' && (!email || !email.trim())) {
-      return res.status(400).json({ success: false, message: 'Email address is required for business accounts' });
-    }
+    // Check existing accounts by unique identities (email, phone, and username)
+    let existingByEmail = cleanEmail ? await User.findOne({ email: cleanEmail }) : null;
+    let existingByPhone = cleanPhone ? await User.findOne({ phone: cleanPhone }) : null;
+    let existingByUsername = cleanUsername ? await User.findOne({ username: cleanUsername }) : null;
 
-    if (!['FARMER', 'SHOPKEEPER', 'OFFICER'].includes(role)) {
-      return res.status(400).json({ success: false, message: 'Invalid role specified' });
-    }
-
-    // Check if user already exists (by username, or by email if provided)
-    const checkConditions = [{ username: username.toLowerCase().trim() }];
-    if (email && email.trim()) {
-      checkConditions.push({ email: email.toLowerCase().trim() });
-    }
-    if (phone && phone.trim()) {
-      checkConditions.push({ phone: phone.trim() });
-    }
-
-    const userExists = await User.findOne({ $or: checkConditions });
-
-    if (userExists) {
-      return res.status(400).json({
+    // Case 5: Identity Conflict — Email belongs to User A, but Phone belongs to User B
+    if (
+      existingByEmail &&
+      existingByPhone &&
+      existingByEmail._id.toString() !== existingByPhone._id.toString()
+    ) {
+      return res.status(409).json({
         success: false,
-        message: 'A user with this username, email, or mobile number already exists'
+        message: 'Identity conflict: The provided email and mobile number belong to two separate registered accounts. Please use matching credentials.'
       });
     }
 
-    // Hash password
+    // If username is already taken by another distinct user account
+    if (
+      existingByUsername &&
+      ((existingByEmail && existingByUsername._id.toString() !== existingByEmail._id.toString()) ||
+       (existingByPhone && existingByUsername._id.toString() !== existingByPhone._id.toString()) ||
+       (!existingByEmail && !existingByPhone))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Username '${cleanUsername}' is already taken by another account. Please choose a different username.`
+      });
+    }
+
+    const existingUser = existingByEmail || existingByPhone;
+
+    // =========================================================================
+    // CASE A: EXISTING USER FOUND (Add new role to existing account)
+    // =========================================================================
+    if (existingUser) {
+      // Normalize user roles array
+      const currentRoles = existingUser.roles && existingUser.roles.length > 0
+        ? existingUser.roles
+        : [existingUser.role || 'FARMER'];
+
+      // Verify the person's password to authenticate that they own this account
+      const isMatch = await existingUser.matchPassword(password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          accountExists: true,
+          message: `An account already exists with this ${cleanEmail && existingUser.email === cleanEmail ? 'email' : 'mobile number'}. Please enter your correct account password to add the ${role} role to your account.`
+        });
+      }
+
+      // Case 2: Role already exists for this account
+      if (currentRoles.includes(role)) {
+        const roleLabel = role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
+        return res.status(400).json({
+          success: false,
+          alreadyHasRole: true,
+          message: `${roleLabel} role already exists for this account. Please sign in through the ${roleLabel} portal.`
+        });
+      }
+
+      // Case 1: Append new role to existing roles array
+      const updatedRoles = [...new Set([...currentRoles, role])];
+      existingUser.roles = updatedRoles;
+      existingUser.role = role; // Set active session role
+
+      // Update email/phone if provided
+      if (!existingUser.email && cleanEmail) {
+        existingUser.email = cleanEmail;
+      }
+      await existingUser.save();
+
+      // Create role-specific profile if not already present
+      let profile = null;
+      if (role === 'FARMER') {
+        profile = await FarmerProfile.findOne({ userId: existingUser._id });
+        if (!profile) {
+          profile = await FarmerProfile.create({
+            userId: existingUser._id,
+            farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+            village: village || '',
+            mandal: mandal || '',
+            district: district || 'Vijayawada',
+            state: state || 'Andhra Pradesh',
+            address: address || '',
+            registrationStatus: 'UNVERIFIED'
+          });
+        }
+      } else if (role === 'SHOPKEEPER') {
+        profile = await ShopkeeperProfile.findOne({ userId: existingUser._id });
+        if (!profile) {
+          profile = await ShopkeeperProfile.create({
+            userId: existingUser._id,
+            businessName: businessName || `${existingUser.name}'s Agro Store`,
+            primaryLocation: village || district || 'Vijayawada'
+          });
+        }
+      } else if (role === 'OFFICER') {
+        profile = await OfficerProfile.findOne({ userId: existingUser._id });
+        if (!profile) {
+          profile = await OfficerProfile.create({
+            userId: existingUser._id,
+            officerId: `AGR-OFC-${Math.floor(1000 + Math.random() * 9000)}`,
+            assignedArea: address || 'Vijayawada Mandal, Krishna District',
+            district: district || 'Vijayawada',
+            state: state || 'Andhra Pradesh'
+          });
+        }
+      }
+
+      const token = generateToken(existingUser._id, role);
+
+      return res.status(200).json({
+        success: true,
+        message: `Successfully added ${role === 'FARMER' ? 'Farmer' : 'Shopkeeper'} role to your account!`,
+        token,
+        user: {
+          _id: existingUser._id,
+          name: existingUser.name,
+          username: existingUser.username,
+          email: existingUser.email || '',
+          phone: existingUser.phone,
+          role,
+          roles: existingUser.roles,
+          avatar: existingUser.avatar,
+          profile
+        }
+      });
+    }
+
+    // =========================================================================
+    // CASE B: NEW USER (Brand new account registration)
+    // =========================================================================
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create user
+    const generatedUsername = cleanUsername || `${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString().slice(-4)}`;
+
     const user = await User.create({
       name: name.trim(),
-      username: username.toLowerCase().trim(),
-      email: email && email.trim() ? email.toLowerCase().trim() : undefined,
-      phone: phone ? phone.trim() : '',
+      username: generatedUsername,
+      email: cleanEmail,
+      phone: cleanPhone,
       passwordHash,
-      role,
-      avatar: role === 'FARMER'
-        ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(username)}&backgroundColor=064e3b,0f766e,047857&skinColor=9e5622,763900,ecad80,f2d3b1`
-        : role === 'SHOPKEEPER'
-        ? `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(username)}&backgroundColor=78350f,92400e,b45309`
-        : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(username)}&backgroundColor=0e3a44,134e4a,0f766e`
+      roles: [role],
+      role: role,
+      avatar: '',
     });
 
     // Create associated profile
@@ -102,7 +228,7 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, role);
 
     return res.status(201).json({
       success: true,
@@ -114,6 +240,7 @@ export const registerUser = async (req, res) => {
         email: user.email || '',
         phone: user.phone,
         role: user.role,
+        roles: user.roles,
         avatar: user.avatar,
         profile
       }
@@ -124,7 +251,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// @desc    Authenticate user & get token (supports username, email, or mobile phone)
+// @desc    Authenticate user & get token for selected role
 // @route   POST /api/auth/login
 // @access  Public
 export const loginUser = async (req, res) => {
@@ -136,16 +263,19 @@ export const loginUser = async (req, res) => {
     }
 
     const cleanIdentifier = identifier.trim();
-    const userSearchQuery = {
-      $or: [
-        { email: cleanIdentifier.toLowerCase() },
-        { username: cleanIdentifier.toLowerCase() },
-        { phone: cleanIdentifier }
-      ]
-    };
+    const cleanPhone = normalizePhone(cleanIdentifier);
 
-    // 1. Check if user exists in the system
-    const existingUser = await User.findOne(userSearchQuery);
+    const userSearchConditions = [
+      { email: cleanIdentifier.toLowerCase() },
+      { username: cleanIdentifier.toLowerCase() },
+      { phone: cleanIdentifier },
+    ];
+    if (cleanPhone) {
+      userSearchConditions.push({ phone: cleanPhone });
+    }
+
+    // 1. FIRST identify the user
+    const existingUser = await User.findOne({ $or: userSearchConditions });
     if (!existingUser) {
       return res.status(404).json({
         success: false,
@@ -153,16 +283,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 2. Check if user role matches the current login portal
-    if (role && existingUser.role !== role) {
-      const roleLabel = existingUser.role === 'FARMER' ? 'Farmer' : existingUser.role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
-      return res.status(403).json({
-        success: false,
-        message: `This account is registered as a ${roleLabel}. Please sign in through the ${roleLabel} portal.`
-      });
-    }
-
-    // 3. Check password
+    // 2. THEN authenticate the password
     const isMatch = await existingUser.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -171,31 +292,48 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const user = existingUser;
+    // Normalize user roles array
+    const userRoles = existingUser.roles && existingUser.roles.length > 0
+      ? existingUser.roles
+      : [existingUser.role || 'FARMER'];
 
-    // Load role profile
-    let profile = null;
-    if (user.role === 'FARMER') {
-      profile = await FarmerProfile.findOne({ userId: user._id });
-    } else if (user.role === 'SHOPKEEPER') {
-      profile = await ShopkeeperProfile.findOne({ userId: user._id });
-    } else if (user.role === 'OFFICER') {
-      profile = await OfficerProfile.findOne({ userId: user._id });
+    // 3. THEN verify the selected role
+    const activeRole = role || userRoles[0];
+
+    if (role && !userRoles.includes(role)) {
+      const requestedLabel = role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
+      const availableLabels = userRoles.map(r => r === 'FARMER' ? 'Farmer' : r === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer').join(' and ');
+      return res.status(403).json({
+        success: false,
+        message: `Your account is registered as ${availableLabels}, but not for the ${requestedLabel} role. Please sign in through your registered portal or add the ${requestedLabel} role.`,
+        availableRoles: userRoles
+      });
     }
 
-    const token = generateToken(user._id, user.role);
+    // Load role-specific profile for active role
+    let profile = null;
+    if (activeRole === 'FARMER') {
+      profile = await FarmerProfile.findOne({ userId: existingUser._id });
+    } else if (activeRole === 'SHOPKEEPER') {
+      profile = await ShopkeeperProfile.findOne({ userId: existingUser._id });
+    } else if (activeRole === 'OFFICER') {
+      profile = await OfficerProfile.findOne({ userId: existingUser._id });
+    }
+
+    const token = generateToken(existingUser._id, activeRole);
 
     return res.status(200).json({
       success: true,
       token,
       user: {
-        _id: user._id,
-        name: user.name,
-        username: user.username,
-        email: user.email || '',
-        phone: user.phone,
-        role: user.role,
-        avatar: user.avatar,
+        _id: existingUser._id,
+        name: existingUser.name,
+        username: existingUser.username,
+        email: existingUser.email || '',
+        phone: existingUser.phone,
+        role: activeRole,
+        roles: userRoles,
+        avatar: existingUser.avatar,
         profile
       }
     });
@@ -205,7 +343,66 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// @desc    Get current user profile
+// @desc    Switch active session role for a multi-role user
+// @route   POST /api/auth/switch-role
+// @access  Private
+export const switchRole = async (req, res) => {
+  try {
+    const { targetRole } = req.body;
+
+    if (!targetRole || !['FARMER', 'SHOPKEEPER', 'OFFICER'].includes(targetRole)) {
+      return res.status(400).json({ success: false, message: 'Invalid target role' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+
+    if (!userRoles.includes(targetRole)) {
+      return res.status(403).json({
+        success: false,
+        message: `You do not have access to the ${targetRole} role on this account.`
+      });
+    }
+
+    // Load target role profile
+    let profile = null;
+    if (targetRole === 'FARMER') {
+      profile = await FarmerProfile.findOne({ userId: user._id });
+    } else if (targetRole === 'SHOPKEEPER') {
+      profile = await ShopkeeperProfile.findOne({ userId: user._id });
+    } else if (targetRole === 'OFFICER') {
+      profile = await OfficerProfile.findOne({ userId: user._id });
+    }
+
+    const token = generateToken(user._id, targetRole);
+
+    return res.status(200).json({
+      success: true,
+      message: `Switched to ${targetRole === 'FARMER' ? 'Farmer' : targetRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Officer'} role`,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email || '',
+        phone: user.phone,
+        role: targetRole,
+        roles: userRoles,
+        avatar: user.avatar,
+        profile
+      }
+    });
+  } catch (error) {
+    console.error('Switch role error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get current user profile and session role
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = async (req, res) => {
@@ -215,12 +412,15 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+    const activeRole = req.currentRole || userRoles[0];
+
     let profile = null;
-    if (user.role === 'FARMER') {
+    if (activeRole === 'FARMER') {
       profile = await FarmerProfile.findOne({ userId: user._id });
-    } else if (user.role === 'SHOPKEEPER') {
+    } else if (activeRole === 'SHOPKEEPER') {
       profile = await ShopkeeperProfile.findOne({ userId: user._id });
-    } else if (user.role === 'OFFICER') {
+    } else if (activeRole === 'OFFICER') {
       profile = await OfficerProfile.findOne({ userId: user._id });
     }
 
@@ -230,9 +430,10 @@ export const getMe = async (req, res) => {
         _id: user._id,
         name: user.name,
         username: user.username,
-        email: user.email,
+        email: user.email || '',
         phone: user.phone,
-        role: user.role,
+        role: activeRole,
+        roles: userRoles,
         avatar: user.avatar,
         profile
       }
@@ -242,7 +443,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// @desc    Update user and role profile
+// @desc    Update user and active role profile
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateProfile = async (req, res) => {
@@ -255,14 +456,17 @@ export const updateProfile = async (req, res) => {
     }
 
     if (name) user.name = name.trim();
-    if (phone) user.phone = phone.trim();
+    if (phone) user.phone = normalizePhone(phone);
     if (email !== undefined) {
       user.email = email && email.trim() ? email.toLowerCase().trim() : undefined;
     }
     await user.save();
 
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+    const activeRole = req.currentRole || userRoles[0];
+
     let profile = null;
-    if (user.role === 'FARMER') {
+    if (activeRole === 'FARMER') {
       profile = await FarmerProfile.findOne({ userId: user._id });
       if (profile) {
         if (village !== undefined) profile.village = village;
@@ -273,14 +477,30 @@ export const updateProfile = async (req, res) => {
         if (totalLandArea !== undefined) profile.totalLandArea = totalLandArea;
         await profile.save();
       }
-    } else if (user.role === 'SHOPKEEPER') {
+    } else if (activeRole === 'SHOPKEEPER') {
       profile = await ShopkeeperProfile.findOne({ userId: user._id });
       if (profile) {
         if (businessName !== undefined) profile.businessName = businessName;
         if (tradeLicenseNo !== undefined) profile.tradeLicenseNo = tradeLicenseNo;
+        if (req.body.primaryLocation !== undefined) profile.primaryLocation = req.body.primaryLocation;
+        if (req.body.timings !== undefined) {
+          profile.timings = {
+            ...profile.timings,
+            ...req.body.timings,
+          };
+        }
         await profile.save();
       }
-    } else if (user.role === 'OFFICER') {
+      // Also update timings on shop if present
+      if (req.body.timings !== undefined) {
+        await import('../models/Shop.js').then(async ({ Shop }) => {
+          await Shop.updateMany(
+            { ownerId: user._id },
+            { $set: { timings: req.body.timings } }
+          );
+        });
+      }
+    } else if (activeRole === 'OFFICER') {
       profile = await OfficerProfile.findOne({ userId: user._id });
       if (profile) {
         if (assignedArea !== undefined) profile.assignedArea = assignedArea;
@@ -297,9 +517,10 @@ export const updateProfile = async (req, res) => {
         _id: user._id,
         name: user.name,
         username: user.username,
-        email: user.email,
+        email: user.email || '',
         phone: user.phone,
-        role: user.role,
+        role: activeRole,
+        roles: userRoles,
         avatar: user.avatar,
         profile
       }
@@ -347,14 +568,6 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Incorrect current password' });
     }
 
-    const isSameAsCurrent = await user.matchPassword(newPassword);
-    if (isSameAsCurrent) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password cannot be the same as your current password. Please choose a different password.'
-      });
-    }
-
     const salt = await bcrypt.genSalt(10);
     user.passwordHash = await bcrypt.hash(newPassword, salt);
     await user.save();
@@ -387,20 +600,28 @@ export const resetPassword = async (req, res) => {
     }
 
     const cleanId = identifier.trim();
-    const query = {
-      $or: [
-        { email: cleanId.toLowerCase() },
-        { username: cleanId.toLowerCase() },
-        { phone: cleanId }
-      ]
-    };
-    if (role) {
-      query.role = role;
+    const cleanPhone = normalizePhone(cleanId);
+    const queryConditions = [
+      { email: cleanId.toLowerCase() },
+      { username: cleanId.toLowerCase() },
+      { phone: cleanId }
+    ];
+    if (cleanPhone) {
+      queryConditions.push({ phone: cleanPhone });
     }
 
-    const user = await User.findOne(query);
+    const user = await User.findOne({ $or: queryConditions });
     if (!user) {
       return res.status(404).json({ success: false, message: 'No registered user found with these details.' });
+    }
+
+    // If role specified, ensure user has that role
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+    if (role && !userRoles.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Account found, but it is not registered for the ${role} role.`
+      });
     }
 
     const salt = await bcrypt.genSalt(10);

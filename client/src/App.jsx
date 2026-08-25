@@ -29,7 +29,9 @@ import FarmerProfilePage from './pages/farmer/FarmerProfilePage';
 // Shopkeeper Pages
 import ShopkeeperDashboard from './pages/shopkeeper/ShopkeeperDashboard';
 import ShopkeeperShopDetailsPage from './pages/shopkeeper/ShopDetailsPage';
+import ProductsInventoryPage from './pages/shopkeeper/ProductsInventoryPage';
 import ShopkeeperProfilePage from './pages/shopkeeper/ShopkeeperProfilePage';
+
 
 // Officer Pages
 import OfficerDashboard from './pages/officer/OfficerDashboard';
@@ -173,10 +175,26 @@ function AppContent() {
             }
           />
           <Route
+            path="/shopkeeper/products"
+            element={
+              <ProtectedRoute allowedRoles={['SHOPKEEPER']}>
+                <ProductsInventoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/shopkeeper/inventory"
+            element={
+              <ProtectedRoute allowedRoles={['SHOPKEEPER']}>
+                <ProductsInventoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/shopkeeper/shops/:id"
             element={
               <ProtectedRoute allowedRoles={['SHOPKEEPER']}>
-                <ShopkeeperShopDetailsPage />
+                <ProductsInventoryPage />
               </ProtectedRoute>
             }
           />
@@ -188,6 +206,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
 
           {/* Officer Protected Routes */}
           <Route

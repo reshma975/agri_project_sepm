@@ -23,11 +23,22 @@ export const requireAuth = async (req, res, next) => {
         process.env.JWT_SECRET || 'farmsetu_jwt_fallback_secret'
       );
 
-      req.user = await User.findById(decoded.id).select('-passwordHash');
+      const user = await User.findById(decoded.id).select('-passwordHash');
 
-      if (!req.user) {
+      if (!user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
+
+      // Normalize user.roles for multi-role support
+      if (!user.roles || user.roles.length === 0) {
+        user.roles = user.role ? [user.role] : ['FARMER'];
+      }
+
+      // Active role from the token's current session
+      const activeRole = decoded.role || user.roles[0];
+      req.currentRole = activeRole;
+      user.role = activeRole; // Backward compatibility for controllers reading req.user.role
+      req.user = user;
 
       next();
     } catch (error) {
@@ -41,7 +52,13 @@ export const requireAuth = async (req, res, next) => {
 
 export const requireRole = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    const activeRole = req.currentRole || req.user?.role;
+    const userRoles = req.user?.roles || (req.user?.role ? [req.user.role] : []);
+
+    // Verify that the active session role matches AND the user actually possesses this role
+    const hasRole = roles.includes(activeRole) && userRoles.some((r) => roles.includes(r));
+
+    if (!req.user || !hasRole) {
       return res.status(403).json({
         success: false,
         message: `Forbidden: Access restricted to [${roles.join(', ')}] role(s)`

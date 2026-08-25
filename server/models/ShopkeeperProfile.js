@@ -22,6 +22,20 @@ const shopkeeperProfileSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    timings: {
+      weekday: {
+        type: String,
+        default: '7:30 AM - 8:00 PM',
+      },
+      sunday: {
+        type: String,
+        default: '7:30 AM - 1:00 PM',
+      },
+      note: {
+        type: String,
+        default: 'Timings may change on festival days',
+      },
+    },
   },
   {
     timestamps: true,

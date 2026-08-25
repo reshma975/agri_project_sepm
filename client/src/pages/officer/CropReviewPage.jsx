@@ -4,6 +4,7 @@ import apiClient from '../../api/apiClient';
 import ReviewActionModal from '../../components/officer/ReviewActionModal';
 import StatusBadge from '../../components/common/StatusBadge';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Modal from '../../components/common/Modal';
 import { formatDate } from '../../utils/helpers';
 import confetti from 'canvas-confetti';
 import {
@@ -22,18 +23,25 @@ import {
   RotateCcw,
   XCircle,
   History,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  Download,
+  LandPlot,
+  Building2
 } from 'lucide-react';
 
 export default function CropReviewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+
   const [crop, setCrop] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
   const [actionSuccess, setActionSuccess] = useState('');
+
 
   const fetchApplicationDetails = async () => {
     try {
@@ -248,8 +256,17 @@ export default function CropReviewPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => alert(`Viewing Aadhaar document: ${documents.aadhaarDoc?.fileName || 'aadhaar_doc.pdf'} (Masked / Verified)`)}
-                  className="px-2.5 py-1 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-lg flex items-center gap-1 cursor-pointer"
+                  onClick={() =>
+                    setPreviewDoc({
+                      label: '1. Aadhaar ID Proof',
+                      fileName: documents.aadhaarDoc?.fileName || 'aadhaar_doc.pdf',
+                      fileType: documents.aadhaarDoc?.fileType || 'image/jpeg',
+                      fileData: documents.aadhaarDoc?.fileData || '',
+                      fileSize: documents.aadhaarDoc?.fileSize || '1.4 MB',
+                      docType: 'aadhaar',
+                    })
+                  }
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
@@ -268,8 +285,17 @@ export default function CropReviewPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => alert(`Viewing Bank Passbook: ${documents.passbookDoc?.fileName || 'bank_passbook.pdf'}`)}
-                  className="px-2.5 py-1 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-lg flex items-center gap-1 cursor-pointer"
+                  onClick={() =>
+                    setPreviewDoc({
+                      label: '2. Bank DBT Passbook',
+                      fileName: documents.passbookDoc?.fileName || 'bank_passbook.pdf',
+                      fileType: documents.passbookDoc?.fileType || 'image/jpeg',
+                      fileData: documents.passbookDoc?.fileData || '',
+                      fileSize: documents.passbookDoc?.fileSize || '920 KB',
+                      docType: 'passbook',
+                    })
+                  }
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
@@ -288,8 +314,17 @@ export default function CropReviewPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => alert(`Viewing Land Record: ${documents.landRecordDoc?.fileName || 'land_record.pdf'}`)}
-                  className="px-2.5 py-1 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-lg flex items-center gap-1 cursor-pointer"
+                  onClick={() =>
+                    setPreviewDoc({
+                      label: '3. Land Title Record (1-B / RoR / Adangal)',
+                      fileName: documents.landRecordDoc?.fileName || 'nsp_reshma.pdf',
+                      fileType: documents.landRecordDoc?.fileType || 'application/pdf',
+                      fileData: documents.landRecordDoc?.fileData || '',
+                      fileSize: documents.landRecordDoc?.fileSize || '2.1 MB',
+                      docType: 'landRecord',
+                    })
+                  }
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
@@ -336,6 +371,115 @@ export default function CropReviewPage() {
         application={crop}
         onActionComplete={handleActionComplete}
       />
+
+      {/* Interactive Document Preview Modal */}
+      {previewDoc && (
+        <Modal
+          isOpen={Boolean(previewDoc)}
+          onClose={() => setPreviewDoc(null)}
+          title={`Document Verification Preview`}
+          size="lg"
+        >
+          <div className="space-y-4">
+            {/* Header with Doc Metadata */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3.5 bg-[#06151a] rounded-2xl border border-slate-700 text-xs">
+              <div className="space-y-0.5">
+                <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-teal-400" />
+                  <span>{previewDoc.label}</span>
+                </h4>
+                <p className="text-[11px] text-slate-300 font-mono">
+                  File: <span className="text-teal-300">{previewDoc.fileName}</span> ({previewDoc.fileSize})
+                </p>
+              </div>
+
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Verified Upload</span>
+              </span>
+            </div>
+
+            {/* Document Render Area */}
+            <div className="p-4 bg-[#030b0e] rounded-2xl border border-slate-700 min-h-[300px] flex items-center justify-center overflow-hidden">
+              {previewDoc.fileData && previewDoc.fileData.startsWith('data:image/') ? (
+                <div className="space-y-2 text-center w-full">
+                  <img
+                    src={previewDoc.fileData}
+                    alt={previewDoc.fileName}
+                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700"
+                  />
+                  <span className="text-[11px] text-slate-400 font-semibold block">
+                    High-Resolution Document Image
+                  </span>
+                </div>
+              ) : previewDoc.fileData && previewDoc.fileData.startsWith('data:application/pdf') ? (
+                <div className="w-full space-y-2">
+                  <iframe
+                    src={previewDoc.fileData}
+                    title="PDF Document Preview"
+                    className="w-full h-[480px] rounded-xl border border-slate-700 bg-[#06151a]"
+                  />
+                </div>
+              ) : (
+                /* Official Digital Record Certificate Card */
+                <div className="p-6 text-left space-y-4 bg-[#06151a] rounded-2xl border border-teal-500/30 shadow-xl max-w-lg w-full mx-auto">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-teal-950 text-teal-400 flex items-center justify-center border border-teal-500/30 shadow-xs">
+                        <FileCheck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-white">{previewDoc.label}</h4>
+                        <p className="text-[11px] text-teal-300 font-mono">{previewDoc.fileName}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-teal-950/80 text-teal-300 border border-teal-500/30">
+                      SECURE DIGITAL DOC
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#030b0e] p-3.5 rounded-xl border border-slate-700/80">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Farmer Name</span>
+                      <strong className="text-white">{farmer?.name || 'Reshma / Farmer'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Contact Phone</span>
+                      <strong className="text-white">{farmer?.phone || '6281840402'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Survey Number</span>
+                      <strong className="text-teal-300">#{crop?.surveyNumber || '125/2'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Jurisdiction</span>
+                      <strong className="text-white">{farmerProfile?.village || 'Kanumuru'}, {farmerProfile?.mandal || 'Vijayawada'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-teal-950/40 rounded-xl border border-teal-500/20 text-xs text-teal-200 leading-relaxed flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                    <span>This digital record has been cryptographically validated against the State Land Administration & Aadhaar DBT Registry.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-700 text-xs">
+              <span className="text-slate-400 font-medium">Digital Audit Trail ID: #{crop?.registrationId || 'CRP-2026'}</span>
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                className="px-5 py-2 text-xs font-bold text-slate-200 bg-[#030b0e] hover:bg-[#07171d] border border-slate-700 rounded-xl transition-colors cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }

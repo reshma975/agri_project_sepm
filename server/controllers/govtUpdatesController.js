@@ -1,4 +1,35 @@
 import { GovernmentUpdate } from '../models/GovernmentUpdate.js';
+import { fetchFarmerNews } from '../services/newsService.js';
+
+// @desc    Get live farmer & agriculture government news from News API
+// @route   GET /api/government-updates/news
+// @access  Public
+export const getGovernmentNewsUpdates = async (req, res) => {
+  try {
+    const { q, search, pageSize, page } = req.query;
+    const query = q || search || '';
+
+    const { totalResults, articles } = await fetchFarmerNews({
+      query,
+      pageSize: pageSize ? parseInt(pageSize, 10) : 20,
+      page: page ? parseInt(page, 10) : 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: articles.length,
+      totalResults,
+      news: articles,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Failed to fetch live agriculture news',
+      code: error.code || 'NEWS_FETCH_ERROR',
+    });
+  }
+};
 
 // @desc    Get government updates with category & personalization filters
 // @route   GET /api/government-updates
@@ -64,3 +95,4 @@ export const getGovernmentUpdateById = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
