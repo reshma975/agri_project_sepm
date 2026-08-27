@@ -14,11 +14,13 @@ import {
   ImageIcon
 } from 'lucide-react';
 
-export default function DocumentUploader({ documents, onDocumentUpdated }) {
+export default function DocumentUploader({ documents, onDocumentUpdated, onDocumentsUpdated }) {
   const [uploading, setUploading] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
   const [localDocs, setLocalDocs] = useState({});
+
+  const updateCallback = onDocumentUpdated || onDocumentsUpdated;
 
   // Hidden file input refs for each doc type
   const fileInputRefs = {
@@ -102,12 +104,11 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
             fileData: typeof fileData === 'string' ? fileData : ''
           });
 
-          if (res.data.success && onDocumentUpdated) {
-            onDocumentUpdated(res.data.documents);
+          if (res.data.success && updateCallback) {
+            updateCallback(res.data.documents);
           }
         } catch (apiErr) {
           console.warn('Backend document save warning:', apiErr);
-          // Even if backend fails, local file is kept in state so farmer can view it
         } finally {
           setUploading(null);
         }
@@ -313,15 +314,15 @@ export default function DocumentUploader({ documents, onDocumentUpdated }) {
 
             {/* Document Content View Area */}
             <div className="p-4 bg-[#030b0e] rounded-2xl border border-slate-700 min-h-[320px] flex items-center justify-center overflow-hidden">
-              {previewDoc.fileData && previewDoc.fileData.startsWith('data:image/') ? (
+              {previewDoc.fileData && (previewDoc.fileData.startsWith('data:image/') || previewDoc.fileData.startsWith('http')) ? (
                 <div className="space-y-2 text-center w-full">
                   <img
                     src={previewDoc.fileData}
                     alt={previewDoc.fileName}
-                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700"
+                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700 bg-white"
                   />
                   <span className="text-[11px] text-slate-400 font-semibold block">
-                    Image Document Preview
+                    Official Document Image Preview
                   </span>
                 </div>
               ) : previewDoc.fileData && previewDoc.fileData.startsWith('data:application/pdf') ? (

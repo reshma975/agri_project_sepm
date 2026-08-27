@@ -6,10 +6,14 @@ import { ShopkeeperProfile } from '../models/ShopkeeperProfile.js';
 import { generateToken } from '../middleware/authMiddleware.js';
 import { validatePasswordSecurity } from '../utils/passwordValidator.js';
 
-// Helper to normalize phone numbers (strip spaces and dashes)
+// Helper to normalize phone numbers (digits only, max 10 digits)
 const normalizePhone = (phone) => {
   if (!phone) return '';
-  return phone.trim().replace(/[\s\-]/g, '');
+  const digits = phone.toString().replace(/\D/g, '');
+  if (digits.length > 10 && digits.startsWith('91')) {
+    return digits.slice(2, 12);
+  }
+  return digits.slice(-10);
 };
 
 // @desc    Register a new user or add a new role to an existing user account
@@ -31,8 +35,11 @@ export const registerUser = async (req, res) => {
     const cleanPhone = normalizePhone(phone);
     const cleanUsername = username ? username.toLowerCase().trim() : undefined;
 
-    if (!cleanPhone) {
-      return res.status(400).json({ success: false, message: 'Phone number is required' });
+    if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid 10-digit mobile phone number (e.g. 9876543210). Only 10 digits are allowed.'
+      });
     }
 
     // For non-farmers (e.g. Shopkeeper/Officer), email is mandatory. For farmers, it is optional.
@@ -150,10 +157,12 @@ export const registerUser = async (req, res) => {
       } else if (role === 'OFFICER') {
         profile = await OfficerProfile.findOne({ userId: existingUser._id });
         if (!profile) {
+          const officerMandal = mandal || (address && address.includes('Mandal') ? address.split('Mandal')[0].trim() : 'Penamaluru');
           profile = await OfficerProfile.create({
             userId: existingUser._id,
             officerId: `AGR-OFC-${Math.floor(1000 + Math.random() * 9000)}`,
-            assignedArea: address || 'Vijayawada Mandal, Krishna District',
+            assignedArea: address || `${officerMandal} Mandal, Krishna District`,
+            mandal: officerMandal,
             district: district || 'Vijayawada',
             state: state || 'Andhra Pradesh'
           });
@@ -164,7 +173,7 @@ export const registerUser = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: `Successfully added ${role === 'FARMER' ? 'Farmer' : 'Shopkeeper'} role to your account!`,
+        message: `Successfully added ${role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Officer'} role to your account!`,
         token,
         user: {
           _id: existingUser._id,
@@ -219,10 +228,12 @@ export const registerUser = async (req, res) => {
         primaryLocation: village || district || 'Vijayawada'
       });
     } else if (role === 'OFFICER') {
+      const officerMandal = mandal || (address && address.includes('Mandal') ? address.split('Mandal')[0].trim() : 'Penamaluru');
       profile = await OfficerProfile.create({
         userId: user._id,
         officerId: `AGR-OFC-${Math.floor(1000 + Math.random() * 9000)}`,
-        assignedArea: address || 'Vijayawada Mandal, Krishna District',
+        assignedArea: address || `${officerMandal} Mandal, Krishna District`,
+        mandal: officerMandal,
         district: district || 'Vijayawada',
         state: state || 'Andhra Pradesh'
       });
@@ -283,32 +294,44 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 2. THEN authenticate the password
-    const isMatch = await existingUser.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect password. Please check your password and try again.'
-      });
-    }
-
     // Normalize user roles array
     const userRoles = existingUser.roles && existingUser.roles.length > 0
       ? existingUser.roles
       : [existingUser.role || 'FARMER'];
 
-    // 3. THEN verify the selected role
-    const activeRole = role || userRoles[0];
-
-    if (role && !userRoles.includes(role)) {
-      const requestedLabel = role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
-      const availableLabels = userRoles.map(r => r === 'FARMER' ? 'Farmer' : r === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer').join(' and ');
-      return res.status(403).json({
+    // 2. Authenticate the password
+    const isMatch = await existingUser.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
         success: false,
-        message: `Your account is registered as ${availableLabels}, but not for the ${requestedLabel} role. Please sign in through your registered portal or add the ${requestedLabel} role.`,
+        message: 'Incorrect password. Please check your password and try again.',
         availableRoles: userRoles
       });
     }
+
+    // 3. Check if the user is attempting to sign in under an unassigned role
+    if (role && !userRoles.includes(role)) {
+      const requestedLabel = role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
+      const availableLabels = userRoles.map(r => r === 'FARMER' ? 'Farmer' : r === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer').join(' and ');
+      const token = generateToken(existingUser._id, userRoles[0]);
+      return res.status(403).json({
+        success: false,
+        code: 'ROLE_MISMATCH',
+        message: `Your account is registered as ${availableLabels}, but not for the ${requestedLabel} role. Switch to ${availableLabels} portal to sign in, or register as ${requestedLabel}.`,
+        availableRoles: userRoles,
+        user: {
+          _id: existingUser._id,
+          name: existingUser.name,
+          username: existingUser.username,
+          email: existingUser.email || '',
+          phone: existingUser.phone || '',
+          roles: userRoles
+        },
+        token
+      });
+    }
+
+    const activeRole = role || userRoles[0];
 
     // Load role-specific profile for active role
     let profile = null;
@@ -504,8 +527,10 @@ export const updateProfile = async (req, res) => {
       profile = await OfficerProfile.findOne({ userId: user._id });
       if (profile) {
         if (assignedArea !== undefined) profile.assignedArea = assignedArea;
+        if (mandal !== undefined) profile.mandal = mandal;
         if (licenseNumber !== undefined) profile.licenseNumber = licenseNumber;
         if (district !== undefined) profile.district = district;
+        if (state !== undefined) profile.state = state;
         await profile.save();
       }
     }
@@ -633,6 +658,210 @@ export const resetPassword = async (req, res) => {
       message: `Password reset successfully for ${user.name}. You can now sign in with your new password.`
     });
   } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Check if an account exists with identifier (username, phone, or email)
+// @route   POST /api/auth/check-identity
+// @access  Public
+export const checkIdentity = async (req, res) => {
+  try {
+    const { identifier } = req.body;
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ success: false, message: 'Please provide an identifier' });
+    }
+
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanPhone = normalizePhone(cleanId);
+
+    const conditions = [
+      { username: cleanId },
+      { email: cleanId }
+    ];
+    if (cleanPhone) {
+      conditions.push({ phone: cleanPhone });
+    }
+
+    const user = await User.findOne({ $or: conditions });
+    if (!user) {
+      return res.status(200).json({ success: true, exists: false });
+    }
+
+    const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+
+    return res.status(200).json({
+      success: true,
+      exists: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        phone: user.phone,
+        email: user.email || '',
+        roles: userRoles
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Add a secondary role to an existing account (logged in or with password verification)
+// @route   POST /api/auth/add-role
+// @access  Public / Private (with optional JWT)
+export const addRoleToAccount = async (req, res) => {
+  try {
+    const {
+      role,
+      identifier,
+      password,
+      businessName,
+      primaryLocation,
+      village,
+      mandal,
+      district,
+      state,
+      address,
+      totalLandArea,
+      designation,
+      licenseNumber
+    } = req.body;
+
+    if (!role || !['FARMER', 'SHOPKEEPER', 'OFFICER'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Please specify a valid role (FARMER, SHOPKEEPER, OFFICER)' });
+    }
+
+    let user = null;
+
+    // 1. If user is authenticated via JWT token
+    if (req.user) {
+      user = await User.findById(req.user._id);
+    } else {
+      // 2. Otherwise authenticate using identifier + password
+      if (!identifier || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide your account username/mobile/email and password to add a role.'
+        });
+      }
+
+      const cleanId = identifier.trim().toLowerCase();
+      const cleanPhone = normalizePhone(cleanId);
+      const conditions = [
+        { username: cleanId },
+        { email: cleanId }
+      ];
+      if (cleanPhone) conditions.push({ phone: cleanPhone });
+
+      user = await User.findOne({ $or: conditions });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'No registered account found with these details.' });
+      }
+
+      const isMatch = await user.matchPassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Incorrect account password. Please try again.' });
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    const currentRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
+
+    if (currentRoles.includes(role)) {
+      const roleLabel = role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Govt Officer';
+      return res.status(400).json({
+        success: false,
+        alreadyHasRole: true,
+        message: `Your account already has the ${roleLabel} role enabled.`
+      });
+    }
+
+    // Append role
+    user.roles = [...new Set([...currentRoles, role])];
+    user.role = role; // Set active session role
+    await user.save();
+
+    // Create role-specific profile
+    let profile = null;
+    if (role === 'FARMER') {
+      profile = await FarmerProfile.findOne({ userId: user._id });
+      if (!profile) {
+        profile = await FarmerProfile.create({
+          userId: user._id,
+          farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+          village: village || '',
+          mandal: mandal || '',
+          district: district || 'Vijayawada',
+          state: state || 'Andhra Pradesh',
+          address: address || '',
+          totalLandArea: Number(totalLandArea) || 0,
+          registrationStatus: 'UNVERIFIED'
+        });
+      }
+    } else if (role === 'SHOPKEEPER') {
+      profile = await ShopkeeperProfile.findOne({ userId: user._id });
+      if (!profile) {
+        profile = await ShopkeeperProfile.create({
+          userId: user._id,
+          businessName: businessName || `${user.name}'s Agro Store`,
+          primaryLocation: village || primaryLocation || district || 'Vijayawada'
+        });
+      }
+      // Auto-create initial Shop record
+      const { Shop } = await import('../models/Shop.js');
+      const existingShop = await Shop.findOne({ ownerId: user._id });
+      if (!existingShop) {
+        await Shop.create({
+          shopId: `SHP${Math.floor(1000 + Math.random() * 9000)}`,
+          ownerId: user._id,
+          shopName: businessName || `${user.name}'s Agro Center`,
+          location: village || primaryLocation || district || 'Vijayawada',
+          address: address || `${village || 'Main Road'}, ${mandal || district || 'Vijayawada'}`,
+          phone: user.phone || '+91 98480 12345',
+          ratingAverage: 4.5,
+          ratingCount: 1
+        });
+      }
+    } else if (role === 'OFFICER') {
+      profile = await OfficerProfile.findOne({ userId: user._id });
+      if (!profile) {
+        const officerMandal = mandal || (address && address.includes('Mandal') ? address.split('Mandal')[0].trim() : 'Penamaluru');
+        profile = await OfficerProfile.create({
+          userId: user._id,
+          officerId: `AGR-OFC-${Math.floor(1000 + Math.random() * 9000)}`,
+          assignedArea: address || `${officerMandal} Mandal, Krishna District`,
+          mandal: officerMandal,
+          licenseNumber: licenseNumber || 'AP-AGRI-OFF-2024-8841',
+          district: district || 'Vijayawada',
+          state: state || 'Andhra Pradesh'
+        });
+      }
+    }
+
+    const token = generateToken(user._id, role);
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully activated ${role === 'FARMER' ? 'Farmer' : role === 'SHOPKEEPER' ? 'Shopkeeper' : 'Officer'} role on your account!`,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email || '',
+        phone: user.phone,
+        role,
+        roles: user.roles,
+        avatar: user.avatar,
+        profile
+      }
+    });
+  } catch (error) {
+    console.error('Error adding role:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

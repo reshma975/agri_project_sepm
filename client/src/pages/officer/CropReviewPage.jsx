@@ -244,13 +244,13 @@ export default function CropReviewPage() {
 
             <div className="space-y-3">
               {/* Aadhaar Card */}
-              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileCheck className="w-5 h-5 text-teal-400" />
-                  <div>
-                    <strong className="text-white block font-bold">1. Aadhaar ID Proof</strong>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {documents.aadhaarDoc?.fileName || 'aadhaar_doc.pdf'}
+              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <FileCheck className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <strong className="text-white block font-bold truncate">1. Aadhaar ID Proof</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block truncate">
+                      {documents.aadhaarDoc?.fileName || 'aadhaar_document.pdf'}
                     </span>
                   </div>
                 </div>
@@ -259,26 +259,26 @@ export default function CropReviewPage() {
                   onClick={() =>
                     setPreviewDoc({
                       label: '1. Aadhaar ID Proof',
-                      fileName: documents.aadhaarDoc?.fileName || 'aadhaar_doc.pdf',
-                      fileType: documents.aadhaarDoc?.fileType || 'image/jpeg',
+                      fileName: documents.aadhaarDoc?.fileName || 'aadhaar_card.pdf',
+                      fileType: documents.aadhaarDoc?.fileType || 'image/svg+xml',
                       fileData: documents.aadhaarDoc?.fileData || '',
                       fileSize: documents.aadhaarDoc?.fileSize || '1.4 MB',
                       docType: 'aadhaar',
                     })
                   }
-                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors flex-shrink-0"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
               </div>
 
               {/* Passbook */}
-              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileCheck className="w-5 h-5 text-teal-400" />
-                  <div>
-                    <strong className="text-white block font-bold">2. Bank DBT Passbook</strong>
-                    <span className="text-[10px] text-slate-400 font-mono">
+              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <FileCheck className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <strong className="text-white block font-bold truncate">2. Bank DBT Passbook</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block truncate">
                       {documents.passbookDoc?.fileName || 'bank_passbook.pdf'}
                     </span>
                   </div>
@@ -289,26 +289,26 @@ export default function CropReviewPage() {
                     setPreviewDoc({
                       label: '2. Bank DBT Passbook',
                       fileName: documents.passbookDoc?.fileName || 'bank_passbook.pdf',
-                      fileType: documents.passbookDoc?.fileType || 'image/jpeg',
+                      fileType: documents.passbookDoc?.fileType || 'image/svg+xml',
                       fileData: documents.passbookDoc?.fileData || '',
                       fileSize: documents.passbookDoc?.fileSize || '920 KB',
                       docType: 'passbook',
                     })
                   }
-                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors flex-shrink-0"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
               </div>
 
               {/* Land Record */}
-              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileCheck className="w-5 h-5 text-teal-400" />
-                  <div>
-                    <strong className="text-white block font-bold">3. Land Title (1-B / RoR)</strong>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {documents.landRecordDoc?.fileName || 'land_record.pdf'}
+              <div className="p-3.5 bg-[#030b0e] border border-slate-700 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <FileCheck className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <strong className="text-white block font-bold truncate">3. Land Title (1-B / RoR)</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block truncate">
+                      {documents.landRecordDoc?.fileName || 'land_record_1b.pdf'}
                     </span>
                   </div>
                 </div>
@@ -317,14 +317,14 @@ export default function CropReviewPage() {
                   onClick={() =>
                     setPreviewDoc({
                       label: '3. Land Title Record (1-B / RoR / Adangal)',
-                      fileName: documents.landRecordDoc?.fileName || 'nsp_reshma.pdf',
-                      fileType: documents.landRecordDoc?.fileType || 'application/pdf',
+                      fileName: documents.landRecordDoc?.fileName || 'land_record_1b.pdf',
+                      fileType: documents.landRecordDoc?.fileType || 'image/svg+xml',
                       fileData: documents.landRecordDoc?.fileData || '',
                       fileSize: documents.landRecordDoc?.fileSize || '2.1 MB',
                       docType: 'landRecord',
                     })
                   }
-                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  className="px-3 py-1.5 text-xs font-bold text-teal-300 bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors flex-shrink-0"
                 >
                   <Eye className="w-3.5 h-3.5 text-teal-400" /> View
                 </button>
@@ -401,15 +401,15 @@ export default function CropReviewPage() {
 
             {/* Document Render Area */}
             <div className="p-4 bg-[#030b0e] rounded-2xl border border-slate-700 min-h-[300px] flex items-center justify-center overflow-hidden">
-              {previewDoc.fileData && previewDoc.fileData.startsWith('data:image/') ? (
+              {previewDoc.fileData && (previewDoc.fileData.startsWith('data:image/') || previewDoc.fileData.startsWith('http')) ? (
                 <div className="space-y-2 text-center w-full">
                   <img
                     src={previewDoc.fileData}
                     alt={previewDoc.fileName}
-                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700"
+                    className="max-h-[460px] max-w-full mx-auto object-contain rounded-xl shadow-lg border border-slate-700 bg-white"
                   />
                   <span className="text-[11px] text-slate-400 font-semibold block">
-                    High-Resolution Document Image
+                    High-Resolution Official Document Preview
                   </span>
                 </div>
               ) : previewDoc.fileData && previewDoc.fileData.startsWith('data:application/pdf') ? (

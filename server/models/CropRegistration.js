@@ -17,6 +17,21 @@ const cropRegistrationSchema = new mongoose.Schema(
       ref: 'Land',
       required: false,
     },
+    village: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mandal: {
+      type: String,
+      default: 'Penamaluru',
+      trim: true,
+    },
+    district: {
+      type: String,
+      default: 'Vijayawada',
+      trim: true,
+    },
     cropName: {
       type: String,
       required: [true, 'Crop name is required'],

@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
 import { formatCurrency } from '../../utils/helpers';
 import {
   Store,
   Search,
-  Filter,
   MapPin,
   Star,
   Tag,
@@ -18,39 +16,60 @@ import {
   RotateCcw,
   SlidersHorizontal,
   ArrowLeft,
-  Navigation
+  Navigation,
+  Sparkles,
+  CheckCircle2,
+  Phone
 } from 'lucide-react';
 
 export default function ShopDiscoveryPage() {
   const { user } = useAuth();
+  const [farmerProfile, setFarmerProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('PRODUCTS'); // 'PRODUCTS' | 'SHOPS'
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('All');
+  const [locationFilter, setLocationFilter] = useState('All'); // 'All' | specific location
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [minRating, setMinRating] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  const [products, setProducts] = useState([]);
-  const [shops, setShops] = useState([]);
-  const [locations, setLocations] = useState(['All', 'Vijayawada', 'Guntur', 'Mangalagiri']);
+  const [rawProducts, setRawProducts] = useState([]);
+  const [rawShops, setRawShops] = useState([]);
+  const [locations, setLocations] = useState(['All']);
   const [loading, setLoading] = useState(true);
 
-  // Farmer's registered location
-  const farmerVillage = user?.profile?.village || '';
-  const farmerDistrict = user?.profile?.district || '';
-  const farmerLocation = farmerVillage || farmerDistrict || '';
+  // Fetch full farmer profile from API
+  useEffect(() => {
+    const fetchFarmerProfile = async () => {
+      try {
+        const res = await apiClient.get('/farmers/profile');
+        if (res.data.success && res.data.profile) {
+          setFarmerProfile(res.data.profile);
+        }
+      } catch (err) {
+        console.error('Error loading farmer profile for discovery:', err);
+      }
+    };
+    fetchFarmerProfile();
+  }, [user]);
 
-  // Categories matching specifications
+  // Farmer's registered location details
+  const farmerVillage = farmerProfile?.village || user?.profile?.village || '';
+  const farmerMandal = farmerProfile?.mandal || user?.profile?.mandal || '';
+  const farmerDistrict = farmerProfile?.district || user?.profile?.district || '';
+  const hasFarmerLocation = Boolean(farmerVillage || farmerMandal || farmerDistrict);
+
+  // Categories
   const categories = ['All', 'Fertilizer', 'Seeds', 'Pesticide', 'Tools', 'Machines', 'Others'];
 
-  // Fetch dynamic locations from database
+  // Fetch distinct locations from shops database
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         const res = await apiClient.get('/shops/locations');
         if (res.data.success && res.data.locations?.length > 0) {
-          setLocations(['All', ...res.data.locations]);
+          const list = ['All', ...res.data.locations.filter(l => l !== 'All')];
+          setLocations([...new Set(list)]);
         }
       } catch (err) {
         console.error('Error fetching dynamic locations:', err);
@@ -62,28 +81,26 @@ export default function ShopDiscoveryPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch products across shops
+      // Fetch products
       const productParams = {};
       if (searchQuery) productParams.query = searchQuery;
-      if (locationFilter !== 'All') productParams.location = locationFilter;
       if (categoryFilter !== 'All') productParams.category = categoryFilter;
       if (maxPrice) productParams.maxPrice = maxPrice;
       if (minRating) productParams.minRating = minRating;
 
       const prodRes = await apiClient.get('/products/search', { params: productParams });
       if (prodRes.data.success) {
-        setProducts(prodRes.data.results);
+        setRawProducts(prodRes.data.results || []);
       }
 
       // Fetch shops
       const shopParams = {};
       if (searchQuery) shopParams.search = searchQuery;
-      if (locationFilter !== 'All') shopParams.location = locationFilter;
       if (minRating) shopParams.minRating = minRating;
 
       const shopRes = await apiClient.get('/shops', { params: shopParams });
       if (shopRes.data.success) {
-        setShops(shopRes.data.shops);
+        setRawShops(shopRes.data.shops || []);
       }
     } catch (err) {
       console.error('Error discovering shops/products:', err);
@@ -94,7 +111,121 @@ export default function ShopDiscoveryPage() {
 
   useEffect(() => {
     fetchData();
-  }, [searchQuery, locationFilter, categoryFilter, maxPrice, minRating]);
+  }, [searchQuery, categoryFilter, maxPrice, minRating]);
+
+  // Helper to extract keywords from location strings
+  const extractTokens = (str = '') => {
+    if (!str) return [];
+    return str
+      .toLowerCase()
+      .split(/[,;\s/]+/)
+      .map(t => t.replace(/[^a-z0-9]/gi, '').trim())
+      .filter(t => t.length >= 3 && !['village', 'mandal', 'town', 'district', 'dist', 'state', 'andhra', 'pradesh', 'ap'].includes(t));
+  };
+
+  // Proximity Calculation (Prioritize Same Village -> Same Mandal -> Same District -> All Other Shops)
+  const getProximity = (shop) => {
+    if (!shop || !hasFarmerLocation) {
+      return { score: 10, rank: 99, level: 'ALL', label: '', badgeClass: '', isNearby: false };
+    }
+
+    const shopCombined = `${shop.location || ''} ${shop.address || ''} ${shop.shopName || ''}`.toLowerCase();
+
+    const vTokens = extractTokens(farmerVillage);
+    const mTokens = extractTokens(farmerMandal);
+    const dTokens = extractTokens(farmerDistrict);
+
+    // Expand district synonyms (e.g. NTR -> Vijayawada / Krishna)
+    if (dTokens.includes('ntr') || dTokens.includes('vijayawada') || dTokens.includes('krishna')) {
+      dTokens.push('ntr', 'vijayawada', 'krishna');
+    }
+
+    // 1. Same Village / Town (Rank 1 - Highest Priority)
+    if (vTokens.length > 0 && vTokens.some(t => shopCombined.includes(t))) {
+      return {
+        score: 300,
+        rank: 1,
+        level: 'VILLAGE',
+        label: '📍 In Your Village',
+        badgeClass: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-sm ring-1 ring-emerald-400/30',
+        isNearby: true
+      };
+    }
+
+    // 2. Same Mandal / Tehsil (Rank 2)
+    if (mTokens.length > 0 && mTokens.some(t => shopCombined.includes(t))) {
+      return {
+        score: 200,
+        rank: 2,
+        level: 'MANDAL',
+        label: '📍 In Your Mandal',
+        badgeClass: 'bg-teal-950/90 text-teal-300 border-teal-500/50 shadow-sm',
+        isNearby: true
+      };
+    }
+
+    // 3. Same District (Rank 3)
+    if (dTokens.length > 0 && dTokens.some(t => shopCombined.includes(t))) {
+      return {
+        score: 100,
+        rank: 3,
+        level: 'DISTRICT',
+        label: '📍 In Your District',
+        badgeClass: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/50 shadow-sm',
+        isNearby: true
+      };
+    }
+
+    // Default: Show all shops with standard priority
+    return {
+      score: 10,
+      rank: 99,
+      level: 'ALL',
+      label: '',
+      badgeClass: '',
+      isNearby: false
+    };
+  };
+
+  // Processed Products with Smart Prioritization
+  const processedProducts = useMemo(() => {
+    const scored = rawProducts.map((item) => ({
+      ...item,
+      proximity: getProximity(item.shop)
+    }));
+
+    if (locationFilter === 'All') {
+      // Sort by proximity score (Closest shops first) then by price
+      return scored.sort((a, b) => b.proximity.score - a.proximity.score || a.price - b.price);
+    } else {
+      // Filter by specific location selected in dropdown
+      const target = locationFilter.toLowerCase();
+      return scored.filter((item) => {
+        const text = `${item.shop?.location || ''} ${item.shop?.address || ''}`.toLowerCase();
+        return text.includes(target);
+      });
+    }
+  }, [rawProducts, locationFilter, farmerVillage, farmerMandal, farmerDistrict]);
+
+  // Processed Shops with Smart Prioritization
+  const processedShops = useMemo(() => {
+    const scored = rawShops.map((shop) => ({
+      ...shop,
+      proximity: getProximity(shop)
+    }));
+
+    if (locationFilter === 'All') {
+      // Sort by proximity score (Closest shops first) then by rating
+      return scored.sort((a, b) => b.proximity.score - a.proximity.score || (b.ratingAverage || 0) - (a.ratingAverage || 0));
+    } else {
+      // Filter by specific location selected in dropdown
+      const target = locationFilter.toLowerCase();
+      return scored.filter((shop) => {
+        const text = `${shop.location || ''} ${shop.address || ''}`.toLowerCase();
+        return text.includes(target);
+      });
+    }
+  }, [rawShops, locationFilter, farmerVillage, farmerMandal, farmerDistrict]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -102,18 +233,6 @@ export default function ShopDiscoveryPage() {
     setCategoryFilter('All');
     setMinRating('');
     setMaxPrice('');
-  };
-
-  const isNearby = (shopLoc = '', shopAddr = '') => {
-    if (!farmerLocation) return false;
-    const combined = `${shopLoc} ${shopAddr}`.toLowerCase();
-    const stopWords = new Set(['town', 'city', 'district', 'distrcit', 'dist', 'near', 'mandal', 'village', 'state', 'andhra', 'pradesh']);
-    const tokens = `${farmerVillage} ${farmerDistrict} ${farmerLocation}`
-      .split(/[,;\s/]+/)
-      .map(t => t.trim().toLowerCase())
-      .filter(t => t.length >= 2 && !stopWords.has(t));
-
-    return tokens.some(t => combined.includes(t));
   };
 
   return (
@@ -134,48 +253,21 @@ export default function ShopDiscoveryPage() {
         </p>
       </div>
 
-      {/* Farmer Location Banner */}
-      {farmerLocation && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-teal-950/60 border border-teal-500/30 shadow-md">
+      {/* Location Bar */}
+      {hasFarmerLocation && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#05181f]/95 border border-teal-500/30 shadow-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center flex-shrink-0 border border-teal-500/30">
-              <Navigation className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">
-                Farmer Registered Location:{' '}
-                <span className="text-teal-300 font-extrabold">
-                  {farmerVillage ? `${farmerVillage}, ` : ''}{farmerDistrict || 'Vijayawada'}
-                </span>
-              </p>
-              <p className="text-[11px] text-slate-300">
-                {locationFilter === 'All'
-                  ? 'Showing all verified agricultural centers. Nearby shops are highlighted below.'
-                  : `Currently filtered by "${locationFilter}".`}
-              </p>
+            <MapPin className="w-4 h-4 text-teal-400 flex-shrink-0" />
+            <div className="text-xs font-semibold text-slate-300 flex flex-wrap items-center gap-1.5">
+              <span>Your Location:</span>
+              <span className="text-teal-300 font-bold bg-[#030b0e] px-2.5 py-0.5 rounded-md border border-teal-500/30">
+                {[farmerVillage, farmerMandal, farmerDistrict].filter(Boolean).join(' • ')}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            {locationFilter !== (farmerDistrict || farmerVillage) && (
-              <button
-                type="button"
-                onClick={() => setLocationFilter(farmerDistrict || farmerVillage || 'Vijayawada')}
-                className="px-3 py-1.5 bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Show Nearby Only</span>
-              </button>
-            )}
-            {locationFilter !== 'All' && (
-              <button
-                type="button"
-                onClick={() => setLocationFilter('All')}
-                className="px-3 py-1.5 bg-[#06171c] hover:bg-[#0c242c] text-slate-300 text-xs font-semibold rounded-xl border border-teal-500/30 transition-all cursor-pointer"
-              >
-                Show All Locations
-              </button>
-            )}
+          <div className="text-[11px] text-teal-300/80 font-medium">
+            ✨ Nearby stores in your village & mandal are sorted to the top
           </div>
         </div>
       )}
@@ -200,304 +292,303 @@ export default function ShopDiscoveryPage() {
             type="button"
             onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
             className={`px-5 py-3 rounded-2xl text-xs font-bold border transition-all flex items-center gap-2 flex-shrink-0 shadow-sm cursor-pointer ${
-              filterDrawerOpen || locationFilter !== 'All' || categoryFilter !== 'All' || maxPrice || minRating
+              filterDrawerOpen || categoryFilter !== 'All' || maxPrice || minRating || locationFilter !== 'All'
                 ? 'bg-teal-950/80 text-teal-300 border-teal-500/50 ring-2 ring-teal-400/20'
                 : 'bg-[#030b0e] hover:bg-[#0c242c] text-white border-slate-700'
             }`}
           >
             <SlidersHorizontal className="w-4 h-4 text-teal-400" />
-            <span>Filters {(locationFilter !== 'All' || categoryFilter !== 'All') ? '• Active' : ''}</span>
+            <span>Filters</span>
+            {(categoryFilter !== 'All' || maxPrice || minRating || locationFilter !== 'All') && (
+              <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+            )}
           </button>
         </div>
 
-        {/* Filter Drawer */}
+        {/* Collapsible Filter Options Panel */}
         {filterDrawerOpen && (
-          <div className="pt-4 border-t border-slate-700 grid grid-cols-1 sm:grid-cols-4 gap-4 animate-fade-in text-xs">
-            <div>
-              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Product Category</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
-              >
-                {categories.map((c) => <option key={c} value={c} className="bg-[#06151a] text-white">{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Shop Location</label>
+          <div className="pt-4 border-t border-slate-700/80 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Location Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 block">
+                Filter by Location / City
+              </label>
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
+                style={{ backgroundColor: '#030b0e', color: '#ffffff' }}
+                className="w-full px-3.5 py-2.5 text-xs font-bold text-white bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none cursor-pointer"
               >
-                {locations.map((loc) => <option key={loc} value={loc} className="bg-[#06151a] text-white">{loc}</option>)}
+                <option value="All" className="bg-[#06151a] text-white font-bold">All Locations (Nearby First)</option>
+                {locations.filter(l => l !== 'All').map((loc) => (
+                  <option key={loc} value={loc} className="bg-[#06151a] text-white font-semibold">
+                    {loc}
+                  </option>
+                ))}
               </select>
             </div>
-            <div>
-              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Max Price (₹)</label>
+
+            {/* Category Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 block">Product Category</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ backgroundColor: '#030b0e', color: '#ffffff' }}
+                className="w-full px-3.5 py-2.5 text-xs font-bold text-white bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none cursor-pointer"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c} className="bg-[#06151a] text-white font-semibold">
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Max Price */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 block">Max Price (₹)</label>
               <input
                 type="number"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="e.g. 1500"
-                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs placeholder:text-slate-500"
+                className="w-full px-3.5 py-2.5 text-xs font-bold text-white bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none"
               />
             </div>
-            <div>
-              <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1.5 text-[10px]">Min Rating</label>
+
+            {/* Min Shop Rating */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 block">Minimum Rating</label>
               <select
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
-                className="w-full px-3 py-2 bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none font-bold text-white text-xs shadow-2xs cursor-pointer"
+                style={{ backgroundColor: '#030b0e', color: '#ffffff' }}
+                className="w-full px-3.5 py-2.5 text-xs font-bold text-white bg-[#030b0e] border border-slate-700 rounded-xl focus:border-teal-400 outline-none cursor-pointer"
               >
                 <option value="" className="bg-[#06151a] text-white">Any Rating</option>
-                <option value="4" className="bg-[#06151a] text-white">⭐ 4.0 & above</option>
-                <option value="4.5" className="bg-[#06151a] text-white">⭐ 4.5 & above</option>
+                <option value="4.5" className="bg-[#06151a] text-white">4.5+ Stars ★★★★★</option>
+                <option value="4.0" className="bg-[#06151a] text-white">4.0+ Stars ★★★★</option>
+                <option value="3.5" className="bg-[#06151a] text-white">3.5+ Stars ★★★</option>
               </select>
             </div>
           </div>
         )}
-
-        {/* Active Filters Summary */}
-        {(searchQuery || locationFilter !== 'All' || categoryFilter !== 'All' || maxPrice || minRating) && (
-          <div className="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-700">
-            <span>
-              Showing results for:{' '}
-              {categoryFilter !== 'All' && <strong className="text-teal-400 font-bold">{categoryFilter} • </strong>}
-              {locationFilter !== 'All' && <strong className="text-teal-400 font-bold">{locationFilter} • </strong>}
-              {searchQuery && <strong className="text-teal-400 font-bold">"{searchQuery}"</strong>}
-            </span>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset All Filters
-            </button>
-          </div>
-        )}
-
-        {/* View Switcher Tabs */}
-        <div className="pt-3 border-t border-slate-700 flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('PRODUCTS')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-              activeTab === 'PRODUCTS'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'bg-[#030b0e] hover:bg-[#0c242c] text-slate-300'
-            }`}
-          >
-            Product Availability ({products.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('SHOPS')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-              activeTab === 'SHOPS'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'bg-[#030b0e] hover:bg-[#0c242c] text-slate-300'
-            }`}
-          >
-            Agro Shops ({shops.length})
-          </button>
-        </div>
       </div>
 
-      {/* Main Results View */}
+      {/* Tabs Switcher: Products Availability vs Agro Shops */}
+      <div className="flex items-center gap-2 p-1.5 bg-[#06151a] rounded-2xl border border-slate-700 w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab('PRODUCTS')}
+          className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'PRODUCTS'
+              ? 'bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 shadow-md font-black'
+              : 'text-slate-300 hover:text-white hover:bg-[#0c242c]'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          <span>Product Availability ({processedProducts.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('SHOPS')}
+          className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'SHOPS'
+              ? 'bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 shadow-md font-black'
+              : 'text-slate-300 hover:text-white hover:bg-[#0c242c]'
+          }`}
+        >
+          <Store className="w-4 h-4" />
+          <span>Agro Shops ({processedShops.length})</span>
+        </button>
+      </div>
+
+      {/* Main Content Area */}
       {loading ? (
-        <LoadingSpinner message="Searching shops and live stock..." />
+        <LoadingSpinner message="Searching verified agricultural stores..." fullScreen={false} />
       ) : activeTab === 'PRODUCTS' ? (
-        <div>
-          {products.length === 0 ? (
-            shops.length > 0 ? (
-              <div className="glass-card bg-[#06151a]/90 rounded-3xl border border-teal-500/20 p-8 text-center space-y-4 shadow-lg">
-                <div className="w-12 h-12 rounded-2xl bg-teal-950 text-teal-400 mx-auto flex items-center justify-center border border-teal-500/30">
-                  <Store className="w-6 h-6" />
+        /* ========================================================================= */
+        /* TAB 1: PRODUCT AVAILABILITY CARDS                                          */
+        /* ========================================================================= */
+        processedProducts.length === 0 ? (
+          <div className="glass-card bg-[#051419]/95 rounded-3xl p-10 sm:p-14 border border-dashed border-teal-500/30 text-center space-y-4 shadow-xl">
+            <div className="w-16 h-16 rounded-3xl bg-teal-950/90 border border-teal-400/40 text-teal-400 mx-auto flex items-center justify-center shadow-[0_0_25px_rgba(45,212,191,0.15)]">
+              <Package className="w-8 h-8" />
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-lg sm:text-xl font-black text-white">
+                No Matching Products Found
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                No agricultural products matched your current search or category filter. Try changing the keywords or resetting filters.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="px-5 py-2.5 bg-[#071d24] hover:bg-[#0b2b35] text-teal-300 rounded-xl text-xs font-bold border border-teal-500/40 cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset All Filters</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {processedProducts.map((item) => (
+              <div
+                key={item._id}
+                className="glass-card bg-[#051419]/95 rounded-3xl p-5 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-xl flex flex-col justify-between group space-y-4"
+              >
+                {/* Image & Badges */}
+                <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center p-2">
+                  <img
+                    src={item.imageUrl || item.product?.imageUrl || 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=400&q=80'}
+                    alt={item.customName || item.product?.name}
+                    className="w-full h-full object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {item.proximity?.label && (
+                    <span className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${item.proximity.badgeClass}`}>
+                      {item.proximity.label}
+                    </span>
+                  )}
+                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#030b0e]/90 text-teal-300 border border-teal-500/40">
+                    {item.product?.category || 'Fertilizer'}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">
-                    {shops.length} Agro Shop{shops.length > 1 ? 's' : ''} Found in Your Area
+
+                {/* Info */}
+                <div className="space-y-1.5 flex-1">
+                  <h3 className="text-base font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                    {item.customName || item.product?.name}
                   </h3>
-                  <p className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
-                    The local dealer(s) are registered in this area, but haven't listed individual item-level product stock yet. Click below to view the shops and contact them directly.
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                    {item.product?.description || 'Government certified agricultural input.'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('SHOPS')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-black rounded-xl shadow-md transition-all cursor-pointer"
-                >
-                  <Store className="w-4 h-4" /> View Agro Shops ({shops.length})
-                </button>
-              </div>
-            ) : (
-              <EmptyState
-                icon={Package}
-                title="No matching products found"
-                description="No agricultural products match your search or filter criteria. Try searching for 'Urea', 'DAP', or 'Seeds'."
-                actionText="Reset Search"
-                onAction={handleResetFilters}
-              />
-            )
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {products.map((item) => {
-                const prod = item.product || {};
-                const shop = item.shop || {};
-                const isOutOfStock = item.status === 'Out of Stock' || item.quantity === 0;
 
-                return (
-                  <div
-                    key={item._id}
-                    className="glass-card rounded-3xl p-5 border border-slate-700 bg-[#06151a]/95 flex flex-col justify-between group transition-all hover:border-teal-400/50 shadow-xl"
-                  >
-                    <div className="space-y-3">
-                      {/* Product Header */}
-                      <div className="flex items-start gap-3">
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-900 flex-shrink-0 border border-slate-700">
-                          <img
-                            src={item.imageUrl || prod.imageUrl || 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=600&q=80'}
-                            alt={item.customName || prod.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-extrabold text-base text-white group-hover:text-teal-300 transition-colors truncate">
-                            {item.customName || prod.name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                            <span className="inline-block text-[11px] font-semibold text-slate-300 bg-[#030b0e] border border-slate-700 px-2 py-0.5 rounded-md">
-                              {prod.category || 'General'}
-                            </span>
-                            {isNearby(shop.location || shop.address) && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-300 bg-teal-950/80 border border-teal-700 px-2 py-0.5 rounded-md">
-                                📍 Near Your Farm
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Pricing & Live Stock Status */}
-                      <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex items-center justify-between shadow-2xs">
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
-                          <span className="text-base font-black text-white">
-                            {formatCurrency(item.price)}
-                            <span className="text-xs font-medium text-slate-500">/{item.unit}</span>
-                          </span>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Availability</span>
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                              item.status === 'Out of Stock' || item.status === 'Empty'
-                                ? 'bg-rose-950/80 text-rose-300 border-rose-900'
-                                : item.status === 'Low Stock'
-                                ? 'bg-amber-950/80 text-amber-300 border-amber-900'
-                                : 'bg-emerald-950/80 text-emerald-300 border-emerald-900'
-                            }`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                            {item.status === 'Out of Stock' || item.status === 'Empty'
-                              ? `🔴 Out of Stock (${item.quantity} ${item.unit})`
-                              : item.status === 'Low Stock'
-                              ? `🟠 Low Stock (${item.quantity} ${item.unit})`
-                              : `🟢 ${item.status} (${item.quantity} ${item.unit})`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Store Details */}
-                      <div className="space-y-1 text-xs text-slate-300 pt-1">
-                        <p className="font-bold text-white flex items-center gap-1">
-                          <Store className="w-3.5 h-3.5 text-teal-400" />
-                          {shop.shopName}
-                        </p>
-                        <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                          {shop.location} • {shop.address}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Open Shop Link */}
-                    <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between">
-                      <span className="text-xs text-amber-400 font-bold flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        {shop.ratingAverage?.toFixed(1) || '4.5'}
-                      </span>
-
-                      <Link
-                        to={`/farmer/shops/${shop._id}`}
-                        className="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-                      >
-                        View Shop Details <ChevronRight className="w-4 h-4" />
-                      </Link>
-                    </div>
+                {/* Shop Reference Card */}
+                <div className="p-3 rounded-2xl bg-[#030b0e] border border-slate-700/70 space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-medium">Available At:</span>
+                    <span className="font-extrabold text-white line-clamp-1">{item.shop?.shopName}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Shops Grid View (Wireframe 3: Shop cards with rating) */
-        <div>
-          {shops.length === 0 ? (
-            <EmptyState
-              icon={Store}
-              title="No agricultural shops found"
-              description="No authorized shops found matching your search location."
-              actionText="Reset Filter"
-              onAction={handleResetFilters}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {shops.map((shop) => (
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Location:</span>
+                    <span className="text-teal-300 font-semibold">{item.shop?.location}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
+                    <span className="text-slate-400">Price:</span>
+                    <span className="text-base font-black text-white">
+                      ₹{item.price}<span className="text-[10px] text-slate-400 font-normal">/{item.unit || 'kg'}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* View Shop Button */}
                 <Link
-                  key={shop._id}
-                  to={`/farmer/shops/${shop._id}`}
-                  className="glass-card rounded-3xl overflow-hidden border border-slate-700 hover:border-teal-400 bg-[#06151a]/95 group transition-all shadow-xl"
+                  to={`/farmer/shops/${item.shop?._id}`}
+                  className="w-full py-2.5 px-4 bg-[#071d24] hover:bg-teal-500 hover:text-slate-950 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <div className="relative h-44 w-full overflow-hidden bg-slate-900">
-                    <img
-                      src={shop.imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80'}
-                      alt={shop.shopName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {isNearby(shop.location || shop.address) && (
-                      <div className="absolute top-3 left-3 bg-[#030b0e]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-teal-300 border border-slate-700 flex items-center gap-1 shadow-md">
-                        📍 Near Your Farm
-                      </div>
-                    )}
-                    <div className="absolute top-3 right-3 bg-[#030b0e]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-300 border border-slate-700 flex items-center gap-1 shadow-md">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{shop.ratingAverage?.toFixed(1) || '4.5'}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-extrabold text-lg text-white group-hover:text-teal-300 transition-colors truncate">
-                      {shop.shopName}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-teal-300">
-                      <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                      <span>{shop.location}</span>
-                    </div>
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-                      {shop.address}
-                    </p>
-                    <div className="pt-3 border-t border-slate-700 flex items-center justify-between text-xs font-bold text-teal-300">
-                      <span>Browse Store Inventory</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
+                  <span>View Dealer & Inventory</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
-              ))}
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        /* ========================================================================= */
+        /* TAB 2: AGRO SHOPS DIRECTORY                                               */
+        /* ========================================================================= */
+        processedShops.length === 0 ? (
+          <div className="glass-card bg-[#051419]/95 rounded-3xl p-10 sm:p-14 border border-dashed border-teal-500/30 text-center space-y-4 shadow-xl">
+            <div className="w-16 h-16 rounded-3xl bg-teal-950/90 border border-teal-400/40 text-teal-400 mx-auto flex items-center justify-center shadow-[0_0_25px_rgba(45,212,191,0.15)]">
+              <Store className="w-8 h-8" />
             </div>
-          )}
-        </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-lg sm:text-xl font-black text-white">
+                No Agro Shops Found
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                No authorized dealers matched your location or search filter. Try resetting your search filters to explore all available shops.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="px-5 py-2.5 bg-[#071d24] hover:bg-[#0b2b35] text-teal-300 rounded-xl text-xs font-bold border border-teal-500/40 cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset All Filters</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {processedShops.map((shop) => (
+              <div
+                key={shop._id}
+                className="glass-card bg-[#051419]/95 rounded-3xl p-5 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-xl flex flex-col justify-between group space-y-4"
+              >
+                {/* Shop Cover Image & Proximity Badge */}
+                <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center">
+                  <img
+                    src={shop.imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80'}
+                    alt={shop.shopName}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {shop.proximity?.label && (
+                    <span className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${shop.proximity.badgeClass}`}>
+                      {shop.proximity.label}
+                    </span>
+                  )}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[11px] font-extrabold text-amber-300 bg-[#030b0e]/90 px-2 py-0.5 rounded-lg border border-slate-700">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span>{shop.ratingAverage ? shop.ratingAverage.toFixed(1) : '4.5'}</span>
+                  </div>
+                </div>
+
+                {/* Shop Info */}
+                <div className="space-y-1.5 flex-1">
+                  <h3 className="text-base sm:text-lg font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                    {shop.shopName}
+                  </h3>
+                  <p className="text-xs text-slate-300 flex items-start gap-1 line-clamp-2">
+                    <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0 mt-0.5" />
+                    <span>{shop.address || shop.location}</span>
+                  </p>
+                </div>
+
+                {/* Shop Details */}
+                <div className="p-3 rounded-2xl bg-[#030b0e] border border-slate-700/70 flex items-center justify-between text-xs text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-teal-400" />
+                    <span><strong>{shop.productCount || 0}</strong> Products listed</span>
+                  </div>
+                  {shop.phone && (
+                    <div className="flex items-center gap-1 text-slate-400 text-[11px]">
+                      <Phone className="w-3 h-3 text-teal-400" />
+                      <span>{shop.phone}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* View Shop Button */}
+                <Link
+                  to={`/farmer/shops/${shop._id}`}
+                  className="w-full py-2.5 px-4 btn-glow-primary text-slate-950 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102"
+                >
+                  <span>Visit Shop & Browse Stock ➔</span>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

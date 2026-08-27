@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableRoles, setAvailableRoles] = useState([]);
+  const [detectedUser, setDetectedUser] = useState(null);
+  const [detectedToken, setDetectedToken] = useState(null);
   const [successMsg, setSuccessMsg] = useState('');
 
   // Forgot password modal state
@@ -44,6 +46,8 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setAvailableRoles([]);
+    setDetectedUser(null);
+    setDetectedToken(null);
     setSuccessMsg('');
     setLoading(true);
 
@@ -58,6 +62,10 @@ export default function LoginPage() {
       setError(res.message || 'Login failed. Please check your credentials.');
       if (res.availableRoles && res.availableRoles.length > 0) {
         setAvailableRoles(res.availableRoles);
+      }
+      if (res.user) {
+        setDetectedUser(res.user);
+        setDetectedToken(res.token);
       }
     }
   };
@@ -178,24 +186,43 @@ export default function LoginPage() {
         <div className="glass-panel rounded-3xl p-5 sm:p-6 shadow-2xl border border-teal-500/20 bg-[#051419]/90">
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {error && (
-              <div className="p-3 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 space-y-2">
+              <div className="p-3.5 bg-rose-950/70 text-rose-200 rounded-2xl text-xs border border-rose-800/60 space-y-2.5 shadow-md">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+                  <span className="font-bold">{error}</span>
                 </div>
                 {availableRoles.length > 0 && (
-                  <div className="pt-2 border-t border-rose-800/40 flex flex-wrap gap-2 items-center">
-                    <span className="text-[11px] text-slate-300 font-semibold">Switch to your registered portal:</span>
-                    {availableRoles.map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => { setSelectedRole(r); setError(''); setAvailableRoles([]); }}
-                        className="px-2.5 py-1 bg-teal-500/20 hover:bg-teal-500/40 text-teal-300 rounded-lg text-[11px] font-bold border border-teal-500/40 cursor-pointer"
+                  <div className="pt-2 border-t border-rose-800/40 space-y-2">
+                    <span className="text-[11px] text-slate-300 font-semibold block">
+                      Switch to your active account portal:
+                    </span>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {availableRoles.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => { setSelectedRole(r); setError(''); setAvailableRoles([]); }}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-black shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <Sprout className="w-3.5 h-3.5" />
+                          <span>Switch to {r === 'FARMER' ? 'Farmer Portal 👨‍🌾' : r === 'SHOPKEEPER' ? 'Shopkeeper Portal 🏪' : 'Govt Officer 🏛️'}</span>
+                        </button>
+                      ))}
+                      <Link
+                        to={`/register?role=${selectedRole}`}
+                        state={{ existingUser: detectedUser, token: detectedToken }}
+                        onClick={() => {
+                          if (detectedToken) {
+                            try {
+                              localStorage.setItem('farmsetu_token', detectedToken);
+                            } catch (e) {}
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-[#030b0e] hover:bg-[#0c242c] text-teal-300 rounded-xl text-xs font-bold border border-teal-500/40 flex items-center gap-1 cursor-pointer"
                       >
-                        Sign in as {r === 'FARMER' ? 'Farmer 👨‍🌾' : r === 'SHOPKEEPER' ? 'Shopkeeper 🏪' : 'Officer 🏛️'}
-                      </button>
-                    ))}
+                        <span>Register as {selectedRole === 'SHOPKEEPER' ? 'Shopkeeper' : selectedRole === 'FARMER' ? 'Farmer' : 'Officer'}</span>
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>

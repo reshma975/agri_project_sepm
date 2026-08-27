@@ -24,28 +24,32 @@ export const getStatusConfig = (status) => {
     case 'Full':
     case 'In Stock':
       return {
-        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        dot: 'bg-emerald-500',
-        label: status === 'VERIFIED' ? 'Verified' : status,
+        bg: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+        dot: 'bg-emerald-400',
+        label: status === 'VERIFIED' ? 'Verified & Approved' : status,
         icon: 'check',
       };
     case 'UNDER_VERIFICATION':
     case 'Under Verification':
     case 'SUBMITTED':
     case 'Submitted':
+    case 'Pending':
+    case 'PENDING':
     case 'Low Stock':
       return {
-        bg: 'bg-amber-50 text-amber-700 border-amber-200',
-        dot: 'bg-amber-500',
-        label: status === 'UNDER_VERIFICATION' ? 'Under Verification' : status === 'SUBMITTED' ? 'Submitted' : status,
+        bg: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+        dot: 'bg-amber-400',
+        label: ['UNDER_VERIFICATION', 'SUBMITTED', 'Pending', 'PENDING'].includes(status) ? 'Pending Verification' : status,
         icon: 'clock',
       };
     case 'RETURNED_FOR_CORRECTION':
     case 'Returned for Correction':
+    case 'RESUBMIT_NEEDED':
+    case 'Resubmit Needed':
       return {
-        bg: 'bg-orange-50 text-orange-700 border-orange-200',
-        dot: 'bg-orange-500',
-        label: 'Returned for Correction',
+        bg: 'bg-orange-950/90 text-orange-300 border-orange-500/50',
+        dot: 'bg-orange-400',
+        label: 'Resubmit Needed',
         icon: 'alert-circle',
       };
     case 'REJECTED':
@@ -55,22 +59,22 @@ export const getStatusConfig = (status) => {
     case 'Out of Stock':
     case 'Empty':
       return {
-        bg: 'bg-rose-50 text-rose-700 border-rose-200',
-        dot: 'bg-rose-500',
-        label: status === 'Out of Stock' ? 'Temporarily Out of Stock' : status,
+        bg: 'bg-rose-950/80 text-rose-300 border-rose-500/40',
+        dot: 'bg-rose-400',
+        label: status === 'Out of Stock' ? 'Temporarily Out of Stock' : status === 'UNVERIFIED' ? 'Unverified Profile' : status,
         icon: 'x-circle',
       };
     case 'DRAFT':
     case 'Draft':
       return {
-        bg: 'bg-slate-100 text-slate-700 border-slate-200',
+        bg: 'bg-slate-900 text-slate-300 border-slate-700',
         dot: 'bg-slate-400',
         label: 'Draft',
         icon: 'file-text',
       };
     default:
       return {
-        bg: 'bg-slate-100 text-slate-700 border-slate-200',
+        bg: 'bg-slate-900 text-slate-300 border-slate-700',
         dot: 'bg-slate-400',
         label: status || 'Pending',
         icon: 'help-circle',

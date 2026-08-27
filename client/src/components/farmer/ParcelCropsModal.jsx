@@ -136,6 +136,13 @@ export default function ParcelCropsModal({
                   </div>
                 </div>
 
+                {/* Officer remarks if returned for correction */}
+                {crop.status === 'RETURNED_FOR_CORRECTION' && crop.officerComment && (
+                  <div className="p-3 bg-orange-950/80 rounded-xl border border-orange-500/50 text-xs text-orange-200">
+                    <strong className="text-orange-300">⚠️ Officer Remarks:</strong> "{crop.officerComment}"
+                  </div>
+                )}
+
                 {/* Footer action bar */}
                 <div className="flex items-center justify-between pt-1 text-xs">
                   <span className="text-[10px] font-mono text-slate-500">
@@ -145,7 +152,7 @@ export default function ParcelCropsModal({
                     <button
                       type="button"
                       onClick={() => onViewCropDetails(crop)}
-                      className="px-3 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white rounded-xl border border-teal-900/60 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white rounded-xl border border-teal-900/60 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                     >
                       <Eye className="w-3.5 h-3.5 text-teal-400" />
                       <span>View Full Details</span>

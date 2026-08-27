@@ -3,43 +3,179 @@ import { Land } from '../models/Land.js';
 import { CropRegistration } from '../models/CropRegistration.js';
 import { CropRegistrationHistory } from '../models/CropRegistrationHistory.js';
 import { User } from '../models/User.js';
+import { RegistrationDeadline } from '../models/RegistrationDeadline.js';
 
-// @desc    Get farmer profile details & stats
+// Helper to check if farmer has uploaded all 3 required documents
+const checkFarmerDocuments = (profile) => {
+  const docs = profile?.documents || {};
+  const missingDocs = [];
+
+  if (!docs.aadhaarDoc?.fileName) missingDocs.push('Aadhaar Card');
+  if (!docs.passbookDoc?.fileName) missingDocs.push('Bank Passbook');
+  if (!docs.landRecordDoc?.fileName) missingDocs.push('Land Title Record');
+
+  return {
+    valid: missingDocs.length === 0,
+    missingDocs
+  };
+};
+
+// Helper to check deadlines strictly for mandals where the farmer owns land parcels
+const getFarmerMandalDeadlines = async (profile, lands = []) => {
+  const mandalSet = new Set();
+  
+  // Collect all mandals from the farmer's registered land parcels
+  lands.forEach(l => {
+    if (l.mandal && l.mandal.trim()) {
+      mandalSet.add(l.mandal.trim());
+    }
+  });
+
+  // If no lands yet, fallback to profile mandal
+  if (mandalSet.size === 0 && profile?.mandal && profile.mandal.trim()) {
+    mandalSet.add(profile.mandal.trim());
+  }
+
+  const mandalDeadlines = [];
+  const now = new Date();
+
+  // Query active registration deadline set by officer for each mandal of the farmer's lands
+  for (const mandal of mandalSet) {
+    const deadline = await RegistrationDeadline.findOne({
+      mandal: new RegExp(`^${mandal}$`, 'i'),
+      isActive: true
+    }).sort({ createdAt: -1 });
+
+    if (deadline) {
+      const deadlineDate = new Date(deadline.deadlineDate);
+      const landsInMandal = lands.filter(
+        l => l.mandal && l.mandal.trim().toLowerCase() === mandal.toLowerCase()
+      ).length;
+
+      mandalDeadlines.push({
+        mandal: deadline.mandal,
+        district: deadline.district,
+        season: deadline.season,
+        year: deadline.year,
+        deadlineDate: deadline.deadlineDate,
+        isDeadlinePassed: now > deadlineDate,
+        deadline,
+        landsCount: landsInMandal,
+        isProfileMandal: profile?.mandal?.toLowerCase() === mandal.toLowerCase()
+      });
+    }
+  }
+
+  return mandalDeadlines;
+};
+
+// Helper to check if crop registration deadline for farmer's mandal has expired
+const checkMandalDeadline = async (mandal) => {
+  if (!mandal) return { passed: false, deadline: null };
+
+  const deadline = await RegistrationDeadline.findOne({
+    mandal: new RegExp(`^${mandal.trim()}$`, 'i'),
+    isActive: true
+  }).sort({ createdAt: -1 });
+
+  if (!deadline) {
+    return { passed: false, deadline: null };
+  }
+
+  const now = new Date();
+  const deadlineDate = new Date(deadline.deadlineDate);
+
+  return {
+    passed: now > deadlineDate,
+    deadline
+  };
+};
+
+// @desc    Get farmer profile details, stats, and active registration deadline for farmer's mandal
 // @route   GET /api/farmers/profile
 // @access  Private (FARMER)
 export const getFarmerProfile = async (req, res) => {
   try {
-    let profile = await FarmerProfile.findOne({ userId: req.user._id });
+    let profile = await FarmerProfile.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user._id }]
+    });
     if (!profile) {
       profile = await FarmerProfile.create({
         userId: req.user._id,
         farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+        village: 'Kankipadu',
+        mandal: 'Penamaluru',
         district: 'Vijayawada',
         state: 'Andhra Pradesh'
       });
     }
 
-    const lands = await Land.find({ farmerId: profile._id });
-    const cropCount = await CropRegistration.countDocuments({ farmerId: profile._id });
+    const farmerIdMatch = { $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] };
+    const lands = await Land.find(farmerIdMatch).sort({ createdAt: -1 });
+    const cropCount = await CropRegistration.countDocuments(farmerIdMatch);
     const verifiedCropCount = await CropRegistration.countDocuments({
-      farmerId: profile._id,
+      ...farmerIdMatch,
       status: 'VERIFIED'
     });
     const pendingCropCount = await CropRegistration.countDocuments({
-      farmerId: profile._id,
+      ...farmerIdMatch,
       status: { $in: ['SUBMITTED', 'UNDER_VERIFICATION'] }
     });
+    const returnedCropCount = await CropRegistration.countDocuments({
+      ...farmerIdMatch,
+      status: 'RETURNED_FOR_CORRECTION'
+    });
+
+    const docsCheck = checkFarmerDocuments(profile);
+    const primaryDeadlineCheck = await checkMandalDeadline(profile.mandal || 'Penamaluru');
+    const mandalDeadlines = await getFarmerMandalDeadlines(profile, lands);
 
     return res.status(200).json({
       success: true,
       profile,
       lands,
+      documentsStatus: {
+        allUploaded: docsCheck.valid,
+        missingDocs: docsCheck.missingDocs
+      },
+      deadline: primaryDeadlineCheck.deadline,
+      isDeadlinePassed: primaryDeadlineCheck.passed,
+      mandalDeadlines,
       stats: {
         totalLands: lands.length,
         totalCrops: cropCount,
         verifiedCrops: verifiedCropCount,
-        pendingCrops: pendingCropCount
+        pendingCrops: pendingCropCount,
+        returnedCrops: returnedCropCount
       }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get active registration deadline for the farmer's mandal and lands
+// @route   GET /api/farmers/deadline
+// @access  Private (FARMER)
+export const getFarmerDeadline = async (req, res) => {
+  try {
+    const profile = await FarmerProfile.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user._id }]
+    });
+    const lands = profile
+      ? await Land.find({ $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] })
+      : [];
+    const farmerMandal = profile?.mandal || 'Penamaluru';
+
+    const deadlineCheck = await checkMandalDeadline(farmerMandal);
+    const mandalDeadlines = await getFarmerMandalDeadlines(profile, lands);
+
+    return res.status(200).json({
+      success: true,
+      mandal: farmerMandal,
+      deadline: deadlineCheck.deadline,
+      isDeadlinePassed: deadlineCheck.passed,
+      mandalDeadlines
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -51,13 +187,24 @@ export const getFarmerProfile = async (req, res) => {
 // @access  Private (FARMER)
 export const getFarmerLands = async (req, res) => {
   try {
-    const profile = await FarmerProfile.findOne({ userId: req.user._id });
+    let profile = await FarmerProfile.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user._id }]
+    });
     if (!profile) {
-      return res.status(404).json({ success: false, message: 'Farmer profile not found' });
+      profile = await FarmerProfile.create({
+        userId: req.user._id,
+        farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+        village: 'Kankipadu',
+        mandal: 'Penamaluru',
+        district: 'Vijayawada',
+        state: 'Andhra Pradesh'
+      });
     }
 
-    const lands = await Land.find({ farmerId: profile._id }).sort({ createdAt: -1 });
-    
+    const lands = await Land.find({
+      $or: [{ farmerId: profile._id }, { farmerId: req.user._id }]
+    }).sort({ createdAt: -1 });
+
     // Ensure all lands have a unique landId
     for (const land of lands) {
       if (!land.landId) {
@@ -72,14 +219,21 @@ export const getFarmerLands = async (req, res) => {
   }
 };
 
-// @desc    Create new land parcel
+// @desc    Create new land parcel (with optional crop)
 // @route   POST /api/farmers/lands
 // @access  Private (FARMER)
 export const createLand = async (req, res) => {
   try {
-    const profile = await FarmerProfile.findOne({ userId: req.user._id });
+    let profile = await FarmerProfile.findOne({ userId: req.user._id });
     if (!profile) {
-      return res.status(404).json({ success: false, message: 'Farmer profile not found' });
+      profile = await FarmerProfile.create({
+        userId: req.user._id,
+        farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+        village: req.body.village || 'Kankipadu',
+        mandal: req.body.mandal || 'Penamaluru',
+        district: req.body.district || 'Vijayawada',
+        state: 'Andhra Pradesh'
+      });
     }
 
     const {
@@ -101,7 +255,7 @@ export const createLand = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Survey number is required' });
     }
 
-    // Check if this land parcel survey number already exists for this farmer
+    // Check if land parcel survey number already exists for this farmer
     const existingLand = await Land.findOne({ farmerId: profile._id, surveyNumber: targetSurvey });
     if (existingLand) {
       if (!currentCrop || !currentCrop.trim()) {
@@ -127,10 +281,15 @@ export const createLand = async (req, res) => {
         });
       }
 
-      // Register the new crop on this existing land parcel
+      const farmerMandal = existingLand.mandal || profile.mandal || 'Penamaluru';
+
+      // Register the new crop on this existing land parcel with locked cadastral location
       const registeredCrop = await CropRegistration.create({
         farmerId: profile._id,
         landId: existingLand._id,
+        village: existingLand.village || profile.village || 'Kankipadu',
+        mandal: farmerMandal,
+        district: existingLand.district || profile.district || 'Vijayawada',
         cropName: currentCrop.trim(),
         cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
         surveyNumber: existingLand.surveyNumber,
@@ -142,15 +301,15 @@ export const createLand = async (req, res) => {
         year: new Date().getFullYear(),
         sowingDate: new Date(),
         irrigationType: 'Borewell',
-        status: 'SUBMITTED',
-        submittedAt: new Date()
+        status: 'DRAFT',
+        submittedAt: null
       });
 
       await CropRegistrationHistory.create({
         registrationId: registeredCrop._id,
-        action: 'SUBMITTED',
-        comment: `New crop "${currentCrop.trim()}" added to Survey No. ${targetSurvey}`,
-        officerName: 'Farmer Self-Submission'
+        action: 'DRAFT_RECORDED',
+        comment: `New crop "${currentCrop.trim()}" recorded on Survey No. ${targetSurvey} (Draft - ready for mandal registration)`,
+        officerName: 'Farmer Farm Records'
       });
 
       return res.status(201).json({
@@ -164,8 +323,8 @@ export const createLand = async (req, res) => {
     const land = await Land.create({
       farmerId: profile._id,
       surveyNumber: targetSurvey,
-      village: village || profile.village || 'Vijayawada',
-      mandal: mandal || profile.mandal || '',
+      village: village || profile.village || 'Kankipadu',
+      mandal: mandal || profile.mandal || 'Penamaluru',
       district: district || profile.district || 'Vijayawada',
       totalArea: Number(totalArea) || 1,
       areaUnit: areaUnit || 'Acres',
@@ -178,9 +337,14 @@ export const createLand = async (req, res) => {
     // If an initial crop was provided, auto-register this crop under the new land parcel
     let registeredCrop = null;
     if (currentCrop && currentCrop.trim()) {
+      const farmerMandal = land.mandal || profile.mandal || 'Penamaluru';
+
       registeredCrop = await CropRegistration.create({
         farmerId: profile._id,
         landId: land._id,
+        village: land.village || village || profile.village || '',
+        mandal: farmerMandal,
+        district: land.district || district || profile.district || 'Vijayawada',
         cropName: currentCrop.trim(),
         cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
         surveyNumber: land.surveyNumber,
@@ -192,15 +356,15 @@ export const createLand = async (req, res) => {
         year: new Date().getFullYear(),
         sowingDate: new Date(),
         irrigationType: 'Borewell',
-        status: 'SUBMITTED',
-        submittedAt: new Date()
+        status: 'DRAFT',
+        submittedAt: null
       });
 
       await CropRegistrationHistory.create({
         registrationId: registeredCrop._id,
-        action: 'SUBMITTED',
-        comment: `Crop recorded during cadastral land parcel registration (Duration: ${estimatedDurationMonths ? estimatedDurationMonths + ' Months' : 'Seasonal'})`,
-        officerName: 'Farmer Self-Submission'
+        action: 'DRAFT_RECORDED',
+        comment: `Crop recorded during land parcel registration (Duration: ${estimatedDurationMonths ? estimatedDurationMonths + ' Months' : 'Seasonal'})`,
+        officerName: 'Farmer Farm Records'
       });
     }
 
@@ -226,13 +390,27 @@ export const createLand = async (req, res) => {
 // @access  Private (FARMER)
 export const getFarmerCrops = async (req, res) => {
   try {
-    const profile = await FarmerProfile.findOne({ userId: req.user._id });
+    let profile = await FarmerProfile.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user._id }]
+    });
     if (!profile) {
-      return res.status(404).json({ success: false, message: 'Farmer profile not found' });
+      profile = await FarmerProfile.create({
+        userId: req.user._id,
+        farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+        village: 'Kankipadu',
+        mandal: 'Penamaluru',
+        district: 'Vijayawada',
+        state: 'Andhra Pradesh'
+      });
     }
 
     const { year, status } = req.query;
-    const filter = { farmerId: profile._id };
+    const filter = {
+      $or: [
+        { farmerId: profile._id },
+        { farmerId: req.user._id }
+      ]
+    };
 
     if (year && year !== 'All') {
       filter.year = Number(year);
@@ -285,7 +463,10 @@ export const registerCrop = async (req, res) => {
     if (!profile) {
       profile = await FarmerProfile.create({
         userId: req.user._id,
-        farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`
+        farmerId: `FMR${Math.floor(100000 + Math.random() * 900000)}`,
+        village: 'Kankipadu',
+        mandal: 'Penamaluru',
+        district: 'Vijayawada'
       });
     }
 
@@ -300,7 +481,6 @@ export const registerCrop = async (req, res) => {
       ownershipType,
       crops,
       isDraft,
-      // Single crop fallback properties
       cropName,
       cropCategory,
       cultivatedArea,
@@ -313,6 +493,30 @@ export const registerCrop = async (req, res) => {
       pesticidesUsed,
       expectedHarvest
     } = req.body;
+
+    const farmerMandal = mandal || profile.mandal || 'Penamaluru';
+
+    // 1. If not saving as draft (i.e. submitting for verification), enforce mandatory validations:
+    if (!isDraft) {
+      // Check Mandal Deadline
+      const deadlineCheck = await checkMandalDeadline(farmerMandal);
+      if (deadlineCheck.passed) {
+        return res.status(400).json({
+          success: false,
+          message: `The crop registration deadline for ${farmerMandal} closed on ${new Date(deadlineCheck.deadline.deadlineDate).toLocaleString()}. No new submissions can be accepted.`
+        });
+      }
+
+      // Check Mandatory Documents
+      const docsCheck = checkFarmerDocuments(profile);
+      if (!docsCheck.valid) {
+        return res.status(400).json({
+          success: false,
+          message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) in your profile before submitting crops for verification.`,
+          missingDocs: docsCheck.missingDocs
+        });
+      }
+    }
 
     const targetSurvey = (surveyNumber || '').trim();
     if (!targetSurvey) {
@@ -331,8 +535,8 @@ export const registerCrop = async (req, res) => {
       land = await Land.create({
         farmerId: profile._id,
         surveyNumber: targetSurvey,
-        village: village || profile.village || 'Vijayawada',
-        mandal: mandal || profile.mandal || '',
+        village: village || profile.village || 'Kankipadu',
+        mandal: farmerMandal,
         district: district || profile.district || 'Vijayawada',
         totalArea: Number(totalLandArea) || Number(cultivatedArea) || 1,
         areaUnit: areaUnit || 'Acres',
@@ -344,7 +548,7 @@ export const registerCrop = async (req, res) => {
       profile.totalLandArea = allLands.reduce((acc, curr) => acc + (curr.totalArea || 0), 0);
     }
 
-    // Normalize crops list (supports both array of crops and single crop payload)
+    // Normalize crops list
     const cropList = Array.isArray(crops) && crops.length > 0
       ? crops
       : [{
@@ -376,6 +580,9 @@ export const registerCrop = async (req, res) => {
       const crop = await CropRegistration.create({
         farmerId: profile._id,
         landId: land._id,
+        village: land.village || village || profile.village || '',
+        mandal: land.mandal || farmerMandal || profile.mandal || 'Penamaluru',
+        district: land.district || district || profile.district || 'Vijayawada',
         cropName: item.cropName,
         cropCategory: item.cropCategory || 'Cereals',
         surveyNumber: land.surveyNumber,
@@ -405,8 +612,10 @@ export const registerCrop = async (req, res) => {
       createdCrops.push(crop);
     }
 
-    profile.registrationStatus = 'UNDER_VERIFICATION';
-    await profile.save();
+    if (!isDraft && profile.registrationStatus !== 'VERIFIED') {
+      profile.registrationStatus = 'UNDER_VERIFICATION';
+      await profile.save();
+    }
 
     return res.status(201).json({
       success: true,
@@ -421,7 +630,7 @@ export const registerCrop = async (req, res) => {
   }
 };
 
-// @desc    Update crop (e.g. edit draft or returned application)
+// @desc    Update crop (edit draft or resubmit returned application)
 // @route   PUT /api/farmers/crops/:id
 // @access  Private (FARMER)
 export const updateCrop = async (req, res) => {
@@ -429,6 +638,11 @@ export const updateCrop = async (req, res) => {
     const crop = await CropRegistration.findById(req.params.id);
     if (!crop) {
       return res.status(404).json({ success: false, message: 'Crop registration not found' });
+    }
+
+    const profile = await FarmerProfile.findOne({ userId: req.user._id });
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Farmer profile not found' });
     }
 
     const {
@@ -454,6 +668,33 @@ export const updateCrop = async (req, res) => {
       resubmitComment
     } = req.body;
 
+    const isDraft = crop.status === 'DRAFT';
+    const isReturned = crop.status === 'RETURNED_FOR_CORRECTION';
+    const isSubmitting = submit || resubmit;
+
+    // If attempting to submit or resubmit:
+    if (isSubmitting) {
+      // 1. Validate Mandal Deadline
+      const farmerMandal = crop.mandal || profile.mandal || 'Penamaluru';
+      const deadlineCheck = await checkMandalDeadline(farmerMandal);
+      if (deadlineCheck.passed) {
+        return res.status(400).json({
+          success: false,
+          message: `The crop registration deadline for ${farmerMandal} closed on ${new Date(deadlineCheck.deadline.deadlineDate).toLocaleString()}. Resubmission is no longer accepted after the deadline.`
+        });
+      }
+
+      // 2. Validate Mandatory Documents
+      const docsCheck = checkFarmerDocuments(profile);
+      if (!docsCheck.valid) {
+        return res.status(400).json({
+          success: false,
+          message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) before submitting for verification.`,
+          missingDocs: docsCheck.missingDocs
+        });
+      }
+    }
+
     if (cropName !== undefined && cropName.trim()) crop.cropName = cropName.trim();
     if (cropCategory !== undefined) crop.cropCategory = cropCategory;
     if (surveyNumber !== undefined && surveyNumber.trim()) crop.surveyNumber = surveyNumber.trim();
@@ -471,9 +712,6 @@ export const updateCrop = async (req, res) => {
     if (actualHarvest !== undefined) crop.actualHarvest = actualHarvest;
     if (priceSold !== undefined) crop.priceSold = priceSold;
 
-    const isDraft = crop.status === 'DRAFT';
-    const isSubmitting = submit || resubmit;
-
     if (isSubmitting) {
       crop.status = 'SUBMITTED';
       crop.submittedAt = new Date();
@@ -483,13 +721,11 @@ export const updateCrop = async (req, res) => {
         action: isDraft ? 'SUBMITTED' : 'RESUBMITTED',
         comment: isDraft
           ? (submitComment || 'Draft submitted digitally by farmer for officer verification')
-          : (resubmitComment || 'Corrected and resubmitted by farmer'),
+          : (resubmitComment || 'Corrected and resubmitted by farmer for officer review'),
         officerName: isDraft ? 'Farmer Self-Submission' : 'Farmer Resubmission'
       });
 
-      // Update farmer profile registration status
-      const profile = await FarmerProfile.findOne({ userId: req.user._id });
-      if (profile && profile.registrationStatus !== 'VERIFIED') {
+      if (profile.registrationStatus !== 'VERIFIED') {
         profile.registrationStatus = 'UNDER_VERIFICATION';
         await profile.save();
       }
@@ -513,7 +749,7 @@ export const updateCrop = async (req, res) => {
     await crop.populate('landId');
 
     const responseMessage = isSubmitting
-      ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully!')
+      ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully with corrections!')
       : 'Crop details updated successfully!';
 
     return res.status(200).json({
@@ -531,7 +767,7 @@ export const updateCrop = async (req, res) => {
 // @access  Private (FARMER)
 export const uploadDocument = async (req, res) => {
   try {
-    const { docType, fileName, fileSize, fileType, fileData } = req.body; // docType: 'aadhaarDoc' | 'passbookDoc' | 'landRecordDoc'
+    const { docType, fileName, fileSize, fileType, fileData } = req.body;
 
     const profile = await FarmerProfile.findOne({ userId: req.user._id });
     if (!profile) {
@@ -554,10 +790,120 @@ export const uploadDocument = async (req, res) => {
     await profile.save();
     return res.status(200).json({
       success: true,
-      message: `${docType} uploaded and verified successfully`,
+      message: `${docType} uploaded and saved successfully`,
       documents: profile.documents
     });
   } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Submit all draft/unsubmitted crops in a specific mandal for official officer verification
+// @route   POST /api/farmers/submit-mandal-registration
+// @access  Private (FARMER)
+export const submitMandalRegistration = async (req, res) => {
+  try {
+    const { mandal } = req.body;
+    if (!mandal) {
+      return res.status(400).json({ success: false, message: 'Mandal is required' });
+    }
+
+    const profile = await FarmerProfile.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user._id }]
+    });
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Farmer profile not found' });
+    }
+
+    // 1. Find lands belonging to this mandal
+    const farmerIdMatch = { $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] };
+    const lands = await Land.find({
+      ...farmerIdMatch,
+      mandal: new RegExp(`^${mandal}$`, 'i')
+    });
+    const landIds = lands.map(l => l._id);
+
+    // 2. Check if registration deadline has passed for this mandal
+    const deadlines = await getFarmerMandalDeadlines(profile, lands);
+    const mDeadline = deadlines.find(d => d.mandal.toLowerCase() === mandal.toLowerCase());
+    if (mDeadline && mDeadline.isDeadlinePassed) {
+      return res.status(400).json({
+        success: false,
+        message: `The registration deadline for ${mandal} Mandal has expired on ${new Date(mDeadline.deadlineDate).toLocaleDateString()}. Submissions cannot be accepted after the deadline.`
+      });
+    }
+
+    // 3. Validate mandatory government documents (3 required)
+    const docsCheck = checkFarmerDocuments(profile);
+    if (!docsCheck.valid) {
+      return res.status(400).json({
+        success: false,
+        message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) before submitting for verification.`
+      });
+    }
+
+    // 4. Find all crops in this mandal that are DRAFT or RETURNED_FOR_CORRECTION
+    const cropsToSubmit = await CropRegistration.find({
+      ...farmerIdMatch,
+      $or: [
+        { mandal: new RegExp(`^${mandal}$`, 'i') },
+        { landId: { $in: landIds } }
+      ],
+      status: { $in: ['DRAFT', 'RETURNED_FOR_CORRECTION'] }
+    });
+
+    if (cropsToSubmit.length === 0) {
+      const alreadySubmitted = await CropRegistration.countDocuments({
+        ...farmerIdMatch,
+        $or: [
+          { mandal: new RegExp(`^${mandal}$`, 'i') },
+          { landId: { $in: landIds } }
+        ],
+        status: { $in: ['SUBMITTED', 'UNDER_VERIFICATION', 'VERIFIED'] }
+      });
+
+      if (alreadySubmitted > 0) {
+        return res.status(200).json({
+          success: true,
+          message: `All crop registrations for ${mandal} Mandal have already been submitted and are under official review.`,
+          count: 0
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: `No crops found in ${mandal} Mandal to submit. Please add crops in Farm Records first.`
+      });
+    }
+
+    // 5. Update all eligible crops to SUBMITTED with current timestamp
+    const now = new Date();
+    for (const crop of cropsToSubmit) {
+      const wasReturned = crop.status === 'RETURNED_FOR_CORRECTION';
+      crop.status = 'SUBMITTED';
+      crop.submittedAt = now;
+      await crop.save();
+
+      await CropRegistrationHistory.create({
+        registrationId: crop._id,
+        action: wasReturned ? 'RESUBMITTED' : 'SUBMITTED',
+        comment: wasReturned
+          ? `Application corrected and resubmitted by farmer for ${mandal} Mandal verification`
+          : `Official registration submitted by farmer for ${mandal} Mandal Agriculture Officer verification`,
+        officerName: 'Farmer Self-Submission'
+      });
+    }
+
+    profile.registrationStatus = 'UNDER_VERIFICATION';
+    await profile.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully submitted ${cropsToSubmit.length} crop registration(s) in ${mandal} Mandal for Agriculture Officer verification!`,
+      count: cropsToSubmit.length
+    });
+  } catch (error) {
+    console.error('Submit mandal registration error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -57,12 +57,9 @@ export default function FarmerDashboard() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Namaste, {user?.name || 'Farmer'} 🌾
-            </h1>
-            <StatusBadge status={profile.registrationStatus || 'VERIFIED'} />
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Namaste, {user?.name || 'Farmer'} 🌾
+          </h1>
           <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">
             Farmer ID: <span className="font-mono font-bold text-teal-400">{profile.farmerId || 'FMR000123'}</span> •{' '}
             {profile.village ? `${profile.village}, ` : ''}{profile.district || 'Vijayawada'}

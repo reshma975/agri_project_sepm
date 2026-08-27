@@ -11,6 +11,14 @@ import { Product } from '../models/Product.js';
 import { ShopInventory } from '../models/ShopInventory.js';
 import { Review } from '../models/Review.js';
 import { GovernmentUpdate } from '../models/GovernmentUpdate.js';
+import { RegistrationDeadline } from '../models/RegistrationDeadline.js';
+
+// SVG Sample Base64 Document Templates for instant visual verification inspection
+const sampleAadhaarData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380" style="background:#ffffff;border-radius:12px;font-family:Arial,sans-serif;"><rect width="600" height="380" rx="12" fill="#fff" stroke="#ff9933" stroke-width="6"/><rect width="600" height="50" fill="#ff9933"/><text x="300" y="32" fill="#ffffff" font-size="18" font-weight="bold" text-anchor="middle">GOVERNMENT OF INDIA • UNIQUE IDENTIFICATION AUTHORITY</text><circle cx="300" cy="40" r="8" fill="#000088"/><rect x="35" y="80" width="120" height="150" fill="#e2e8f0" rx="8" stroke="#94a3b8" stroke-width="2"/><text x="95" y="165" font-size="36" text-anchor="middle">👨‍🌾</text><text x="180" y="105" font-size="13" font-weight="bold" fill="#64748b">Name / పేరు:</text><text x="180" y="128" font-size="18" font-weight="bold" fill="#0f172a">RAMESH PATEL</text><text x="180" y="155" font-size="13" font-weight="bold" fill="#64748b">Date of Birth / పుట్టిన తేదీ:</text><text x="180" y="175" font-size="15" font-weight="bold" fill="#1e293b">14/06/1982</text><text x="180" y="202" font-size="13" font-weight="bold" fill="#64748b">Gender / లింగం:</text><text x="180" y="222" font-size="15" font-weight="bold" fill="#1e293b">MALE / పురుషుడు</text><text x="35" y="270" font-size="13" font-weight="bold" fill="#64748b">Address / చిరునామా:</text><text x="35" y="290" font-size="13" fill="#334155">Plot 42, Main Road, Kankipadu Village, Penamaluru Mandal, Krishna Dist, AP - 521151</text><rect x="25" y="315" width="550" height="50" fill="#138808" rx="8"/><text x="300" y="348" fill="#ffffff" font-size="22" font-weight="bold" letter-spacing="4" text-anchor="middle">XXXX XXXX 4921</text></svg>`;
+
+const samplePassbookData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380" style="background:#ffffff;border-radius:12px;font-family:Arial,sans-serif;"><rect width="600" height="380" rx="12" fill="#f8fafc" stroke="#0284c7" stroke-width="5"/><rect width="600" height="60" fill="#0284c7"/><text x="300" y="38" fill="#ffffff" font-size="20" font-weight="bold" text-anchor="middle">STATE BANK OF INDIA • SAVINGS PASSBOOK</text><text x="40" y="95" font-size="12" font-weight="bold" fill="#64748b">Branch / బ్రాంచ్:</text><text x="40" y="115" font-size="14" font-weight="bold" fill="#0369a1">Kankipadu Main Branch (Code: 04521)</text><text x="340" y="95" font-size="12" font-weight="bold" fill="#64748b">IFSC Code:</text><text x="340" y="115" font-size="14" font-weight="bold" fill="#0369a1">SBIN0004521 (DBT Enabled)</text><line x1="40" y1="135" x2="560" y2="135" stroke="#cbd5e1" stroke-width="1.5"/><text x="40" y="165" font-size="12" font-weight="bold" fill="#64748b">Account Holder Name:</text><text x="40" y="188" font-size="18" font-weight="bold" fill="#0f172a">RAMESH PATEL</text><text x="340" y="165" font-size="12" font-weight="bold" fill="#64748b">Account Number:</text><text x="340" y="188" font-size="18" font-weight="bold" fill="#047857">3098 4421 8892</text><text x="40" y="225" font-size="12" font-weight="bold" fill="#64748b">Customer ID (CIF):</text><text x="40" y="245" font-size="14" fill="#334155">8891004218</text><text x="340" y="225" font-size="12" font-weight="bold" fill="#64748b">Direct Benefit Transfer (DBT):</text><text x="340" y="245" font-size="14" font-weight="bold" fill="#15803d">✅ Active / PM-KISAN Linked</text><rect x="40" y="280" width="520" height="75" fill="#f1f5f9" rx="8" stroke="#cbd5e1"/><text x="55" y="305" font-size="11" font-weight="bold" fill="#475569">Bank Seal &amp; Authorized Signature:</text><text x="55" y="335" font-size="13" font-weight="bold" fill="#0284c7">Verified &amp; Certified by Branch Manager, Kankipadu SBI</text></svg>`;
+
+const sampleLandRecordData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420" style="background:#fff;border-radius:12px;font-family:Arial,sans-serif;"><rect width="600" height="420" rx="12" fill="#fffefb" stroke="#854d0e" stroke-width="5"/><rect width="600" height="65" fill="#854d0e"/><text x="300" y="32" fill="#fef08a" font-size="16" font-weight="bold" text-anchor="middle">GOVERNMENT OF ANDHRA PRADESH • REVENUE DEPARTMENT</text><text x="300" y="52" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle">Form 1-B (Record of Rights / Pattadar Passbook Extract)</text><rect x="30" y="80" width="540" height="60" fill="#fefce8" rx="6" stroke="#ca8a04"/><text x="45" y="102" font-size="11" font-weight="bold" fill="#713f12">District: KRISHNA (VIJAYAWADA)</text><text x="240" y="102" font-size="11" font-weight="bold" fill="#713f12">Mandal: PENAMALURU</text><text x="410" y="102" font-size="11" font-weight="bold" fill="#713f12">Village: KANKIPADU</text><text x="45" y="125" font-size="11" font-weight="bold" fill="#713f12">Khata No: 412</text><text x="240" y="125" font-size="11" font-weight="bold" fill="#713f12">Pattadar: RAMESH PATEL</text><text x="410" y="125" font-size="11" font-weight="bold" fill="#713f12">Father: VENKATA PATEL</text><rect x="30" y="155" width="540" height="170" fill="#f8fafc" rx="6" stroke="#cbd5e1"/><text x="45" y="180" font-size="12" font-weight="bold" fill="#334155">Survey / Sub-Division No:</text><text x="230" y="180" font-size="14" font-weight="bold" fill="#0f172a">125/2</text><text x="45" y="210" font-size="12" font-weight="bold" fill="#334155">Total Extent (Area):</text><text x="230" y="210" font-size="14" font-weight="bold" fill="#0f172a">2.50 Acres (1.012 Hectares)</text><text x="45" y="240" font-size="12" font-weight="bold" fill="#334155">Nature of Land / Classification:</text><text x="230" y="240" font-size="14" fill="#334155">Dry / Cultivable Wet (Nanjai)</text><text x="45" y="270" font-size="12" font-weight="bold" fill="#334155">Ownership Rights:</text><text x="230" y="270" font-size="14" font-weight="bold" fill="#15803d">Pattadar / Self-Owned (RoR Certified)</text><text x="45" y="300" font-size="12" font-weight="bold" fill="#334155">Survey Boundary Verified:</text><text x="230" y="300" font-size="14" fill="#334155">North: Channel, South: Survey 126, East: Road, West: Survey 125/1</text><rect x="30" y="340" width="540" height="60" fill="#ecfdf5" rx="6" stroke="#10b981"/><text x="45" y="365" font-size="11" font-weight="bold" fill="#065f46">Digital Certification Status:</text><text x="45" y="385" font-size="12" font-weight="bold" fill="#047857">✅ Validated against AP Meebhoomi Land Records Database (Digital Sign: TAHSILDAR_PENAMALURU)</text></svg>`;
 
 export const seedDatabase = async () => {
   try {
@@ -42,6 +50,7 @@ export const seedDatabase = async () => {
       ShopInventory.deleteMany({}),
       Review.deleteMany({}),
       GovernmentUpdate.deleteMany({}),
+      RegistrationDeadline.deleteMany({}),
     ]);
 
     const salt = await bcrypt.genSalt(10);
@@ -83,7 +92,6 @@ export const seedDatabase = async () => {
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
     });
 
-
     // 2. Create Role Profiles
     const farmerProfile = await FarmerProfile.create({
       userId: farmerUser._id,
@@ -97,9 +105,30 @@ export const seedDatabase = async () => {
       preferredCrop: 'Paddy',
       registrationStatus: 'VERIFIED',
       documents: {
-        aadhaarDoc: { fileName: 'aadhaar_ramesh_verified.pdf', status: 'Verified', uploadedAt: new Date() },
-        passbookDoc: { fileName: 'bank_passbook_sbi_kankipadu.pdf', status: 'Verified', uploadedAt: new Date() },
-        landRecordDoc: { fileName: '1B_namoona_survey125_2.pdf', status: 'Verified', uploadedAt: new Date() }
+        aadhaarDoc: {
+          fileName: 'aadhaar_ramesh_verified.pdf',
+          fileSize: '1.4 MB',
+          fileType: 'image/svg+xml',
+          fileData: sampleAadhaarData,
+          status: 'Verified',
+          uploadedAt: new Date()
+        },
+        passbookDoc: {
+          fileName: 'bank_passbook_sbi_kankipadu.pdf',
+          fileSize: '920 KB',
+          fileType: 'image/svg+xml',
+          fileData: samplePassbookData,
+          status: 'Verified',
+          uploadedAt: new Date()
+        },
+        landRecordDoc: {
+          fileName: '1B_namoona_survey125_2.pdf',
+          fileSize: '2.1 MB',
+          fileType: 'image/svg+xml',
+          fileData: sampleLandRecordData,
+          status: 'Verified',
+          uploadedAt: new Date()
+        }
       }
     });
 
@@ -114,11 +143,42 @@ export const seedDatabase = async () => {
       userId: officerUser._id,
       officerId: 'AGR-OFC-401',
       department: 'Department of Agriculture & Farmer Welfare',
-      assignedArea: 'Vijayawada Mandal, Krishna District',
+      assignedArea: 'Penamaluru Mandal, Krishna District',
+      mandal: 'Penamaluru',
       district: 'Vijayawada',
       state: 'Andhra Pradesh',
       licenseNumber: 'AP-AGRI-OFF-2024-8841',
       designation: 'Assistant Agricultural Officer (AAO)'
+    });
+
+    // 2.1 Seed Registration Deadline for Penamaluru Mandal (30 Days in future)
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 30);
+    deadlineDate.setHours(23, 59, 59, 999);
+
+    await RegistrationDeadline.create({
+      mandal: 'Penamaluru',
+      district: 'Vijayawada',
+      season: 'Kharif',
+      year: 2026,
+      deadlineDate: deadlineDate,
+      description: 'Kharif 2026 Season Official Crop Registration & DBT Verification Window for Penamaluru Mandal.',
+      setByOfficer: officerProfile._id,
+      officerName: 'Dr. V. Sharma',
+      isActive: true
+    });
+
+    // Also seed deadline for Vijayawada mandal
+    await RegistrationDeadline.create({
+      mandal: 'Vijayawada',
+      district: 'Vijayawada',
+      season: 'Kharif',
+      year: 2026,
+      deadlineDate: deadlineDate,
+      description: 'Kharif 2026 Crop Pre-Registration Window for Vijayawada Mandal.',
+      setByOfficer: officerProfile._id,
+      officerName: 'Dr. V. Sharma',
+      isActive: true
     });
 
     // 3. Create Land Parcels
@@ -282,52 +342,77 @@ export const seedDatabase = async () => {
     });
 
     // 5. Create Shops
+    // 5. Create Shops with Clear Geographic Proximity (Village -> Mandal -> District -> Other)
     const shop1 = await Shop.create({
       shopId: 'SHP1001',
       ownerId: shopkeeperUser._id,
-      shopName: 'Sri Lakshmi Agro Agencies',
-      location: 'Vijayawada',
-      address: 'Shop No. 14, Main Rythu Bazaar Road, Benz Circle, Vijayawada',
+      shopName: 'Kokilampadu Kisan Agro Center',
+      location: 'Kokilampadu Village',
+      address: 'Main Bazar Road, Kokilampadu Village, Tiruvuru Mandal, NTR District',
       imageUrl: 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80',
-      phone: '+91 98480 44556',
-      ratingAverage: 4.8,
-      ratingCount: 24
+      phone: '+91 98480 11223',
+      ratingAverage: 4.9,
+      ratingCount: 38
     });
 
     const shop2 = await Shop.create({
       shopId: 'SHP1002',
       ownerId: shopkeeperUser._id,
-      shopName: 'Farm Needs & Seeds Center',
-      location: 'Vijayawada',
-      address: 'Near Old Bus Stand, Governorpet, Vijayawada',
+      shopName: 'Tiruvuru Rythu Seva Samithi',
+      location: 'Tiruvuru Mandal',
+      address: 'Near Old Bus Stand, Tiruvuru Mandal, NTR District',
       imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=600&q=80',
       phone: '+91 98481 99887',
-      ratingAverage: 4.5,
-      ratingCount: 18
+      ratingAverage: 4.7,
+      ratingCount: 29
     });
 
     const shop3 = await Shop.create({
       shopId: 'SHP1003',
       ownerId: shopkeeperUser._id,
-      shopName: 'Kisan Seva Kendra',
-      location: 'Mangalagiri',
-      address: 'Opp. APCO Showroom, GT Road, Mangalagiri',
+      shopName: 'Sri Lakshmi Agro Agencies',
+      location: 'Vijayawada',
+      address: 'Shop No. 14, Main Rythu Bazaar Road, Benz Circle, Vijayawada, NTR District',
       imageUrl: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=600&q=80',
       phone: '+91 98482 33445',
-      ratingAverage: 4.7,
-      ratingCount: 31
+      ratingAverage: 4.8,
+      ratingCount: 52
     });
 
     const shop4 = await Shop.create({
       shopId: 'SHP1004',
       ownerId: shopkeeperUser._id,
-      shopName: 'Balaji Fertilizers & Agro Chemicals',
-      location: 'Guntur',
-      address: 'Near Mirchi Yard, Ring Road, Guntur',
+      shopName: 'Penamaluru Grama Rythu Center',
+      location: 'Penamaluru Mandal',
+      address: 'Main Bandar Road, Penamaluru Mandal, Krishna District',
       imageUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=600&q=80',
       phone: '+91 98483 55667',
       ratingAverage: 4.6,
-      ratingCount: 42
+      ratingCount: 22
+    });
+
+    const shop5 = await Shop.create({
+      shopId: 'SHP1005',
+      ownerId: shopkeeperUser._id,
+      shopName: 'Balaji Fertilizers & Agro Chemicals',
+      location: 'Guntur',
+      address: 'Near Mirchi Yard, Ring Road, Guntur',
+      imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=600&q=80',
+      phone: '+91 98484 77889',
+      ratingAverage: 4.5,
+      ratingCount: 15
+    });
+
+    const shop6 = await Shop.create({
+      shopId: 'SHP1006',
+      ownerId: shopkeeperUser._id,
+      shopName: 'Deccan Agro Traders',
+      location: 'Hyderabad',
+      address: 'Kothapet Fruit Market Road, Hyderabad, Telangana',
+      imageUrl: 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80',
+      phone: '+91 98485 99001',
+      ratingAverage: 4.3,
+      ratingCount: 10
     });
 
     // 6. Create Base Products
@@ -582,11 +667,35 @@ export const seedDatabase = async () => {
         imageUrl: prodSoilTester.imageUrl
       },
 
-      // Shop 4: Balaji Fertilizers
+      // Shop 4: Penamaluru Grama Rythu Center
       {
         shopId: shop4._id,
         productId: prodUrea._id,
-        customName: 'KRIBHCO Urea',
+        customName: 'IFFCO Neem Coated Urea',
+        price: 266,
+        quantity: 110,
+        unit: 'Bag (45kg)',
+        rating: 4.8,
+        status: 'In Stock',
+        imageUrl: prodUrea.imageUrl
+      },
+      {
+        shopId: shop4._id,
+        productId: prodDAP._id,
+        customName: 'Gromor DAP 18:46:0',
+        price: 1350,
+        quantity: 40,
+        unit: 'Bag (50kg)',
+        rating: 4.7,
+        status: 'In Stock',
+        imageUrl: prodDAP.imageUrl
+      },
+
+      // Shop 5: Balaji Fertilizers (Guntur)
+      {
+        shopId: shop5._id,
+        productId: prodUrea._id,
+        customName: 'KRIBHCO Urea (Guntur Yard)',
         price: 270,
         quantity: 95,
         unit: 'Bag (45kg)',
@@ -595,7 +704,7 @@ export const seedDatabase = async () => {
         imageUrl: prodUrea.imageUrl
       },
       {
-        shopId: shop4._id,
+        shopId: shop5._id,
         productId: prodPotash._id,
         customName: 'Muriate of Potash',
         price: 1580,
@@ -604,6 +713,19 @@ export const seedDatabase = async () => {
         rating: 4.5,
         status: 'In Stock',
         imageUrl: prodPotash.imageUrl
+      },
+
+      // Shop 6: Deccan Agro Traders (Hyderabad)
+      {
+        shopId: shop6._id,
+        productId: prodUrea._id,
+        customName: 'Nagarjuna Urea (Hyderabad Market)',
+        price: 275,
+        quantity: 50,
+        unit: 'Bag (45kg)',
+        rating: 4.3,
+        status: 'In Stock',
+        imageUrl: prodUrea.imageUrl
       }
     ]);
 

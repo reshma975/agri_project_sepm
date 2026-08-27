@@ -15,12 +15,14 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  Info
+  Info,
+  ShieldCheck,
+  Sprout
 } from 'lucide-react';
 
 export default function ShopkeeperProfilePage() {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, switchRole } = useAuth();
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -81,6 +83,11 @@ export default function ShopkeeperProfilePage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const cleanPhone = (formData.phone || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return setError('Please enter a valid 10-digit mobile number (e.g. 9876543210).');
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -134,6 +141,95 @@ export default function ShopkeeperProfilePage() {
           <span>{error}</span>
         </div>
       )}
+
+      {/* Multi-Role Ecosystem Card */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#06181d]/90 border border-teal-500/30 shadow-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-teal-400" />
+            <h3 className="text-sm font-extrabold text-white">
+              Account Roles & Linked Portals
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-teal-500/30">
+            Unified Single Login
+          </span>
+        </div>
+        <p className="text-xs text-slate-300">
+          Your account uses unified credentials (same username, mobile phone & password) across all portals.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          {/* Shopkeeper (Current Active) */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-amber-500/50 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block">🏪 Shopkeeper Role</span>
+              <strong className="text-xs text-white">Active Session</strong>
+            </div>
+            <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Current Portal
+            </span>
+          </div>
+
+          {/* Farmer */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">👨‍🌾 Farmer Role</span>
+              <span className="text-xs text-slate-300">
+                {user?.roles?.includes('FARMER') ? 'Activated on account' : 'Not yet added'}
+              </span>
+            </div>
+            {user?.roles?.includes('FARMER') ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await switchRole('FARMER');
+                  if (res.success) window.location.href = '/farmer/dashboard';
+                }}
+                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
+              >
+                <span>Switch Portal ➔</span>
+              </button>
+            ) : (
+              <Link
+                to="/register?role=FARMER&mode=add"
+                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
+              >
+                + Add Farmer Role
+              </Link>
+            )}
+          </div>
+
+          {/* Officer */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">🏛️ Govt Officer</span>
+              <span className="text-xs text-slate-300">
+                {user?.roles?.includes('OFFICER') ? 'Activated on account' : 'Not yet added'}
+              </span>
+            </div>
+            {user?.roles?.includes('OFFICER') ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await switchRole('OFFICER');
+                  if (res.success) window.location.href = '/officer/dashboard';
+                }}
+                className="px-2.5 py-1 bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
+              >
+                <span>Switch Portal ➔</span>
+              </button>
+            ) : (
+              <Link
+                to="/register?role=OFFICER&mode=add"
+                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
+              >
+                + Add Officer Role
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Profile Form (Compact Dark Glass Theme) */}
       <div className="glass-card bg-[#06151a]/95 rounded-2xl p-5 sm:p-6 shadow-xl border border-teal-500/20">
@@ -215,7 +311,12 @@ export default function ShopkeeperProfilePage() {
                     type="tel"
                     name="phone"
                     value={formData.phone}
-                    onChange={handleChange}
+                    maxLength={10}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phone: digits });
+                      setError('');
+                    }}
                     required
                     className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
                   />

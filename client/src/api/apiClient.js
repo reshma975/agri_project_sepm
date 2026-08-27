@@ -24,9 +24,14 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // If unauthorized on protected route, clean local auth state
-      if (!window.location.pathname.includes('/login')) {
-        // Option to logout gracefully
+      // If user does not exist or token is invalid, clear stale token
+      const msg = error.response.data?.message;
+      if (msg === 'User not found' || msg?.includes('Not authorized') || msg?.includes('token invalid')) {
+        try {
+          localStorage.removeItem('farmsetu_token');
+        } catch (e) {
+          console.warn('Could not remove farmsetu_token', e);
+        }
       }
     }
     return Promise.reject(error);

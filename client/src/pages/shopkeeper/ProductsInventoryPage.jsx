@@ -137,23 +137,23 @@ export default function ProductsInventoryPage() {
             description: item.productId?.description || 'Quality agricultural input for high yield crops.',
             brand: item.productId?.brand || 'FarmSetu Certified',
             packSize: item.productId?.defaultUnit || item.unit || 'Standard Pack',
-            price: item.price || 500,
+            price: item.price || 0,
             unit: item.unit || 'kg',
-            quantity: item.quantity || 10,
-            totalValue: (item.price || 500) * (item.quantity || 10),
-            imageUrl: item.imageUrl || item.productId?.imageUrl || defaultProducts[0].imageUrl,
+            quantity: item.quantity || 0,
+            totalValue: (item.price || 0) * (item.quantity || 0),
+            imageUrl: item.imageUrl || item.productId?.imageUrl || 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=300&q=80',
             rawItem: item
           }));
           setProducts(formatted);
         } else {
-          setProducts(defaultProducts);
+          setProducts([]);
         }
       } else {
-        setProducts(defaultProducts);
+        setProducts([]);
       }
     } catch (err) {
       console.error('Error fetching inventory:', err);
-      setProducts(defaultProducts);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -301,7 +301,7 @@ export default function ProductsInventoryPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. 4 STAT CARDS ROW (DYNAMICALLY CALCULATED FROM REAL INVENTORY)           */}
+      {/* 3. 3 STAT CARDS ROW (DYNAMICALLY CALCULATED FROM REAL INVENTORY)           */}
       {/* ========================================================================= */}
       {(() => {
         const totalProductsCount = products.length;
@@ -313,7 +313,7 @@ export default function ProductsInventoryPage() {
         }, 0);
 
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Total Products */}
             <div className="glass-card bg-[#051419]/95 rounded-2xl p-5 border border-slate-700/80 shadow-md flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
@@ -349,7 +349,7 @@ export default function ProductsInventoryPage() {
             {/* Total Stock Value */}
             <div className="glass-card bg-[#051419]/95 rounded-2xl p-5 border border-slate-700/80 shadow-md flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                <Package className="w-6 h-6 text-teal-400" />
+                <IndianRupee className="w-6 h-6 text-teal-400" />
               </div>
               <div>
                 <span className="text-xs text-slate-400 font-semibold block">Total Stock Value</span>
@@ -357,18 +357,6 @@ export default function ProductsInventoryPage() {
                   ₹{totalStockValue.toLocaleString('en-IN')}
                 </div>
                 <span className="text-[11px] text-slate-400">Live inventory sum</span>
-              </div>
-            </div>
-
-            {/* Total Orders */}
-            <div className="glass-card bg-[#051419]/95 rounded-2xl p-5 border border-slate-700/80 shadow-md flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                <ShoppingCart className="w-6 h-6 text-teal-400" />
-              </div>
-              <div>
-                <span className="text-xs text-slate-400 font-semibold block">Total Orders</span>
-                <div className="text-2xl font-black text-white">342</div>
-                <span className="text-[11px] text-slate-400">This month</span>
               </div>
             </div>
           </div>
@@ -478,12 +466,52 @@ export default function ProductsInventoryPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. PRODUCT ITEMS LIST (MATCHING SCREENSHOT 1 DESIGN)                       */}
+      {/* 5. PRODUCT ITEMS (DYNAMIC LIST / GRID VIEW OR EMPTY STATE)                */}
       {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* 5. PRODUCT ITEMS (DYNAMIC LIST / GRID VIEW)                               */}
-      {/* ========================================================================= */}
-      {viewMode === 'list' ? (
+      {filteredProducts.length === 0 ? (
+        /* Empty State */
+        <div className="glass-card bg-[#051419]/95 rounded-3xl p-10 sm:p-14 border border-dashed border-teal-500/30 text-center space-y-4 shadow-xl">
+          <div className="w-16 h-16 rounded-3xl bg-teal-950/90 border border-teal-400/40 text-teal-400 mx-auto flex items-center justify-center shadow-[0_0_25px_rgba(45,212,191,0.15)]">
+            <Package className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h3 className="text-lg sm:text-xl font-black text-white">
+              {searchQuery || selectedCategory !== 'All Categories' || selectedStatus !== 'All Status'
+                ? 'No Products Found'
+                : 'No Products in Your Shop Yet 📦'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              {searchQuery || selectedCategory !== 'All Categories' || selectedStatus !== 'All Status'
+                ? 'No items matched your current search filters. Try adjusting your query or category selection.'
+                : `You haven't listed any seeds, fertilizers, or pesticides for ${shop?.shopName || 'your shop'} yet. Click the button below to add your first product!`}
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            {searchQuery || selectedCategory !== 'All Categories' || selectedStatus !== 'All Status' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All Categories');
+                  setSelectedStatus('All Status');
+                  setSearchParams({});
+                }}
+                className="px-5 py-2.5 bg-[#071d24] hover:bg-[#0b2b35] text-teal-300 rounded-xl text-xs font-bold border border-teal-500/40 cursor-pointer transition-all"
+              >
+                Reset All Filters
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setAddProductOpen(true)}
+              className="px-6 py-2.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer hover:scale-105"
+            >
+              <Plus className="w-4 h-4 text-slate-950" />
+              <span>+ Add Your First Product</span>
+            </button>
+          </div>
+        </div>
+      ) : viewMode === 'list' ? (
         /* LIST VIEW */
         <div className="space-y-3">
           {filteredProducts.map((item) => (

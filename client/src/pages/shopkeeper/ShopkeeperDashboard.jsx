@@ -403,9 +403,9 @@ export default function ShopkeeperDashboard() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. 4 STAT CARDS ROW (WITH POPUP MODAL FOR CATEGORIES)                    */}
+      {/* 2. STAT CARDS ROW (TOTAL PRODUCTS, CATEGORIES, SHOP RATING)               */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Products */}
         <div
           onClick={() => navigate('/shopkeeper/products')}
@@ -436,18 +436,6 @@ export default function ShopkeeperDashboard() {
             </div>
             <div className="text-2xl font-black text-[#2dd4bf] text-glow-teal">{categoriesCount}</div>
             <span className="text-[11px] text-teal-300/80">Click to explore cards</span>
-          </div>
-        </div>
-
-        {/* Total Orders / Enquiries */}
-        <div className="glass-card bg-[#051419]/95 rounded-2xl p-5 border border-slate-700/80 shadow-md flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-teal-950/80 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-            <ShoppingCart className="w-6 h-6 text-teal-400" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-semibold block">Total Orders</span>
-            <div className="text-2xl font-black text-white">{ordersCount}</div>
-            <span className="text-[11px] text-slate-400">This month</span>
           </div>
         </div>
 

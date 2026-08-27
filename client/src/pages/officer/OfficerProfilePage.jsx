@@ -14,18 +14,21 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  Award
+  Award,
+  Sprout,
+  Store
 } from 'lucide-react';
 
 export default function OfficerProfilePage() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, switchRole } = useAuth();
   const officer = user?.profile || {};
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
     email: user?.email || '',
-    assignedArea: officer.assignedArea || 'Vijayawada Mandal, Krishna District',
+    assignedArea: officer.assignedArea || 'Penamaluru Mandal, Krishna District',
+    mandal: officer.mandal || 'Penamaluru',
     licenseNumber: officer.licenseNumber || 'AP-AGRI-OFF-2024-8841',
     district: officer.district || 'Vijayawada',
   });
@@ -41,7 +44,8 @@ export default function OfficerProfilePage() {
         name: user.name || '',
         phone: user.phone || '',
         email: user.email || '',
-        assignedArea: user.profile?.assignedArea || 'Vijayawada Mandal, Krishna District',
+        assignedArea: user.profile?.assignedArea || 'Penamaluru Mandal, Krishna District',
+        mandal: user.profile?.mandal || 'Penamaluru',
         licenseNumber: user.profile?.licenseNumber || 'AP-AGRI-OFF-2024-8841',
         district: user.profile?.district || 'Vijayawada',
       });
@@ -56,6 +60,11 @@ export default function OfficerProfilePage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const cleanPhone = (formData.phone || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return setError('Please enter a valid 10-digit mobile number (e.g. 9876543210).');
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -106,6 +115,95 @@ export default function OfficerProfilePage() {
         </div>
       )}
 
+      {/* Multi-Role Ecosystem Card */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-[#06181d]/90 border border-teal-500/30 shadow-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-teal-400" />
+            <h3 className="text-sm font-extrabold text-white">
+              Account Roles & Linked Portals
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-teal-500/30">
+            Unified Single Login
+          </span>
+        </div>
+        <p className="text-xs text-slate-300">
+          Your account uses unified credentials (same username, mobile phone & password) across all portals.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          {/* Officer (Current Active) */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-cyan-500/50 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">🏛️ Govt Officer</span>
+              <strong className="text-xs text-white">Active Session</strong>
+            </div>
+            <span className="text-[11px] text-cyan-300 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Current Portal
+            </span>
+          </div>
+
+          {/* Farmer */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">👨‍🌾 Farmer Role</span>
+              <span className="text-xs text-slate-300">
+                {user?.roles?.includes('FARMER') ? 'Activated on account' : 'Not yet added'}
+              </span>
+            </div>
+            {user?.roles?.includes('FARMER') ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await switchRole('FARMER');
+                  if (res.success) window.location.href = '/farmer/dashboard';
+                }}
+                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
+              >
+                <span>Switch Portal ➔</span>
+              </button>
+            ) : (
+              <Link
+                to="/register?role=FARMER&mode=add"
+                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
+              >
+                + Add Farmer Role
+              </Link>
+            )}
+          </div>
+
+          {/* Shopkeeper */}
+          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
+            <div>
+              <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block">🏪 Shopkeeper Role</span>
+              <span className="text-xs text-slate-300">
+                {user?.roles?.includes('SHOPKEEPER') ? 'Activated on account' : 'Not yet added'}
+              </span>
+            </div>
+            {user?.roles?.includes('SHOPKEEPER') ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await switchRole('SHOPKEEPER');
+                  if (res.success) window.location.href = '/shopkeeper/dashboard';
+                }}
+                className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
+              >
+                <span>Switch Portal ➔</span>
+              </button>
+            ) : (
+              <Link
+                to="/register?role=SHOPKEEPER&mode=add"
+                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
+              >
+                + Add Shopkeeper Role
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Govt Profile Card */}
       <div className="bg-[#06151a]/95 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700">
         <form onSubmit={handleSave} className="space-y-5">
@@ -154,7 +252,7 @@ export default function OfficerProfilePage() {
             {/* Phone No */}
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Phone Number
+                Phone Number (10 Digits)
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
@@ -162,8 +260,14 @@ export default function OfficerProfilePage() {
                   type="tel"
                   name="phone"
                   value={formData.phone}
-                  onChange={handleChange}
+                  maxLength={10}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: digits });
+                    setError('');
+                  }}
                   required
+                  placeholder="10-digit mobile"
                   className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 outline-none transition-all"
                 />
               </div>
@@ -204,17 +308,37 @@ export default function OfficerProfilePage() {
               </div>
             </div>
 
+            {/* Designated Mandal */}
+            <div>
+              <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-teal-400" />
+                <span>Designated Mandal Jurisdiction *</span>
+              </label>
+              <input
+                type="text"
+                name="mandal"
+                value={formData.mandal}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Penamaluru"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/50 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all font-semibold"
+              />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                You will receive and verify crop registrations submitted by farmers registered in this Mandal.
+              </span>
+            </div>
+
             {/* Area Governing */}
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Area Governing (Assigned Jurisdiction)
+                Full Office Jurisdiction / District
               </label>
               <input
                 type="text"
                 name="assignedArea"
                 value={formData.assignedArea}
                 onChange={handleChange}
-                placeholder="e.g. Vijayawada Mandal, Krishna District"
+                placeholder="e.g. Penamaluru Mandal, Krishna District"
                 className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 outline-none transition-all placeholder:text-slate-500"
               />
             </div>

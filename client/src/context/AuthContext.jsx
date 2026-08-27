@@ -1,34 +1,60 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiClient from '../api/apiClient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('farmsetu_token') || null);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('farmsetu_token') || null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
+
+  const logout = useCallback(() => {
+    try {
+      localStorage.removeItem('farmsetu_token');
+    } catch (e) {
+      console.warn('Could not clear token from localStorage', e);
+    }
+    setToken(null);
+    setUser(null);
+  }, []);
 
   // Fetch current user details on mount if token exists
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       if (token) {
         try {
           const res = await apiClient.get('/auth/me');
-          if (res.data.success) {
+          if (res.data?.success && isMounted) {
             setUser(res.data.user);
-          } else {
+          } else if (isMounted) {
             logout();
           }
         } catch (err) {
-          console.error('Session expired or error checking auth:', err);
-          logout();
+          console.warn('Session check failed or expired:', err.message);
+          if (isMounted) {
+            logout();
+          }
         }
       }
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     };
 
     checkAuth();
-  }, [token]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token, logout]);
 
   const login = async (identifier, password, role) => {
     try {
@@ -44,7 +70,9 @@ export const AuthProvider = ({ children }) => {
       return {
         success: false,
         message: err.response?.data?.message || 'Login failed. Please check your credentials.',
-        availableRoles: err.response?.data?.availableRoles
+        availableRoles: err.response?.data?.availableRoles,
+        user: err.response?.data?.user,
+        token: err.response?.data?.token
       };
     }
   };
@@ -69,6 +97,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const addRole = async (formData) => {
+    try {
+      const res = await apiClient.post('/auth/add-role', formData);
+      if (res.data.success) {
+        localStorage.setItem('farmsetu_token', res.data.token);
+        setToken(res.data.token);
+        setUser(res.data.user);
+        return { success: true, user: res.data.user, message: res.data.message };
+      }
+      return { success: false, message: res.data.message || 'Failed to add role' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Failed to add role. Please check details.',
+        alreadyHasRole: err.response?.data?.alreadyHasRole
+      };
+    }
+  };
+
+  const checkIdentity = async (identifier) => {
+    try {
+      const res = await apiClient.post('/auth/check-identity', { identifier });
+      return res.data;
+    } catch (err) {
+      return { success: false, exists: false };
+    }
+  };
+
   const switchRole = async (targetRole) => {
     try {
       const res = await apiClient.post('/auth/switch-role', { targetRole });
@@ -85,12 +141,6 @@ export const AuthProvider = ({ children }) => {
         message: err.response?.data?.message || 'Failed to switch role'
       };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('farmsetu_token');
-    setToken(null);
-    setUser(null);
   };
 
   const updateProfile = async (profileData) => {
@@ -122,17 +172,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
+    if (!token) return;
     try {
       const res = await apiClient.get('/auth/me');
-      if (res.data.success) {
+      if (res.data?.success) {
         setUser(res.data.user);
       }
     } catch (err) {
-      console.error('Error refreshing user:', err);
+      console.warn('Failed to refresh user:', err.message);
     }
   };
 
-  const userRoles = user?.roles && user.roles.length > 0 ? user.roles : (user?.role ? [user.role] : []);
+  const userRoles = user?.roles && user.roles.length > 0
+    ? user.roles
+    : user?.role
+    ? [user.role]
+    : [];
 
   return (
     <AuthContext.Provider
@@ -142,6 +197,8 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        addRole,
+        checkIdentity,
         switchRole,
         logout,
         updateProfile,

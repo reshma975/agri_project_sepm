@@ -12,12 +12,21 @@ export const connectDB = async () => {
       console.log(`📡 Attempting connection to MongoDB (${mongoUri.includes('@') ? 'Remote Atlas' : 'Local URI'})...`);
       const options = {
         serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        family: 4, // Force IPv4 to prevent DNS ENOTFOUND issues on Windows / certain ISPs
+        maxPoolSize: 10,
+        retryWrites: true
       };
       if (process.env.MONGODB_DB_NAME) {
         options.dbName = process.env.MONGODB_DB_NAME;
       }
       const conn = await mongoose.connect(mongoUri, options);
       console.log(`🌾 MongoDB Connected Successfully: ${conn.connection.host} (Database: ${conn.connection.name})`);
+
+      mongoose.connection.on('error', (err) => {
+        console.error('⚠️ MongoDB Connection runtime error:', err.message);
+      });
+
       return conn;
     } catch (err) {
       console.warn(`⚠️ Could not connect to configured MongoDB (${err.message}).`);
@@ -35,7 +44,7 @@ export const connectDB = async () => {
       }
     });
     const inMemoryUri = mongod.getUri();
-    const conn = await mongoose.connect(inMemoryUri);
+    const conn = await mongoose.connect(inMemoryUri, { family: 4 });
     console.log(`🌾 In-Memory MongoDB Connected & Ready: ${conn.connection.host}/${conn.connection.name}`);
     return conn;
   } catch (error) {

@@ -21,7 +21,12 @@ const officerProfileSchema = new mongoose.Schema(
     assignedArea: {
       type: String,
       required: true,
-      default: 'Vijayawada Mandal, Krishna District',
+      default: 'Penamaluru Mandal, Krishna District',
+    },
+    mandal: {
+      type: String,
+      default: 'Penamaluru',
+      trim: true,
     },
     district: {
       type: String,

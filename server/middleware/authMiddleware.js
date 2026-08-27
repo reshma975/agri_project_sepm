@@ -67,3 +67,23 @@ export const requireRole = (...roles) => {
     next();
   };
 };
+
+export const optionalAuth = async (req, res, next) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'farmsetu_jwt_fallback_secret');
+      const user = await User.findById(decoded.id).select('-passwordHash');
+      if (user) {
+        if (!user.roles || user.roles.length === 0) {
+          user.roles = user.role ? [user.role] : ['FARMER'];
+        }
+        req.user = user;
+        req.currentRole = decoded.role || user.roles[0];
+      }
+    } catch (e) {
+      // Pass through without req.user
+    }
+  }
+  next();
+};
