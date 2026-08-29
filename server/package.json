@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "seed": "node seed/seedDatabase.js"
+    "seed": "node scripts/runSeed.js",
+    "clear-db": "node scripts/clearDatabase.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

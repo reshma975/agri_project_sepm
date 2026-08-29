@@ -184,9 +184,9 @@ export default function Navbar() {
                 </Link>
                 
                 <Link
-                  to="/farmer/crops"
+                  to="/farmer/farm-records"
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                    isNavActive('/farmer/crops')
+                    isNavActive('/farmer/farm-records') || isNavActive('/farmer/crops')
                       ? 'text-teal-300 bg-[#0c2830] border border-teal-500/30 shadow-xs'
                       : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}

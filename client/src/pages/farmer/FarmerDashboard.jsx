@@ -69,11 +69,11 @@ export default function FarmerDashboard() {
         {/* Quick Actions */}
         <div className="flex items-center gap-2.5">
           <Link
-            to="/farmer/crops/register"
+            to="/farmer/farm-records"
             className="px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-extrabold rounded-2xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2"
           >
-            <FilePlus className="w-4 h-4" />
-            + Register New Crop
+            <LandPlot className="w-4 h-4" />
+            + Add Crop / Land Parcel
           </Link>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function FarmerDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Card 1: Digital Farm Records */}
           <Link
-            to="/farmer/crops"
+            to="/farmer/farm-records"
             className="glass-card rounded-3xl p-6 border border-teal-500/20 hover:border-teal-400/50 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">

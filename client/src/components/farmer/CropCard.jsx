@@ -52,12 +52,6 @@ export default function CropCard({ crop, onClick }) {
         </div>
       )}
 
-      {crop.status === 'DRAFT' && (
-        <div className="mt-3 p-2 bg-amber-950/40 border border-amber-500/30 rounded-xl text-[11px] text-amber-300 flex items-center justify-between font-medium">
-          <span>📝 Saved as Draft</span>
-          <span className="text-[10px] font-bold text-slate-950 bg-teal-400 px-2 py-0.5 rounded-md shadow-2xs">Click to Submit →</span>
-        </div>
-      )}
 
       <div className="mt-3.5 flex items-center justify-between text-xs font-bold text-teal-400 group-hover:translate-x-1 transition-transform">
         <span>View / Edit Crop Details</span>

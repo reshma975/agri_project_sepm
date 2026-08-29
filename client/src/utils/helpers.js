@@ -66,11 +66,15 @@ export const getStatusConfig = (status) => {
       };
     case 'DRAFT':
     case 'Draft':
+    case 'UNSUBMITTED':
+    case 'Not Submitted':
+    case 'READY_TO_SUBMIT':
+    case 'Ready to Submit':
       return {
-        bg: 'bg-slate-900 text-slate-300 border-slate-700',
-        dot: 'bg-slate-400',
-        label: 'Draft',
-        icon: 'file-text',
+        bg: 'bg-[#030b0e] text-amber-300 border-amber-500/40',
+        dot: 'bg-amber-400',
+        label: 'Ready to Submit',
+        icon: 'clock',
       };
     default:
       return {

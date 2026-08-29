@@ -18,7 +18,17 @@ const cropRegistrationHistorySchema = new mongoose.Schema(
     },
     action: {
       type: String,
-      enum: ['SUBMITTED', 'VERIFIED', 'RETURNED_FOR_CORRECTION', 'REJECTED', 'RESUBMITTED', 'DRAFT_SAVED', 'UPDATED', 'EDITED'],
+      enum: [
+        'SUBMITTED',
+        'VERIFIED',
+        'RETURNED_FOR_CORRECTION',
+        'REJECTED',
+        'RESUBMITTED',
+        'DRAFT_SAVED',
+        'DRAFT_RECORDED',
+        'UPDATED',
+        'EDITED',
+      ],
       required: true,
     },
     comment: {

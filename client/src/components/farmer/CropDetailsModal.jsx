@@ -94,7 +94,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
   const isVerified = displayCrop.status === 'VERIFIED';
   const isRejected = displayCrop.status === 'REJECTED';
 
-  // Farm records are editable by the farmer
+  // Farm records are editable by the farmer in farm records view
   const canEdit = !readOnly;
 
   // Handle direct submission (from Draft or Returned) or saving edits
@@ -205,16 +205,6 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-            {canEdit && !isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="px-3 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer hover:border-teal-400"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-teal-400" />
-                <span>{isReturned ? 'Edit & Resubmit' : 'Edit Details'}</span>
-              </button>
-            )}
             <StatusBadge status={displayCrop.status} />
           </div>
         </div>
@@ -234,106 +224,32 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
           </div>
         )}
 
-        {/* 1. PENDING STATUS BANNER */}
-        {isPending && !isEditing && (
-          <div className="p-3.5 rounded-2xl bg-teal-950/40 border border-teal-500/30 text-xs text-teal-200 flex items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-teal-400 flex-shrink-0" />
-              <span>
-                <strong>Pending Officer Verification:</strong> Application is currently under review. You can edit farm record details anytime.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="px-3 py-1 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
-            >
-              <Edit3 className="w-3 h-3 text-teal-400" />
-              <span>Edit</span>
-            </button>
-          </div>
-        )}
 
         {/* 2. RETURNED FOR RESUBMISSION CALLOUT */}
         {isReturned && !isEditing && (
-          <div className="p-4.5 rounded-2xl bg-orange-950/60 border border-orange-500/50 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#030b0e] text-orange-400 border border-orange-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <RotateCcw className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
-                  <span>Resubmission Requested by Agriculture Officer</span>
-                  <span className="text-[10px] font-bold text-orange-300 bg-orange-950 px-2 py-0.5 rounded-md border border-orange-500/30">
-                    Action Needed
-                  </span>
-                </h4>
-                {displayCrop.officerComment && (
-                  <p className="text-xs text-white bg-[#030b0e] p-2.5 rounded-xl border border-slate-700 font-medium italic">
-                    Officer Remarks: "{displayCrop.officerComment}"
-                  </p>
-                )}
-                <p className="text-[11px] text-slate-300">
-                  Please update requested details and click "Resubmit to Officer" for approval.
-                </p>
-              </div>
+          <div className="p-4.5 rounded-2xl bg-orange-950/60 border border-orange-500/50 shadow-md flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#030b0e] text-orange-400 border border-orange-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <RotateCcw className="w-5 h-5" />
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2.5 btn-glow-primary text-slate-950 text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-1.5 self-end sm:self-center flex-shrink-0 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-slate-950" />
-              <span>Edit &amp; Resubmit</span>
-            </button>
+            <div className="space-y-1">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
+                <span>Resubmission Requested by Agriculture Officer</span>
+                <span className="text-[10px] font-bold text-orange-300 bg-orange-950 px-2 py-0.5 rounded-md border border-orange-500/30">
+                  Action Needed
+                </span>
+              </h4>
+              {displayCrop.officerComment && (
+                <p className="text-xs text-white bg-[#030b0e] p-2.5 rounded-xl border border-slate-700 font-medium italic">
+                  Officer Remarks: "{displayCrop.officerComment}"
+                </p>
+              )}
+              <p className="text-[11px] text-slate-300">
+                Please click "Edit & Resubmit" below to update requested details and resubmit for approval.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* 3. DRAFT CALLOUT BANNER */}
-        {isDraft && !isEditing && (
-          <div className="p-4 rounded-2xl bg-[#06151a]/90 border border-slate-700 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#030b0e] text-slate-300 border border-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <span>Saved as Draft</span>
-                  <span className="text-[10px] font-bold text-slate-300 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-700">
-                    Not Submitted Yet
-                  </span>
-                </h4>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  You can edit details and submit for verification when ready.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-stretch sm:self-center flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#030b0e] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-teal-400" />
-                <span>Edit Draft</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSaveOrSubmit(true)}
-                disabled={loading || deadlineExpired}
-                className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-black rounded-full shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  deadlineExpired ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed' : 'btn-glow-primary text-slate-950'
-                }`}
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{loading ? 'Submitting...' : 'Submit Now'}</span>
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* 4. VERIFIED CALLOUT BANNER */}
         {isVerified && !isEditing && (
@@ -661,17 +577,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                 Cancel
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleSaveOrSubmit(false)}
-                disabled={loading}
-                className="px-4 py-2 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5 text-teal-400" />
-                <span>{loading ? 'Saving...' : 'Save Changes'}</span>
-              </button>
-
-              {isReturned && (
+              {isReturned ? (
                 <button
                   type="button"
                   onClick={() => handleSaveOrSubmit(true)}
@@ -683,19 +589,15 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                   <Send className="w-3.5 h-3.5" />
                   <span>{loading ? 'Submitting...' : 'Save & Resubmit to Officer'}</span>
                 </button>
-              )}
-
-              {isDraft && (
+              ) : (
                 <button
                   type="button"
-                  onClick={() => handleSaveOrSubmit(true)}
-                  disabled={loading || deadlineExpired}
-                  className={`px-5 py-2 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
-                    deadlineExpired ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed' : 'btn-glow-primary text-slate-950'
-                  }`}
+                  onClick={() => handleSaveOrSubmit(false)}
+                  disabled={loading}
+                  className="px-4 py-2 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{loading ? 'Submitting...' : 'Submit for Verification'}</span>
+                  <Save className="w-3.5 h-3.5 text-teal-400" />
+                  <span>{loading ? 'Saving...' : 'Save Changes'}</span>
                 </button>
               )}
             </div>
@@ -712,29 +614,21 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                 className="px-3.5 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer hover:border-teal-400"
               >
                 <Edit3 className="w-3.5 h-3.5 text-teal-400" />
-                <span>Edit Crop Details</span>
+                <span>{isReturned ? 'Edit & Resubmit' : 'Edit Details'}</span>
               </button>
             )}
-            {readOnly && (
+            {!canEdit && (
               <span className="text-xs text-slate-400 italic">
-                🔒 Cadastral &amp; verification record is view-only.
+                {isVerified
+                  ? '✅ Verified & certified official record (read-only).'
+                  : isPending
+                  ? '🔒 Application is under review with Agriculture Officer (read-only).'
+                  : '🔒 Cadastral & verification record is view-only.'}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            {isDraft && !isEditing && canEdit && (
-              <button
-                type="button"
-                onClick={() => handleSaveOrSubmit(true)}
-                disabled={loading || deadlineExpired}
-                className="px-4 py-2 btn-glow-primary text-slate-950 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Submit for Verification</span>
-              </button>
-            )}
-
             <button
               type="button"
               onClick={onClose}

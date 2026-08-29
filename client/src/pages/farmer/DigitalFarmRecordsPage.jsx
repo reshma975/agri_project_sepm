@@ -51,6 +51,7 @@ export default function DigitalFarmRecordsPage() {
   const [newLandData, setNewLandData] = useState({
     surveyNumber: '',
     totalArea: '2.0',
+    cultivatedArea: '',
     village: 'Kankipadu',
     mandal: 'Penamaluru',
     district: 'Vijayawada',
@@ -119,13 +120,37 @@ export default function DigitalFarmRecordsPage() {
     ? lands.find((l) => l.surveyNumber && l.surveyNumber.trim().toLowerCase() === newLandData.surveyNumber.trim().toLowerCase())
     : null;
 
+  const parcelCrops = matchedExistingLand
+    ? crops.filter(
+        (c) =>
+          c.surveyNumber &&
+          c.surveyNumber.trim().toLowerCase() === matchedExistingLand.surveyNumber.trim().toLowerCase() &&
+          c.status !== 'REJECTED'
+      )
+    : [];
+
+  const allocatedArea = parcelCrops.reduce((sum, c) => sum + (Number(c.cultivatedArea) || 0), 0);
+  const totalParcelArea = parseFloat(matchedExistingLand?.totalArea || newLandData.totalArea || 0);
+  const remainingAvailableArea = Math.max(0, totalParcelArea - allocatedArea);
+
   const handleSurveyNumberChange = (value) => {
     const matched = lands.find((l) => l.surveyNumber && l.surveyNumber.trim().toLowerCase() === value.trim().toLowerCase());
     if (matched) {
+      const pCrops = crops.filter(
+        (c) =>
+          c.surveyNumber &&
+          c.surveyNumber.trim().toLowerCase() === matched.surveyNumber.trim().toLowerCase() &&
+          c.status !== 'REJECTED'
+      );
+      const allocated = pCrops.reduce((sum, c) => sum + (Number(c.cultivatedArea) || 0), 0);
+      const totArea = parseFloat(matched.totalArea || 2.0);
+      const avail = Math.max(0, totArea - allocated);
+
       setNewLandData((prev) => ({
         ...prev,
         surveyNumber: value,
         totalArea: matched.totalArea ? matched.totalArea.toString() : prev.totalArea,
+        cultivatedArea: avail > 0 ? (avail <= 2 ? avail.toString() : '2.0') : '',
         ownershipType: matched.ownershipType || 'Owned',
         village: matched.village || prev.village,
         mandal: matched.mandal || prev.mandal,
@@ -135,6 +160,7 @@ export default function DigitalFarmRecordsPage() {
       setNewLandData((prev) => ({
         ...prev,
         surveyNumber: value,
+        cultivatedArea: '',
       }));
     }
   };
@@ -144,8 +170,36 @@ export default function DigitalFarmRecordsPage() {
     if (!newLandData.surveyNumber.trim()) {
       return setLandModalError('Please enter a Survey Number.');
     }
-    if (!newLandData.totalArea || parseFloat(newLandData.totalArea) <= 0) {
+    const totalAreaNum = parseFloat(newLandData.totalArea);
+    if (!newLandData.totalArea || isNaN(totalAreaNum) || totalAreaNum <= 0) {
       return setLandModalError('Please enter a valid Total Land Area in Acres.');
+    }
+
+    if (newLandData.currentCrop?.trim()) {
+      const cultAreaNum = newLandData.cultivatedArea
+        ? parseFloat(newLandData.cultivatedArea)
+        : (matchedExistingLand ? remainingAvailableArea : totalAreaNum);
+
+      if (isNaN(cultAreaNum) || cultAreaNum <= 0) {
+        return setLandModalError('Please enter a valid Cultivated Area in Acres for this crop.');
+      }
+
+      if (matchedExistingLand) {
+        if (remainingAvailableArea <= 0.001) {
+          return setLandModalError(
+            `Cannot add more crops to Survey No. ${matchedExistingLand.surveyNumber}. All ${totalParcelArea} Acres are already allocated to existing crops (${parcelCrops.map(c => `${c.cropName}: ${c.cultivatedArea} Ac`).join(', ')}).`
+          );
+        }
+        if (cultAreaNum > remainingAvailableArea + 0.001) {
+          return setLandModalError(
+            `Cultivated area (${cultAreaNum} Acres) exceeds the remaining available land on this parcel (${remainingAvailableArea.toFixed(1)} Acres available out of ${totalParcelArea} Acres).`
+          );
+        }
+      } else {
+        if (cultAreaNum > totalAreaNum) {
+          return setLandModalError(`Cultivated area (${cultAreaNum} Acres) cannot exceed total parcel area (${totalAreaNum} Acres).`);
+        }
+      }
     }
 
     setLandSaving(true);
@@ -153,9 +207,14 @@ export default function DigitalFarmRecordsPage() {
     setLandModalSuccess('');
 
     try {
+      const cultArea = newLandData.cultivatedArea
+        ? parseFloat(newLandData.cultivatedArea)
+        : (matchedExistingLand ? remainingAvailableArea : totalAreaNum);
+
       const res = await apiClient.post('/farmers/lands', {
         surveyNumber: newLandData.surveyNumber.trim(),
-        totalArea: parseFloat(newLandData.totalArea),
+        totalArea: totalAreaNum,
+        cultivatedArea: cultArea,
         village: newLandData.village,
         mandal: newLandData.mandal,
         district: newLandData.district,
@@ -168,7 +227,7 @@ export default function DigitalFarmRecordsPage() {
       if (res.data.success) {
         setLandModalSuccess(
           `Land Parcel (${res.data.land.landId || 'New'} • Survey No. ${res.data.land.surveyNumber}) updated successfully!${
-            res.data.registeredCrop ? ` Crop (${res.data.registeredCrop.cropName}) registered!` : ''
+            res.data.registeredCrop ? ` Crop (${res.data.registeredCrop.cropName} - ${res.data.registeredCrop.cultivatedArea} Acres) registered!` : ''
           }`
         );
         fetchRecords();
@@ -178,6 +237,7 @@ export default function DigitalFarmRecordsPage() {
           setNewLandData({
             surveyNumber: '',
             totalArea: '2.0',
+            cultivatedArea: '',
             village: 'Kankipadu',
             mandal: 'Penamaluru',
             district: 'Vijayawada',
@@ -324,10 +384,10 @@ export default function DigitalFarmRecordsPage() {
         </div>
       </div>
 
-      {/* Mandal Registration Deadline Info Banner */}
-      <div className="space-y-2.5">
-        {mandalDeadlines.length > 0 ? (
-          mandalDeadlines.map((md, idx) => {
+      {/* Mandal Registration Deadline Info Banner (Shown ONLY when lands are registered in that mandal) */}
+      {mandalDeadlines.length > 0 && lands.length > 0 && (
+        <div className="space-y-2.5">
+          {mandalDeadlines.map((md, idx) => {
             const isPassed = md.isDeadlinePassed;
             // Distinct visual palettes for each mandal portal
             const palettes = [
@@ -398,36 +458,9 @@ export default function DigitalFarmRecordsPage() {
                 </Link>
               </div>
             );
-          })
-        ) : deadline ? (
-          <div
-            className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md ${
-              isDeadlinePassed
-                ? 'bg-rose-950/80 border-rose-600/50 text-rose-200'
-                : 'bg-gradient-to-r from-emerald-950/90 via-[#031d17] to-[#020f12] border-emerald-500/50 text-emerald-100'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <Calendar className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>
-                <strong>{deadline.mandal} Mandal Deadline:</strong>{' '}
-                {new Date(deadline.deadlineDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}{' '}
-                ({deadline.season} Season){' '}
-                {isDeadlinePassed
-                  ? ' — (Registration window has ended)'
-                  : ' — (Submissions & resubmissions accepted)'}
-              </span>
-            </div>
-
-            <Link
-              to={`/farmer/crops/register?mandal=${encodeURIComponent(deadline.mandal)}`}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
-            >
-              <span>Registration Details →</span>
-            </Link>
-          </div>
-        ) : null}
-      </div>
+          })}
+        </div>
+      )}
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -603,9 +636,8 @@ export default function DigitalFarmRecordsPage() {
               className="px-3 py-1.5 text-xs font-bold text-white bg-[#030b0e] border border-teal-900/60 rounded-xl focus:border-teal-400 outline-none shadow-2xs cursor-pointer"
             >
               <option value="All" className="bg-[#06171c] text-white">All Statuses</option>
+              <option value="SUBMITTED" className="bg-[#06171c] text-white">⏳ Pending Verification</option>
               <option value="VERIFIED" className="bg-[#06171c] text-white">✅ Verified</option>
-              <option value="SUBMITTED" className="bg-[#06171c] text-white">⏳ Submitted / Pending</option>
-              <option value="DRAFT" className="bg-[#06171c] text-white">📝 Drafts</option>
               <option value="RETURNED_FOR_CORRECTION" className="bg-[#06171c] text-white">↩️ Returned for Correction</option>
             </select>
           </div>
@@ -660,7 +692,8 @@ export default function DigitalFarmRecordsPage() {
               {filteredCrops.map((crop) => {
                 const land = crop.landId;
                 const parcelId = land?.landId || `LND-${crop.surveyNumber}`;
-                const village = land?.village || 'Vijayawada';
+                const village = land?.village || crop.village || 'Vijayawada';
+                const mandal = land?.mandal || crop.mandal || profile?.mandal || '';
 
                 return (
                   <div
@@ -683,6 +716,11 @@ export default function DigitalFarmRecordsPage() {
                         <p className="text-[11px] text-slate-400 font-medium truncate">
                           {village} • {parcelId}
                         </p>
+                        {mandal && (
+                          <p className="text-[11px] text-teal-400/90 font-medium truncate">
+                            {mandal} Mandal
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -860,7 +898,7 @@ export default function DigitalFarmRecordsPage() {
           isOpen={addLandModalOpen}
           onClose={() => setAddLandModalOpen(false)}
           title="Add New Land Parcel / Crop"
-          maxWidth="max-w-md"
+          maxWidth="max-w-xl"
         >
           <form onSubmit={handleCreateLandSubmit} className="space-y-4">
 
@@ -1005,33 +1043,83 @@ export default function DigitalFarmRecordsPage() {
             </div>
 
             {/* Optional Crop on Parcel & Estimated Duration */}
-            <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-emerald-900 flex items-center gap-1.5">
-                  <Sprout className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Crop on Parcel (Optional)</span>
+            <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-300 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                <span className="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
+                  <Sprout className="w-4 h-4 text-emerald-600" />
+                  <span>Crop Details for this Parcel</span>
                 </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                  Optional
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                  {matchedExistingLand ? 'Required for Existing Parcel' : 'Optional'}
                 </span>
               </div>
 
+              {/* Crop Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  Current Crop Name {matchedExistingLand && '*'}
+                </label>
+                <input
+                  type="text"
+                  value={newLandData.currentCrop}
+                  onChange={(e) => setNewLandData({ ...newLandData, currentCrop: e.target.value })}
+                  placeholder="e.g. Paddy (BPT 5204), Chilli, Red Gram, Guava"
+                  className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold text-slate-900 shadow-2xs"
+                />
+              </div>
+
+              {matchedExistingLand && (
+                <div
+                  className={`p-2.5 rounded-xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border ${
+                    remainingAvailableArea <= 0.001
+                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : 'bg-emerald-100/90 text-emerald-900 border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>
+                      Parcel Allocation: <strong>{allocatedArea.toFixed(1)} / {totalParcelArea} Acres used</strong>
+                    </span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold self-start sm:self-center ${
+                      remainingAvailableArea <= 0.001 ? 'bg-rose-200 text-rose-900' : 'bg-emerald-200 text-emerald-900'
+                    }`}
+                  >
+                    {remainingAvailableArea <= 0.001 ? 'All Land Allocated' : `${remainingAvailableArea.toFixed(1)} Acres Available`}
+                  </span>
+                </div>
+              )}
+
+              {/* Cultivated Area and Duration in 2 Columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Current Crop Name
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Cultivated Area (Acres)
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      Max: {matchedExistingLand ? remainingAvailableArea.toFixed(1) : (newLandData.totalArea || 0)} Ac
+                    </span>
+                  </div>
                   <input
-                    type="text"
-                    value={newLandData.currentCrop}
-                    onChange={(e) => setNewLandData({ ...newLandData, currentCrop: e.target.value })}
-                    placeholder="e.g. Paddy (BPT 5204) or Guava"
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max={matchedExistingLand ? remainingAvailableArea : (newLandData.totalArea || 100)}
+                    value={newLandData.cultivatedArea}
+                    onChange={(e) => setNewLandData({ ...newLandData, cultivatedArea: e.target.value })}
+                    placeholder={matchedExistingLand ? `e.g. ${remainingAvailableArea.toFixed(1)}` : `e.g. ${newLandData.totalArea || '2.0'}`}
+                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold text-slate-900 shadow-2xs"
                   />
+                  <p className="text-[10px] text-emerald-800 font-medium mt-0.5">
+                    Portion of parcel used for this crop.
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     Estimated Duration (Months)
                   </label>
                   <input
@@ -1041,14 +1129,17 @@ export default function DigitalFarmRecordsPage() {
                     value={newLandData.estimatedDurationMonths}
                     onChange={(e) => setNewLandData({ ...newLandData, estimatedDurationMonths: e.target.value })}
                     placeholder="e.g. 4 or 6 months"
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold"
+                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none font-semibold text-slate-900 shadow-2xs"
                   />
+                  <p className="text-[10px] text-slate-500 font-medium mt-0.5">
+                    Expected crop lifecycle in months.
+                  </p>
                 </div>
               </div>
 
               {/* Quick suggestions */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-500 font-bold">Quick suggestions:</span>
+                <span className="text-[10px] text-slate-600 font-bold">Quick suggestions:</span>
                 {[
                   { name: 'Paddy', dur: '4' },
                   { name: 'Guava', dur: '12' },
@@ -1064,10 +1155,11 @@ export default function DigitalFarmRecordsPage() {
                       setNewLandData({
                         ...newLandData,
                         currentCrop: item.name,
-                        estimatedDurationMonths: item.dur
+                        estimatedDurationMonths: item.dur,
+                        cultivatedArea: newLandData.cultivatedArea || newLandData.totalArea || '2.0'
                       })
                     }
-                    className="text-[10px] font-bold text-emerald-800 bg-white hover:bg-emerald-100/80 px-2 py-0.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                    className="text-[10px] font-bold text-emerald-900 bg-white hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300 shadow-2xs transition-colors cursor-pointer"
                   >
                     + {item.name} ({item.dur}m)
                   </button>

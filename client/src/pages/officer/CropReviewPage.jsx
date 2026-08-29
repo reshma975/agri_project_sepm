@@ -343,21 +343,42 @@ export default function CropReviewPage() {
               <p className="text-xs text-slate-400">No previous audit logs.</p>
             ) : (
               <div className="space-y-3 relative pl-4 border-l-2 border-slate-700">
-                {history.map((h) => (
-                  <div key={h._id} className="relative space-y-0.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full bg-teal-400 absolute -left-[21px] top-1" />
-                    <div className="flex items-center justify-between">
-                      <strong className="text-white font-bold">{h.action}</strong>
-                      <span className="text-[10px] text-slate-400">{formatDate(h.timestamp)}</span>
+                {history.map((h) => {
+                  const formatAction = (act) => {
+                    switch (act) {
+                      case 'DRAFT_RECORDED':
+                        return 'RECORD CREATED';
+                      case 'SUBMITTED':
+                        return 'SUBMITTED';
+                      case 'UPDATED':
+                        return 'UPDATED';
+                      case 'VERIFIED':
+                        return 'VERIFIED & CERTIFIED';
+                      case 'RETURNED_FOR_CORRECTION':
+                        return 'RETURNED FOR CORRECTION';
+                      case 'REJECTED':
+                        return 'REJECTED';
+                      default:
+                        return act ? act.replace(/_/g, ' ') : 'LOGGED';
+                    }
+                  };
+
+                  return (
+                    <div key={h._id} className="relative space-y-0.5 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full bg-teal-400 absolute -left-[21px] top-1" />
+                      <div className="flex items-center justify-between">
+                        <strong className="text-white font-bold">{formatAction(h.action)}</strong>
+                        <span className="text-[10px] text-slate-400">{formatDate(h.timestamp)}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-semibold">{h.officerName}</p>
+                      {h.comment && (
+                        <p className="text-xs text-slate-200 italic bg-[#030b0e] p-2 rounded-lg border border-slate-700 mt-1">
+                          "{h.comment}"
+                        </p>
+                      )}
                     </div>
-                    <p className="text-[11px] text-slate-300 font-semibold">{h.officerName}</p>
-                    {h.comment && (
-                      <p className="text-xs text-slate-200 italic bg-[#030b0e] p-2 rounded-lg border border-slate-700 mt-1">
-                        "{h.comment}"
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

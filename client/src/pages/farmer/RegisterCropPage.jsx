@@ -182,9 +182,9 @@ export default function RegisterCropPage() {
   const mandalCrops = selectedMandal === 'All'
     ? allFarmerCrops
     : allFarmerCrops.filter(c => {
-        const cropMandal = c.mandal || c.landId?.mandal;
-        return cropMandal && cropMandal.toLowerCase() === selectedMandal.toLowerCase();
-      });
+      const cropMandal = c.mandal || c.landId?.mandal;
+      return cropMandal && cropMandal.toLowerCase() === selectedMandal.toLowerCase();
+    });
 
   const draftCrops = mandalCrops.filter(c => c.status === 'DRAFT');
   const pendingCrops = mandalCrops.filter(c => ['SUBMITTED', 'UNDER_VERIFICATION'].includes(c.status));
@@ -204,8 +204,13 @@ export default function RegisterCropPage() {
     }
 
     if (!hasAllDocs) {
-      setError('Please upload all 3 required verification documents (Aadhaar, Passbook, Land Title) before submitting.');
+      setError('Please upload all 3 mandatory verification documents (Aadhaar Card, Bank Passbook, Land Title Record) before submitting for verification.');
       setShowDocUploader(true);
+      return;
+    }
+
+    if (isCurrentMandalDeadlinePassed) {
+      setError(`The registration deadline for ${selectedMandal} Mandal has expired. Submissions or resubmissions cannot be accepted after the deadline.`);
       return;
     }
 
@@ -225,7 +230,7 @@ export default function RegisterCropPage() {
             spread: 80,
             origin: { y: 0.6 }
           });
-        } catch (e) {}
+        } catch (e) { }
 
         setSubmitSuccessMessage(res.data.message || `Successfully submitted crop registration for ${selectedMandal} Mandal!`);
         await loadData();
@@ -241,7 +246,7 @@ export default function RegisterCropPage() {
   // Active crops for the currently selected parcel modal
   const activeParcelCrops = activeParcelForModal
     ? (parcelMap[activeParcelForModal._id || activeParcelForModal.landId]?.crops ||
-       allFarmerCrops.filter(c => c.surveyNumber === activeParcelForModal.surveyNumber))
+      allFarmerCrops.filter(c => c.surveyNumber === activeParcelForModal.surveyNumber))
     : [];
 
   const handleOpenParcelModal = (parcel) => {
@@ -367,16 +372,14 @@ export default function RegisterCropPage() {
             return (
               <div
                 key={idx}
-                className={`p-4 sm:p-5 rounded-3xl border shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
-                  isPassed
+                className={`p-4 sm:p-5 rounded-3xl border shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${isPassed
                     ? 'bg-rose-950/90 border-rose-600/60 text-rose-200'
                     : p.card
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3.5">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 border ${
-                    isPassed ? 'bg-rose-900/80 text-rose-300 border-rose-500/50' : p.icon
-                  }`}>
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 border ${isPassed ? 'bg-rose-900/80 text-rose-300 border-rose-500/50' : p.icon
+                    }`}>
                     <Calendar className="w-6 h-6" />
                   </div>
                   <div>
@@ -414,9 +417,8 @@ export default function RegisterCropPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedMandal(md.mandal)}
-                    className={`px-4 py-2 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
-                      isPassed ? 'bg-rose-600 hover:bg-rose-500 text-white' : p.btn
-                    }`}
+                    className={`px-4 py-2 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${isPassed ? 'bg-rose-600 hover:bg-rose-500 text-white' : p.btn
+                      }`}
                   >
                     <span>View {md.mandal} Lands →</span>
                   </button>
@@ -460,58 +462,6 @@ export default function RegisterCropPage() {
         </div>
       )}
 
-      {/* 2. DRAFT / ONE-TIME SUBMISSION BANNER (Before Farmer Submits) */}
-      {selectedMandal !== 'All' && hasDraft && !isCurrentMandalDeadlinePassed && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/90 via-[#261c06] to-[#120e03] border border-amber-500/60 text-amber-100 shadow-2xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-900/80 text-amber-300 border border-amber-500/50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-base font-extrabold text-white">
-                    Submit Registration for {selectedMandal} Mandal Verification
-                  </h4>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-900/80 text-amber-300 border border-amber-500/40">
-                    {draftCrops.length} Unsubmitted Crop{draftCrops.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <p className="text-xs text-amber-200/90">
-                  Your crop records in {selectedMandal} Mandal are saved as draft. Please confirm your 3 verification documents below and click Submit to send your registration to the Agriculture Officer for verification. Once submitted, your application will enter Official Read-Only Review.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSubmitMandalRegistration}
-              disabled={submitting || !hasAllDocs}
-              className={`px-6 py-3 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 flex-shrink-0 transition-all shadow-xl ${
-                hasAllDocs
-                  ? 'bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 shadow-teal-500/30 cursor-pointer hover:scale-[1.02]'
-                  : 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700'
-              }`}
-            >
-              {submitting ? (
-                <span>Submitting Application...</span>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  <span>Submit Registration to Officer</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {!hasAllDocs && (
-            <div className="p-3 bg-amber-900/40 rounded-xl border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>Please upload all 3 required government verification documents in Section 2 below to enable official submission.</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* 3. APPLICATION UNDER OFFICIAL REVIEW (After Farmer Submits) */}
       {selectedMandal !== 'All' && !hasDraft && hasPending && !hasReturned && (
@@ -625,9 +575,8 @@ export default function RegisterCropPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
-            hasAadhaar ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-          }`}>
+          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${hasAadhaar ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+            }`}>
             {hasAadhaar ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
             <div>
               <span className="font-bold block">1. Aadhaar ID Card</span>
@@ -635,9 +584,8 @@ export default function RegisterCropPage() {
             </div>
           </div>
 
-          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
-            hasPassbook ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-          }`}>
+          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${hasPassbook ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+            }`}>
             {hasPassbook ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
             <div>
               <span className="font-bold block">2. Bank Passbook (DBT)</span>
@@ -645,9 +593,8 @@ export default function RegisterCropPage() {
             </div>
           </div>
 
-          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${
-            hasLandRecord ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-          }`}>
+          <div className={`p-3 rounded-2xl border flex items-center gap-2.5 text-xs ${hasLandRecord ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+            }`}>
             {hasLandRecord ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
             <div>
               <span className="font-bold block">3. Land Title Record (1-B)</span>
@@ -704,11 +651,10 @@ export default function RegisterCropPage() {
                   <div
                     key={parcel._id || parcel.landId}
                     onClick={() => handleOpenParcelModal(parcel)}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-4 ${
-                      hasReturned
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-4 ${hasReturned
                         ? 'bg-orange-950/30 border-orange-500/60 hover:border-orange-400 shadow-lg'
                         : 'bg-[#030b0e] border-slate-700 hover:border-teal-400/80 hover:shadow-lg hover:shadow-teal-500/10'
-                    }`}
+                      }`}
                   >
                     <div className="space-y-3">
                       {/* Header Row: Land ID, Survey No, Ownership */}
@@ -808,11 +754,10 @@ export default function RegisterCropPage() {
                         {mandalName} Mandal Jurisdiction ({mandalLands.length} Land Parcel{mandalLands.length === 1 ? '' : 's'})
                       </h3>
                       {mDeadline && (
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                          mDeadline.isDeadlinePassed
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${mDeadline.isDeadlinePassed
                             ? 'bg-rose-950/80 border-rose-500/40 text-rose-300'
                             : 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300'
-                        }`}>
+                          }`}>
                           {mDeadline.isDeadlinePassed ? 'Registration Closed' : 'Registration Active'}
                         </span>
                       )}
@@ -833,11 +778,10 @@ export default function RegisterCropPage() {
                         <div
                           key={parcel._id || parcel.landId}
                           onClick={() => handleOpenParcelModal(parcel)}
-                          className={`p-5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-4 ${
-                            hasReturned
+                          className={`p-5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-4 ${hasReturned
                               ? 'bg-orange-950/30 border-orange-500/60 hover:border-orange-400 shadow-lg'
                               : 'bg-[#030b0e] border-slate-700 hover:border-teal-400/80 hover:shadow-lg hover:shadow-teal-500/10'
-                          }`}
+                            }`}
                         >
                           <div className="space-y-3">
                             {/* Header Row: Land ID, Survey No, Ownership */}
@@ -910,6 +854,60 @@ export default function RegisterCropPage() {
         </div>
       )}
 
+      {/* Bottom Submit Action Bar for Selected Mandal */}
+      {selectedMandal !== 'All' && (
+        <div className="space-y-4">
+          {(hasDraft || hasReturned) && !isCurrentMandalDeadlinePassed && (
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/90 via-[#261c06] to-[#120e03] border border-amber-500/60 text-amber-100 shadow-2xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-900/80 text-amber-300 border border-amber-500/50 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-extrabold text-white">
+                        Submit Registration for {selectedMandal} Mandal Verification
+                      </h4>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-900/80 text-amber-300 border border-amber-500/40">
+                        {hasDraft ? `${draftCrops.length} Crop${draftCrops.length === 1 ? '' : 's'} Ready for Submission` : `${returnedCrops.length} Resubmission${returnedCrops.length === 1 ? '' : 's'}`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-200/90">
+                      Your crop records in {selectedMandal} Mandal are ready for official submission. Please confirm your 3 verification documents above and click Submit to send your registration to the Agriculture Officer for verification.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSubmitMandalRegistration}
+                  disabled={submitting}
+                  className="px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-black rounded-2xl shadow-xl shadow-teal-500/30 transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer hover:scale-[1.02] disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span>Submitting to Officer...</span>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Submit Registration to Officer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {!hasAllDocs && (
+                <div className="p-3 bg-amber-900/40 rounded-xl border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Please upload all 3 required government verification documents in Section 2 above to enable official submission.</span>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      )}
+
       {/* Bottom Option: Go to Farm Records */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 sm:p-6 bg-gradient-to-r from-[#06151a] via-[#041d24] to-[#06151a] rounded-3xl border border-teal-500/30 shadow-xl">
         <div className="flex items-center gap-3.5 text-center sm:text-left">
@@ -927,7 +925,7 @@ export default function RegisterCropPage() {
         </div>
 
         <Link
-          to="/farmer/crops"
+          to="/farmer/farm-records"
           className="px-5 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-black rounded-xl shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer"
         >
           <span>Go to Farm Records</span>

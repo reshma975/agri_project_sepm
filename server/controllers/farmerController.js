@@ -22,18 +22,21 @@ const checkFarmerDocuments = (profile) => {
 
 // Helper to check deadlines strictly for mandals where the farmer owns land parcels
 const getFarmerMandalDeadlines = async (profile, lands = []) => {
+  if (!lands || lands.length === 0) {
+    return [];
+  }
+
   const mandalSet = new Set();
   
-  // Collect all mandals from the farmer's registered land parcels
+  // Collect all mandals from the farmer's registered land parcels ONLY
   lands.forEach(l => {
     if (l.mandal && l.mandal.trim()) {
       mandalSet.add(l.mandal.trim());
     }
   });
 
-  // If no lands yet, fallback to profile mandal
-  if (mandalSet.size === 0 && profile?.mandal && profile.mandal.trim()) {
-    mandalSet.add(profile.mandal.trim());
+  if (mandalSet.size === 0) {
+    return [];
   }
 
   const mandalDeadlines = [];
@@ -41,6 +44,12 @@ const getFarmerMandalDeadlines = async (profile, lands = []) => {
 
   // Query active registration deadline set by officer for each mandal of the farmer's lands
   for (const mandal of mandalSet) {
+    const landsInMandal = lands.filter(
+      l => l.mandal && l.mandal.trim().toLowerCase() === mandal.toLowerCase()
+    ).length;
+
+    if (landsInMandal === 0) continue;
+
     const deadline = await RegistrationDeadline.findOne({
       mandal: new RegExp(`^${mandal}$`, 'i'),
       isActive: true
@@ -48,15 +57,11 @@ const getFarmerMandalDeadlines = async (profile, lands = []) => {
 
     if (deadline) {
       const deadlineDate = new Date(deadline.deadlineDate);
-      const landsInMandal = lands.filter(
-        l => l.mandal && l.mandal.trim().toLowerCase() === mandal.toLowerCase()
-      ).length;
-
       mandalDeadlines.push({
         mandal: deadline.mandal,
-        district: deadline.district,
-        season: deadline.season,
-        year: deadline.year,
+        district: deadline.district || profile?.district || 'Vijayawada',
+        season: deadline.season || 'Kharif',
+        year: deadline.year || new Date().getFullYear(),
         deadlineDate: deadline.deadlineDate,
         isDeadlinePassed: now > deadlineDate,
         deadline,
@@ -242,6 +247,7 @@ export const createLand = async (req, res) => {
       mandal,
       district,
       totalArea,
+      cultivatedArea,
       areaUnit,
       ownershipType,
       currentCrop,
@@ -281,6 +287,36 @@ export const createLand = async (req, res) => {
         });
       }
 
+      // Check existing crops on this land parcel to compute currently allocated area
+      const parcelCrops = await CropRegistration.find({
+        farmerId: profile._id,
+        $or: [
+          { landId: existingLand._id },
+          { surveyNumber: targetSurvey }
+        ],
+        status: { $nin: ['REJECTED'] }
+      });
+
+      const alreadyAllocatedArea = parcelCrops.reduce((sum, c) => sum + (Number(c.cultivatedArea) || 0), 0);
+      const totalParcelArea = existingLand.totalArea || Number(totalArea) || 1;
+      const remainingArea = Math.max(0, totalParcelArea - alreadyAllocatedArea);
+
+      if (remainingArea <= 0.001) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot add more crops to Survey No. ${targetSurvey}. All ${totalParcelArea} Acres are already allocated to existing crops (${parcelCrops.map(c => `${c.cropName}: ${c.cultivatedArea} Ac`).join(', ')}).`
+        });
+      }
+
+      const requestedCultArea = Number(cultivatedArea) || remainingArea;
+
+      if (alreadyAllocatedArea + requestedCultArea > totalParcelArea + 0.001) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot allocate ${requestedCultArea} Acres. This ${totalParcelArea}-Acre parcel already has ${alreadyAllocatedArea.toFixed(1)} Acres allocated (${remainingArea.toFixed(1)} Acres available).`
+        });
+      }
+
       const farmerMandal = existingLand.mandal || profile.mandal || 'Penamaluru';
 
       // Register the new crop on this existing land parcel with locked cadastral location
@@ -293,8 +329,8 @@ export const createLand = async (req, res) => {
         cropName: currentCrop.trim(),
         cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
         surveyNumber: existingLand.surveyNumber,
-        cultivatedArea: Number(totalArea) || existingLand.totalArea || 1,
-        totalLandArea: existingLand.totalArea || Number(totalArea) || 1,
+        cultivatedArea: requestedCultArea,
+        totalLandArea: totalParcelArea,
         areaUnit: existingLand.areaUnit || areaUnit || 'Acres',
         ownershipType: existingLand.ownershipType || ownershipType || 'Owned',
         season: season || 'Kharif',
@@ -308,7 +344,7 @@ export const createLand = async (req, res) => {
       await CropRegistrationHistory.create({
         registrationId: registeredCrop._id,
         action: 'DRAFT_RECORDED',
-        comment: `New crop "${currentCrop.trim()}" recorded on Survey No. ${targetSurvey} (Draft - ready for mandal registration)`,
+        comment: `New crop "${currentCrop.trim()}" recorded on Survey No. ${targetSurvey} (Not Submitted)`,
         officerName: 'Farmer Farm Records'
       });
 
@@ -334,7 +370,7 @@ export const createLand = async (req, res) => {
       estimatedDurationMonths: estimatedDurationMonths ? Number(estimatedDurationMonths) : null,
     });
 
-    // If an initial crop was provided, auto-register this crop under the new land parcel
+    // If an initial crop was provided, auto-register this crop under the new land parcel as unsubmitted
     let registeredCrop = null;
     if (currentCrop && currentCrop.trim()) {
       const farmerMandal = land.mandal || profile.mandal || 'Penamaluru';
@@ -348,7 +384,7 @@ export const createLand = async (req, res) => {
         cropName: currentCrop.trim(),
         cropCategory: cropCategory && cropCategory !== 'None' ? cropCategory : 'Cereals',
         surveyNumber: land.surveyNumber,
-        cultivatedArea: Number(totalArea) || 1,
+        cultivatedArea: Number(cultivatedArea) || Number(totalArea) || 1,
         totalLandArea: Number(totalArea) || 1,
         areaUnit: areaUnit || 'Acres',
         ownershipType: ownershipType || 'Owned',
@@ -496,24 +532,13 @@ export const registerCrop = async (req, res) => {
 
     const farmerMandal = mandal || profile.mandal || 'Penamaluru';
 
-    // 1. If not saving as draft (i.e. submitting for verification), enforce mandatory validations:
+    // Check Mandal Deadline if submitting
     if (!isDraft) {
-      // Check Mandal Deadline
       const deadlineCheck = await checkMandalDeadline(farmerMandal);
       if (deadlineCheck.passed) {
         return res.status(400).json({
           success: false,
           message: `The crop registration deadline for ${farmerMandal} closed on ${new Date(deadlineCheck.deadline.deadlineDate).toLocaleString()}. No new submissions can be accepted.`
-        });
-      }
-
-      // Check Mandatory Documents
-      const docsCheck = checkFarmerDocuments(profile);
-      if (!docsCheck.valid) {
-        return res.status(400).json({
-          success: false,
-          message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) in your profile before submitting crops for verification.`,
-          missingDocs: docsCheck.missingDocs
         });
       }
     }
@@ -567,6 +592,27 @@ export const registerCrop = async (req, res) => {
 
     if (cropList.length === 0 || !cropList[0].cropName) {
       return res.status(400).json({ success: false, message: 'Please specify at least one crop entry' });
+    }
+
+    // Check existing crops on this land parcel to ensure sum of cultivatedArea <= totalArea
+    const existingParcelCrops = await CropRegistration.find({
+      farmerId: profile._id,
+      $or: [
+        { landId: land._id },
+        { surveyNumber: land.surveyNumber }
+      ],
+      status: { $nin: ['REJECTED'] }
+    });
+    const alreadyAllocated = existingParcelCrops.reduce((sum, c) => sum + (Number(c.cultivatedArea) || 0), 0);
+    const newRequestedTotal = cropList.reduce((sum, item) => sum + (Number(item.cultivatedArea) || 0), 0);
+    const totalParcelArea = land.totalArea || Number(totalLandArea) || 1;
+    const remainingAvailable = Math.max(0, totalParcelArea - alreadyAllocated);
+
+    if (alreadyAllocated + newRequestedTotal > totalParcelArea + 0.001) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot allocate ${newRequestedTotal} Acres. This ${totalParcelArea}-Acre parcel already has ${alreadyAllocated.toFixed(1)} Acres allocated (${remainingAvailable.toFixed(1)} Acres available).`
+      });
     }
 
     const createdCrops = [];
@@ -672,9 +718,8 @@ export const updateCrop = async (req, res) => {
     const isReturned = crop.status === 'RETURNED_FOR_CORRECTION';
     const isSubmitting = submit || resubmit;
 
-    // If attempting to submit or resubmit:
+    // If submitting or resubmitting, check deadline
     if (isSubmitting) {
-      // 1. Validate Mandal Deadline
       const farmerMandal = crop.mandal || profile.mandal || 'Penamaluru';
       const deadlineCheck = await checkMandalDeadline(farmerMandal);
       if (deadlineCheck.passed) {
@@ -683,22 +728,33 @@ export const updateCrop = async (req, res) => {
           message: `The crop registration deadline for ${farmerMandal} closed on ${new Date(deadlineCheck.deadline.deadlineDate).toLocaleString()}. Resubmission is no longer accepted after the deadline.`
         });
       }
-
-      // 2. Validate Mandatory Documents
-      const docsCheck = checkFarmerDocuments(profile);
-      if (!docsCheck.valid) {
-        return res.status(400).json({
-          success: false,
-          message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) before submitting for verification.`,
-          missingDocs: docsCheck.missingDocs
-        });
-      }
     }
 
     if (cropName !== undefined && cropName.trim()) crop.cropName = cropName.trim();
     if (cropCategory !== undefined) crop.cropCategory = cropCategory;
     if (surveyNumber !== undefined && surveyNumber.trim()) crop.surveyNumber = surveyNumber.trim();
-    if (cultivatedArea !== undefined && !isNaN(Number(cultivatedArea))) crop.cultivatedArea = Number(cultivatedArea);
+    if (cultivatedArea !== undefined && !isNaN(Number(cultivatedArea))) {
+      const newCultArea = Number(cultivatedArea);
+      const totalParcelArea = crop.totalLandArea || 1;
+      const otherCrops = await CropRegistration.find({
+        _id: { $ne: crop._id },
+        farmerId: profile._id,
+        $or: [
+          { landId: crop.landId },
+          { surveyNumber: crop.surveyNumber }
+        ],
+        status: { $nin: ['REJECTED'] }
+      });
+      const otherAllocated = otherCrops.reduce((sum, c) => sum + (Number(c.cultivatedArea) || 0), 0);
+      const availableArea = Math.max(0, totalParcelArea - otherAllocated);
+      if (newCultArea + otherAllocated > totalParcelArea + 0.001) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot allocate ${newCultArea} Acres. This ${totalParcelArea}-Acre parcel only has ${availableArea.toFixed(1)} Acres available (${otherAllocated.toFixed(1)} Acres already allocated to other crops).`
+        });
+      }
+      crop.cultivatedArea = newCultArea;
+    }
     if (areaUnit !== undefined) crop.areaUnit = areaUnit;
     if (ownershipType !== undefined) crop.ownershipType = ownershipType;
     if (season !== undefined) crop.season = season;
@@ -714,15 +770,15 @@ export const updateCrop = async (req, res) => {
 
     if (isSubmitting) {
       crop.status = 'SUBMITTED';
-      crop.submittedAt = new Date();
+      crop.submittedAt = crop.submittedAt || new Date();
 
       await CropRegistrationHistory.create({
         registrationId: crop._id,
-        action: isDraft ? 'SUBMITTED' : 'RESUBMITTED',
-        comment: isDraft
-          ? (submitComment || 'Draft submitted digitally by farmer for officer verification')
-          : (resubmitComment || 'Corrected and resubmitted by farmer for officer review'),
-        officerName: isDraft ? 'Farmer Self-Submission' : 'Farmer Resubmission'
+        action: isReturned ? 'RESUBMITTED' : 'SUBMITTED',
+        comment: isReturned
+          ? (resubmitComment || 'Corrected and resubmitted by farmer for officer review')
+          : (submitComment || 'Crop submitted digitally by farmer for officer verification'),
+        officerName: isReturned ? 'Farmer Resubmission' : 'Farmer Self-Submission'
       });
 
       if (profile.registrationStatus !== 'VERIFIED') {
@@ -838,7 +894,8 @@ export const submitMandalRegistration = async (req, res) => {
     if (!docsCheck.valid) {
       return res.status(400).json({
         success: false,
-        message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) before submitting for verification.`
+        message: `Please upload all 3 mandatory verification documents (${docsCheck.missingDocs.join(', ')}) before submitting for verification.`,
+        missingDocs: docsCheck.missingDocs
       });
     }
 

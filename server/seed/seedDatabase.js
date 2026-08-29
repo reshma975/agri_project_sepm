@@ -20,7 +20,7 @@ const samplePassbookData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.or
 
 const sampleLandRecordData = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420" style="background:#fff;border-radius:12px;font-family:Arial,sans-serif;"><rect width="600" height="420" rx="12" fill="#fffefb" stroke="#854d0e" stroke-width="5"/><rect width="600" height="65" fill="#854d0e"/><text x="300" y="32" fill="#fef08a" font-size="16" font-weight="bold" text-anchor="middle">GOVERNMENT OF ANDHRA PRADESH • REVENUE DEPARTMENT</text><text x="300" y="52" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle">Form 1-B (Record of Rights / Pattadar Passbook Extract)</text><rect x="30" y="80" width="540" height="60" fill="#fefce8" rx="6" stroke="#ca8a04"/><text x="45" y="102" font-size="11" font-weight="bold" fill="#713f12">District: KRISHNA (VIJAYAWADA)</text><text x="240" y="102" font-size="11" font-weight="bold" fill="#713f12">Mandal: PENAMALURU</text><text x="410" y="102" font-size="11" font-weight="bold" fill="#713f12">Village: KANKIPADU</text><text x="45" y="125" font-size="11" font-weight="bold" fill="#713f12">Khata No: 412</text><text x="240" y="125" font-size="11" font-weight="bold" fill="#713f12">Pattadar: RAMESH PATEL</text><text x="410" y="125" font-size="11" font-weight="bold" fill="#713f12">Father: VENKATA PATEL</text><rect x="30" y="155" width="540" height="170" fill="#f8fafc" rx="6" stroke="#cbd5e1"/><text x="45" y="180" font-size="12" font-weight="bold" fill="#334155">Survey / Sub-Division No:</text><text x="230" y="180" font-size="14" font-weight="bold" fill="#0f172a">125/2</text><text x="45" y="210" font-size="12" font-weight="bold" fill="#334155">Total Extent (Area):</text><text x="230" y="210" font-size="14" font-weight="bold" fill="#0f172a">2.50 Acres (1.012 Hectares)</text><text x="45" y="240" font-size="12" font-weight="bold" fill="#334155">Nature of Land / Classification:</text><text x="230" y="240" font-size="14" fill="#334155">Dry / Cultivable Wet (Nanjai)</text><text x="45" y="270" font-size="12" font-weight="bold" fill="#334155">Ownership Rights:</text><text x="230" y="270" font-size="14" font-weight="bold" fill="#15803d">Pattadar / Self-Owned (RoR Certified)</text><text x="45" y="300" font-size="12" font-weight="bold" fill="#334155">Survey Boundary Verified:</text><text x="230" y="300" font-size="14" fill="#334155">North: Channel, South: Survey 126, East: Road, West: Survey 125/1</text><rect x="30" y="340" width="540" height="60" fill="#ecfdf5" rx="6" stroke="#10b981"/><text x="45" y="365" font-size="11" font-weight="bold" fill="#065f46">Digital Certification Status:</text><text x="45" y="385" font-size="12" font-weight="bold" fill="#047857">✅ Validated against AP Meebhoomi Land Records Database (Digital Sign: TAHSILDAR_PENAMALURU)</text></svg>`;
 
-export const seedDatabase = async () => {
+export const seedDatabase = async (force = false) => {
   try {
     // Non-destructive backward compatibility migration for existing database records
     await User.updateMany(
@@ -29,7 +29,7 @@ export const seedDatabase = async () => {
     );
 
     const existingUsers = await User.countDocuments();
-    if (existingUsers > 0) {
+    if (!force && existingUsers > 0) {
       console.log('🌾 Database already contains data. Ensured multi-role schema compatibility.');
       return;
     }

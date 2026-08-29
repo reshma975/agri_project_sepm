@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import { seedDatabase } from './seed/seedDatabase.js';
 
@@ -16,8 +16,6 @@ import govtUpdatesRoutes from './routes/govtUpdatesRoutes.js';
 import assistantRoutes from './routes/assistantRoutes.js';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
-
-dotenv.config();
 
 const app = express();
 
