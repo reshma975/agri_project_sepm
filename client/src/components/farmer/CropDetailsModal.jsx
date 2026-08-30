@@ -22,6 +22,7 @@ import {
   FileText,
   Clock,
   RotateCcw,
+  XCircle,
   X
 } from 'lucide-react';
 
@@ -83,6 +84,31 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
       setIsEditing(false);
       setMessage('');
       setErrorMessage('');
+
+      if (isOpen && crop._id) {
+        apiClient
+          .get(`/farmers/crops/${crop._id}`)
+          .then((res) => {
+            if (res.data?.crop) {
+              const freshCrop = res.data.crop;
+              const allIssues = res.data.issues || [];
+              const cropSpecific = allIssues.filter(
+                (i) => i.cropId?.toString() === crop._id.toString() && i.status !== 'RESOLVED'
+              );
+              const landLevel = allIssues.filter(
+                (i) => i.issueLevel === 'LAND' && i.status !== 'RESOLVED'
+              );
+
+              setDisplayCrop((prev) => ({
+                ...prev,
+                ...freshCrop,
+                cropIssues: cropSpecific.length > 0 ? cropSpecific : prev.cropIssues || [],
+                landIssues: landLevel.length > 0 ? landLevel : prev.landIssues || [],
+              }));
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [crop, isOpen]);
 
@@ -226,26 +252,94 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
 
 
         {/* 2. RETURNED FOR RESUBMISSION CALLOUT */}
-        {isReturned && !isEditing && (
-          <div className="p-4.5 rounded-2xl bg-orange-950/60 border border-orange-500/50 shadow-md flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#030b0e] text-orange-400 border border-orange-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+        {(isReturned || (displayCrop.cropIssues && displayCrop.cropIssues.length > 0) || (displayCrop.landIssues && displayCrop.landIssues.length > 0)) && !isEditing && (
+          <div className="p-4.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 shadow-md flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#030b0e] text-amber-400 border border-amber-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
               <RotateCcw className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
-                <span>Resubmission Requested by Agriculture Officer</span>
-                <span className="text-[10px] font-bold text-orange-300 bg-orange-950 px-2 py-0.5 rounded-md border border-orange-500/30">
-                  Action Needed
-                </span>
-              </h4>
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                  <span>Resubmission Requested by Agriculture Officer</span>
+                </h4>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                    displayCrop.resubmissionCount >= 3
+                      ? 'bg-rose-900 border-rose-500 text-rose-200'
+                      : 'bg-amber-900/80 border-amber-500/40 text-amber-200'
+                  }`}>
+                    Attempt {Math.min(displayCrop.resubmissionCount || 1, 3)} of 3
+                  </span>
+                  {displayCrop.resubmissionCount === 3 && (
+                    <span className="text-[10px] font-black text-rose-300 bg-rose-950 px-2 py-0.5 rounded-md border border-rose-500/40">
+                      ⚠️ Final Opportunity
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-950 px-2 py-0.5 rounded-md border border-amber-500/30">
+                    Action Needed
+                  </span>
+                </div>
+              </div>
+
+              {/* Crop-Specific Issues */}
+              {Array.isArray(displayCrop.cropIssues) && displayCrop.cropIssues.length > 0 && (
+                <div className="space-y-1.5">
+                  {displayCrop.cropIssues.map((iss) => (
+                    <div key={iss._id || iss.id} className="p-2.5 rounded-xl bg-[#030b0e] border border-amber-500/40 text-xs">
+                      <span className="text-[10px] font-bold uppercase text-amber-300 block mb-0.5">
+                        🌱 Officer's Correction Note on {displayCrop.cropName}:
+                      </span>
+                      <p className="text-white font-medium">"{iss.description}"</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Land / Document Level Issues */}
+              {Array.isArray(displayCrop.landIssues) && displayCrop.landIssues.length > 0 && (
+                <div className="space-y-1.5">
+                  {displayCrop.landIssues.map((iss) => (
+                    <div key={iss._id || iss.id} className="p-2.5 rounded-xl bg-[#030b0e] border border-amber-500/40 text-xs">
+                      <span className="text-[10px] font-bold uppercase text-amber-300 block mb-0.5">
+                        📄 Officer's Correction Note on Land / Documents:
+                      </span>
+                      <p className="text-white font-medium">"{iss.description}"</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Direct Crop Officer Comment fallback */}
               {displayCrop.officerComment && (
-                <p className="text-xs text-white bg-[#030b0e] p-2.5 rounded-xl border border-slate-700 font-medium italic">
-                  Officer Remarks: "{displayCrop.officerComment}"
+                <div className="p-2.5 rounded-xl bg-[#030b0e] border border-amber-500/40 text-xs">
+                  <span className="text-[10px] font-bold uppercase text-amber-300 block mb-0.5">
+                    ⚠️ Officer Remarks:
+                  </span>
+                  <p className="text-white font-medium">"{displayCrop.officerComment}"</p>
+                </div>
+              )}
+
+              {/* Land Officer Comment fallback */}
+              {!displayCrop.cropIssues?.length && !displayCrop.landIssues?.length && !displayCrop.officerComment && displayCrop.landId?.officerComment && (
+                <div className="p-2.5 rounded-xl bg-[#030b0e] border border-amber-500/40 text-xs">
+                  <span className="text-[10px] font-bold uppercase text-amber-300 block mb-0.5">
+                    📄 Officer's Note on Land / Documents:
+                  </span>
+                  <p className="text-white font-medium">"{displayCrop.landId.officerComment}"</p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-300">
+                {readOnly
+                  ? 'To update or correct crop information, simply go to your Farm Records page.'
+                  : 'Please click "Edit Crop Details" below to update requested information. Once saved, submit your complete registration for verification from the Registration page.'}
+              </p>
+
+              {displayCrop.resubmissionCount === 3 && (
+                <p className="text-[11px] text-rose-300 font-semibold bg-rose-950/80 p-2.5 rounded-xl border border-rose-500/40">
+                  ⚠️ Note: This is your 3rd and final correction attempt. Please make sure all details and documents are fully accurate before resubmitting. Applications exceeding 3 attempts will be automatically rejected.
                 </p>
               )}
-              <p className="text-[11px] text-slate-300">
-                Please click "Edit & Resubmit" below to update requested details and resubmit for approval.
-              </p>
             </div>
           </div>
         )}
@@ -263,6 +357,26 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                 This crop record has passed official agricultural verification and is certified under State Agricultural registries.
                 {displayCrop.reviewedAt && ` (Verified on ${formatDate(displayCrop.reviewedAt)})`}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* 5. REJECTED CALLOUT BANNER */}
+        {isRejected && !isEditing && (
+          <div className="p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-xs text-rose-200 flex items-start gap-3 shadow-md">
+            <XCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <strong className="block font-bold text-rose-300 text-sm">
+                ❌ Application Rejected by Agriculture Officer
+              </strong>
+              <p className="text-slate-300 leading-relaxed">
+                {displayCrop.officerComment || 'This application was rejected following agricultural verification audit.'}
+              </p>
+              {displayCrop.resubmissionCount >= 3 && (
+                <p className="text-[11px] text-rose-200 font-semibold bg-rose-900/60 p-2.5 rounded-xl border border-rose-500/40">
+                  ⚠️ Limit Reached: Exceeded maximum allowed correction attempts (3 resubmissions). This case is closed. Please visit your local Mandal Agriculture Office for assistance or file a fresh registration during the next sowing window.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -398,7 +512,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSaveOrSubmit(isReturned);
+              handleSaveOrSubmit(false);
             }}
             className="p-5 rounded-2xl bg-[#030b0e] border border-slate-700 space-y-4 animate-fade-in"
           >
@@ -407,9 +521,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                 <Edit3 className="w-4 h-4 text-teal-400" />
                 {isDraft
                   ? 'Edit Draft Details'
-                  : isReturned
-                  ? 'Edit & Resubmit Application'
-                  : 'Edit Farm Record Details'}
+                  : 'Edit Crop Entry Details'}
               </h4>
               <button
                 type="button"
@@ -556,50 +668,40 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
             {/* Correction Note for Officer */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                {isReturned ? 'Note to Agriculture Officer (Explaining Corrections) *' : 'Optional Notes'}
+                Correction Notes / Remarks (Optional)
               </label>
               <input
                 type="text"
                 value={formData.comment}
                 onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                placeholder={isReturned ? 'e.g. Re-verified survey parcel acreage per patta record' : 'e.g. Sown on survey parcel 125/2'}
+                placeholder="e.g. Updated cultivated area per patta survey details"
                 className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none focus:border-teal-400"
               />
             </div>
 
             {/* Edit Mode Action Buttons */}
-            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-slate-700">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-700">
+              <p className="text-[11px] text-slate-400">
+                💡 Edits will be saved to your records. Submit the complete registration to the Officer from the Registration page.
+              </p>
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-[#06151a] hover:bg-[#0c242c] border border-slate-700 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
 
-              {isReturned ? (
                 <button
-                  type="button"
-                  onClick={() => handleSaveOrSubmit(true)}
-                  disabled={loading || deadlineExpired}
-                  className={`px-5 py-2 text-xs font-black rounded-full shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
-                    deadlineExpired ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed' : 'btn-glow-primary text-slate-950'
-                  }`}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{loading ? 'Submitting...' : 'Save & Resubmit to Officer'}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSaveOrSubmit(false)}
+                  type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 text-xs font-black rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <Save className="w-3.5 h-3.5 text-teal-400" />
-                  <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+                  <Save className="w-3.5 h-3.5 text-slate-950" />
+                  <span>{loading ? 'Saving Changes...' : 'Save Crop Details'}</span>
                 </button>
-              )}
+              </div>
             </div>
           </form>
         )}
@@ -614,7 +716,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                 className="px-3.5 py-1.5 bg-[#06151a] hover:bg-[#0c242c] text-teal-300 hover:text-white text-xs font-bold rounded-xl border border-teal-500/40 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer hover:border-teal-400"
               >
                 <Edit3 className="w-3.5 h-3.5 text-teal-400" />
-                <span>{isReturned ? 'Edit & Resubmit' : 'Edit Details'}</span>
+                <span>Edit Crop Details</span>
               </button>
             )}
             {!canEdit && (
@@ -623,7 +725,7 @@ export default function CropDetailsModal({ isOpen, onClose, crop, onCropUpdated,
                   ? '✅ Verified & certified official record (read-only).'
                   : isPending
                   ? '🔒 Application is under review with Agriculture Officer (read-only).'
-                  : '🔒 Cadastral & verification record is view-only.'}
+                  : '🔒 To edit details, please go to the Farm Records page.'}
               </span>
             )}
           </div>

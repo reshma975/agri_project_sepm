@@ -814,9 +814,20 @@ export default function RegisterCropPage() {
                           {/* Verification Status & Action Button */}
                           <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                             {hasReturned ? (
-                              <span className="px-2.5 py-1 text-xs font-bold text-orange-300 bg-orange-950/80 border border-orange-500/50 rounded-xl flex items-center gap-1">
-                                <RotateCcw className="w-3.5 h-3.5" /> Corrections Needed
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2.5 py-1 text-xs font-bold text-orange-300 bg-orange-950/80 border border-orange-500/50 rounded-xl flex items-center gap-1">
+                                  <RotateCcw className="w-3.5 h-3.5" /> Corrections Needed
+                                </span>
+                                {parcel.resubmissionCount > 0 && (
+                                  <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-lg border ${
+                                    parcel.resubmissionCount >= 3
+                                      ? 'bg-rose-950/80 text-rose-300 border-rose-500/50'
+                                      : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                                  }`}>
+                                    Attempt {parcel.resubmissionCount}/3
+                                  </span>
+                                )}
+                              </div>
                             ) : allVerified ? (
                               <span className="px-2.5 py-1 text-xs font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 rounded-xl flex items-center gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
@@ -944,7 +955,7 @@ export default function RegisterCropPage() {
         }}
       />
 
-      {/* Complete Crop Details Modal (Editable ONLY if returned for correction by officer) */}
+      {/* Complete Crop Details Modal (View-only on Registration page; editing happens on Farm Records page) */}
       <CropDetailsModal
         isOpen={Boolean(selectedCropModal)}
         onClose={() => {
@@ -955,7 +966,7 @@ export default function RegisterCropPage() {
         onCropUpdated={() => {
           loadData();
         }}
-        readOnly={selectedCropModal?.status !== 'RETURNED_FOR_CORRECTION'}
+        readOnly={true}
         deadlineExpired={isCurrentMandalDeadlinePassed}
       />
     </div>

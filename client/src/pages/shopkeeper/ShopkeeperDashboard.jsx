@@ -4,6 +4,7 @@ import apiClient from '../../api/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import AddProductModal from '../../components/shopkeeper/AddProductModal';
 import CategoriesModal from '../../components/shopkeeper/CategoriesModal';
+import UpdateShopPhotoModal from '../../components/shopkeeper/UpdateShopPhotoModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import {
   Store,
@@ -24,7 +25,9 @@ import {
   Tag,
   Save,
   X,
-  Sparkles
+  Sparkles,
+  Camera,
+  Upload
 } from 'lucide-react';
 
 export function getShopOpenStatus(timings) {
@@ -123,23 +126,27 @@ export default function ShopkeeperDashboard() {
   const [loading, setLoading] = useState(true);
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+
+  const defaultShopName = user?.profile?.businessName || (user?.name ? `${user.name}'s Agro Store` : 'My Agro Center');
+  const defaultLocation = user?.profile?.village || user?.profile?.primaryLocation || 'Vijayawada';
+  const defaultAddress = user?.profile?.address || `${user?.profile?.village ? user.profile.village + ', ' : ''}${user?.profile?.mandal ? user.profile.mandal + ' Mandal, ' : ''}${user?.profile?.district || 'Andhra Pradesh'}`;
 
   // Editable Header state (Shop name, location, address)
   const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [headerData, setHeaderData] = useState({
-    shopName: 'kumari dealers kanumuru',
-    location: 'kanumuru village',
-    address: 'opposite to ramalayam,main road , Kanumuru, Andhra Pradesh - 533215',
+    shopName: defaultShopName,
+    location: defaultLocation,
+    address: defaultAddress,
   });
 
   // Editable Timings state
   const [isEditingTimings, setIsEditingTimings] = useState(false);
   const [timingsData, setTimingsData] = useState({
-    weekday: '7:30 AM - 8:00 PM',
-    sunday: '7:30 AM - 1:00 PM',
-    note: 'Timings may change on festival days',
+    weekday: user?.profile?.timings?.weekday || '7:30 AM - 8:00 PM',
+    sunday: user?.profile?.timings?.sunday || '7:30 AM - 1:00 PM',
+    note: user?.profile?.timings?.note || 'Timings may change on festival days',
   });
-
 
   const fetchShopData = async () => {
     try {
@@ -149,9 +156,9 @@ export default function ShopkeeperDashboard() {
         const myShop = res.data.shops[0];
         setShop(myShop);
         setHeaderData({
-          shopName: myShop.shopName || 'kumari dealers kanumuru',
-          location: myShop.location || 'kanumuru village',
-          address: myShop.address || 'opposite to ramalayam,main road , Kanumuru, Andhra Pradesh - 533215',
+          shopName: myShop.shopName || user?.profile?.businessName || defaultShopName,
+          location: myShop.location || user?.profile?.village || user?.profile?.primaryLocation || defaultLocation,
+          address: myShop.address || user?.profile?.address || defaultAddress,
         });
 
         if (myShop.timings) {
@@ -168,37 +175,48 @@ export default function ShopkeeperDashboard() {
           setProducts(prodRes.data.products || []);
         }
       } else {
-        // Fallback default state matching screenshot 2
-        setShop({
+        const fallbackShop = {
           _id: 'default_shop',
-          shopName: 'kumari dealers kanumuru',
-          location: 'kanumuru village',
-          address: 'opposite to ramalayam,main road , Kanumuru, Andhra Pradesh - 533215',
+          shopName: user?.profile?.businessName || defaultShopName,
+          location: user?.profile?.village || user?.profile?.primaryLocation || defaultLocation,
+          address: user?.profile?.address || defaultAddress,
           ratingAverage: 4.5,
-          ratingCount: 12,
+          ratingCount: 1,
           imageUrl: 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=1200&q=80',
-          timings: {
+          timings: user?.profile?.timings || {
             weekday: '7:30 AM - 8:00 PM',
             sunday: '7:30 AM - 1:00 PM',
             note: 'Timings may change on festival days',
           }
+        };
+        setShop(fallbackShop);
+        setHeaderData({
+          shopName: fallbackShop.shopName,
+          location: fallbackShop.location,
+          address: fallbackShop.address,
         });
       }
     } catch (err) {
       console.error('Error loading shop dashboard data:', err);
-      setShop({
+      const fallbackShop = {
         _id: 'default_shop',
-        shopName: 'kumari dealers kanumuru',
-        location: 'kanumuru village',
-        address: 'opposite to ramalayam,main road , Kanumuru, Andhra Pradesh - 533215',
+        shopName: user?.profile?.businessName || defaultShopName,
+        location: user?.profile?.village || user?.profile?.primaryLocation || defaultLocation,
+        address: user?.profile?.address || defaultAddress,
         ratingAverage: 4.5,
-        ratingCount: 12,
+        ratingCount: 1,
         imageUrl: 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=1200&q=80',
-        timings: {
+        timings: user?.profile?.timings || {
           weekday: '7:30 AM - 8:00 PM',
           sunday: '7:30 AM - 1:00 PM',
           note: 'Timings may change on festival days',
         }
+      };
+      setShop(fallbackShop);
+      setHeaderData({
+        shopName: fallbackShop.shopName,
+        location: fallbackShop.location,
+        address: fallbackShop.address,
       });
     } finally {
       setLoading(false);
@@ -207,7 +225,7 @@ export default function ShopkeeperDashboard() {
 
   useEffect(() => {
     fetchShopData();
-  }, []);
+  }, [user]);
 
   const handleSaveHeader = async () => {
     if (shop && shop._id && shop._id !== 'default_shop') {
@@ -219,6 +237,23 @@ export default function ShopkeeperDashboard() {
     }
     setShop((prev) => ({ ...prev, ...headerData }));
     setIsEditingHeader(false);
+  };
+
+  const handleSavePhoto = async (newImageUrl) => {
+    if (shop && shop._id && shop._id !== 'default_shop') {
+      try {
+        const res = await apiClient.put(`/shops/${shop._id}`, { imageUrl: newImageUrl });
+        if (res.data.success) {
+          setShop((prev) => ({ ...prev, imageUrl: newImageUrl }));
+          return { success: true };
+        }
+      } catch (err) {
+        console.error('Failed to update shop photo:', err);
+        return { success: false, message: 'Failed to update photo on server' };
+      }
+    }
+    setShop((prev) => ({ ...prev, imageUrl: newImageUrl }));
+    return { success: true };
   };
 
   const handleSaveTimings = async () => {
@@ -269,14 +304,36 @@ export default function ShopkeeperDashboard() {
       {/* ========================================================================= */}
       <div className="glass-card bg-[#051419]/95 rounded-3xl p-5 sm:p-7 border border-slate-700/80 shadow-2xl relative overflow-hidden">
         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-          {/* Shop Image on Left */}
-          <div className="w-full lg:w-72 h-48 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 shadow-lg relative group">
+          {/* Shop Image on Left with Photo Upload Option */}
+          <div
+            onClick={() => setPhotoModalOpen(true)}
+            className="w-full lg:w-72 h-48 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 shadow-lg relative group cursor-pointer"
+            title="Click to upload or change storefront photo"
+          >
             <img
               src={shop?.imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=800&q=80'}
               alt={shop?.shopName || 'Shop Storefront'}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#030b0e]/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#030b0e]/80 via-transparent to-transparent opacity-70 group-hover:opacity-90 transition-opacity" />
+
+            {/* Hover Camera Action Button */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-xs">
+              <span className="px-3.5 py-2 bg-teal-400 text-slate-950 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 transform group-hover:scale-105 transition-all">
+                <Camera className="w-4 h-4" />
+                <span>Upload / Change Photo</span>
+              </span>
+            </div>
+
+            {/* Bottom Floating Badge */}
+            <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+              <span className="text-[10px] font-bold text-teal-300 bg-[#030b0e]/90 px-2 py-0.5 rounded-full border border-teal-500/30 flex items-center gap-1">
+                <Camera className="w-3 h-3 text-teal-400" /> Store Photo
+              </span>
+              <span className="text-[10px] text-teal-300 font-bold bg-[#030b0e]/90 px-2 py-0.5 rounded-full border border-teal-500/30 group-hover:bg-teal-400 group-hover:text-slate-950 transition-colors">
+                Change ➔
+              </span>
+            </div>
           </div>
 
           {/* Shop Information in Middle */}
@@ -347,7 +404,15 @@ export default function ShopkeeperDashboard() {
                   placeholder="Detailed Address"
                   className="w-full px-3 py-2 text-xs bg-[#06151a] border border-slate-700 text-white rounded-xl outline-none"
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoModalOpen(true)}
+                    className="px-3 py-1.5 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 border border-teal-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Upload / Change Photo</span>
+                  </button>
                   <button
                     type="button"
                     onClick={handleSaveHeader}
@@ -621,6 +686,14 @@ export default function ShopkeeperDashboard() {
         onSelectCategory={(categoryId) => {
           navigate(`/shopkeeper/products?category=${encodeURIComponent(categoryId)}`);
         }}
+      />
+
+      {/* Update Storefront Photo Modal */}
+      <UpdateShopPhotoModal
+        isOpen={photoModalOpen}
+        onClose={() => setPhotoModalOpen(false)}
+        currentImageUrl={shop?.imageUrl}
+        onSavePhoto={handleSavePhoto}
       />
     </div>
   );

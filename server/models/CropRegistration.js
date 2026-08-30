@@ -129,6 +129,11 @@ const cropRegistrationSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    resubmissionCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

@@ -437,52 +437,118 @@ export default function ShopDiscoveryPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {processedProducts.map((item) => (
               <div
                 key={item._id}
-                className="glass-card bg-[#051419]/95 rounded-3xl p-5 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-xl flex flex-col justify-between group space-y-4"
+                className="glass-card bg-[#051419]/95 rounded-2xl p-4 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-lg flex flex-col justify-between group space-y-3"
               >
                 {/* Image & Badges */}
-                <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center p-2">
+                <div className="relative w-full h-32 sm:h-36 rounded-xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center p-2">
                   <img
                     src={item.imageUrl || item.product?.imageUrl || 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=400&q=80'}
                     alt={item.customName || item.product?.name}
-                    className="w-full h-full object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
                   />
                   {item.proximity?.label && (
-                    <span className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${item.proximity.badgeClass}`}>
+                    <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold border ${item.proximity.badgeClass}`}>
                       {item.proximity.label}
                     </span>
                   )}
-                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#030b0e]/90 text-teal-300 border border-teal-500/40">
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-[#030b0e]/90 text-teal-300 border border-teal-500/40">
                     {item.product?.category || 'Fertilizer'}
                   </span>
+
+                  {/* Stock Availability Badge on Image */}
+                  {(() => {
+                    const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || item.quantity === 0;
+                    const isLow = item.status === 'Low Stock' || item.status === 'Low' || (item.quantity > 0 && item.quantity <= 5);
+                    return (
+                      <span
+                        className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold border flex items-center gap-1 shadow-xs ${
+                          isOut
+                            ? 'bg-rose-950/90 text-rose-300 border-rose-500/50'
+                            : isLow
+                            ? 'bg-amber-950/90 text-amber-300 border-amber-500/50'
+                            : 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isOut ? 'bg-rose-400' : isLow ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+                          }`}
+                        />
+                        <span>
+                          {isOut
+                            ? 'Out of Stock'
+                            : isLow
+                            ? `Low Stock (${item.quantity || 1} left)`
+                            : `In Stock (${item.quantity !== undefined ? item.quantity : 'Available'})`}
+                        </span>
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Info */}
-                <div className="space-y-1.5 flex-1">
-                  <h3 className="text-base font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                <div className="space-y-1 flex-1">
+                  <h3 className="text-sm sm:text-base font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
                     {item.customName || item.product?.name}
                   </h3>
-                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
                     {item.product?.description || 'Government certified agricultural input.'}
                   </p>
                 </div>
 
                 {/* Shop Reference Card */}
-                <div className="p-3 rounded-2xl bg-[#030b0e] border border-slate-700/70 space-y-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Available At:</span>
-                    <span className="font-extrabold text-white line-clamp-1">{item.shop?.shopName}</span>
+                <div className="p-2.5 rounded-xl bg-[#030b0e] border border-slate-700/70 space-y-1 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-400 font-medium flex-shrink-0 text-[11px]">Available At:</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-extrabold text-white text-xs truncate">{item.shop?.shopName}</span>
+                      {item.shop?.ratingAverage && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/40 flex-shrink-0">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                          {item.shop.ratingAverage.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
                   <div className="flex items-center justify-between text-[11px] text-slate-400">
                     <span>Location:</span>
                     <span className="text-teal-300 font-semibold">{item.shop?.location}</span>
                   </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Stock Status:</span>
+                    {(() => {
+                      const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || item.quantity === 0;
+                      const isLow = item.status === 'Low Stock' || item.status === 'Low' || (item.quantity > 0 && item.quantity <= 5);
+                      return (
+                        <span
+                          className={`font-bold flex items-center gap-1 ${
+                            isOut ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-emerald-400'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isOut ? 'bg-rose-400' : isLow ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+                            }`}
+                          />
+                          {isOut
+                            ? 'Out of Stock'
+                            : isLow
+                            ? `Low Stock (${item.quantity || 1} ${item.unit || 'left'})`
+                            : `In Stock (${item.quantity !== undefined ? item.quantity : ''} ${item.unit || 'units'})`}
+                        </span>
+                      );
+                    })()}
+                  </div>
+
                   <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-xs">
-                    <span className="text-slate-400">Price:</span>
-                    <span className="text-base font-black text-white">
+                    <span className="text-slate-400 text-[11px]">Price:</span>
+                    <span className="text-sm font-black text-white">
                       ₹{item.price}<span className="text-[10px] text-slate-400 font-normal">/{item.unit || 'kg'}</span>
                     </span>
                   </div>
@@ -491,7 +557,7 @@ export default function ShopDiscoveryPage() {
                 {/* View Shop Button */}
                 <Link
                   to={`/farmer/shops/${item.shop?._id}`}
-                  className="w-full py-2.5 px-4 bg-[#071d24] hover:bg-teal-500 hover:text-slate-950 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2 px-3 bg-[#071d24] hover:bg-teal-500 hover:text-slate-950 text-teal-300 text-xs font-bold rounded-xl border border-teal-500/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>View Dealer & Inventory</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -529,49 +595,49 @@ export default function ShopDiscoveryPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {processedShops.map((shop) => (
               <div
                 key={shop._id}
-                className="glass-card bg-[#051419]/95 rounded-3xl p-5 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-xl flex flex-col justify-between group space-y-4"
+                className="glass-card bg-[#051419]/95 rounded-2xl p-4 border border-slate-700/80 hover:border-teal-400/80 transition-all shadow-lg flex flex-col justify-between group space-y-3"
               >
                 {/* Shop Cover Image & Proximity Badge */}
-                <div className="relative w-full h-44 rounded-2xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center">
+                <div className="relative w-full h-32 sm:h-36 rounded-xl overflow-hidden bg-[#030b0e] border border-slate-700/80 flex items-center justify-center">
                   <img
                     src={shop.imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80'}
                     alt={shop.shopName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {shop.proximity?.label && (
-                    <span className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold border ${shop.proximity.badgeClass}`}>
+                    <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold border ${shop.proximity.badgeClass}`}>
                       {shop.proximity.label}
                     </span>
                   )}
-                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[11px] font-extrabold text-amber-300 bg-[#030b0e]/90 px-2 py-0.5 rounded-lg border border-slate-700">
+                  <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-extrabold text-amber-300 bg-[#030b0e]/90 px-2 py-0.5 rounded-md border border-slate-700">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>{shop.ratingAverage ? shop.ratingAverage.toFixed(1) : '4.5'}</span>
                   </div>
                 </div>
 
                 {/* Shop Info */}
-                <div className="space-y-1.5 flex-1">
-                  <h3 className="text-base sm:text-lg font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
+                <div className="space-y-1 flex-1">
+                  <h3 className="text-sm sm:text-base font-black text-white group-hover:text-teal-300 transition-colors line-clamp-1">
                     {shop.shopName}
                   </h3>
-                  <p className="text-xs text-slate-300 flex items-start gap-1 line-clamp-2">
+                  <p className="text-[11px] text-slate-300 flex items-start gap-1 line-clamp-2">
                     <MapPin className="w-3.5 h-3.5 text-teal-400 flex-shrink-0 mt-0.5" />
                     <span>{shop.address || shop.location}</span>
                   </p>
                 </div>
 
                 {/* Shop Details */}
-                <div className="p-3 rounded-2xl bg-[#030b0e] border border-slate-700/70 flex items-center justify-between text-xs text-slate-300">
-                  <div className="flex items-center gap-1.5">
+                <div className="p-2.5 rounded-xl bg-[#030b0e] border border-slate-700/70 flex items-center justify-between text-xs text-slate-300">
+                  <div className="flex items-center gap-1.5 text-[11px]">
                     <Package className="w-3.5 h-3.5 text-teal-400" />
                     <span><strong>{shop.productCount || 0}</strong> Products listed</span>
                   </div>
                   {shop.phone && (
-                    <div className="flex items-center gap-1 text-slate-400 text-[11px]">
+                    <div className="flex items-center gap-1 text-slate-400 text-[10px]">
                       <Phone className="w-3 h-3 text-teal-400" />
                       <span>{shop.phone}</span>
                     </div>
@@ -581,7 +647,7 @@ export default function ShopDiscoveryPage() {
                 {/* View Shop Button */}
                 <Link
                   to={`/farmer/shops/${shop._id}`}
-                  className="w-full py-2.5 px-4 btn-glow-primary text-slate-950 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102"
+                  className="w-full py-2 px-3 btn-glow-primary text-slate-950 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102"
                 >
                   <span>Visit Shop & Browse Stock ➔</span>
                 </Link>

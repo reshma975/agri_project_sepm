@@ -1,13 +1,20 @@
 import React from 'react';
 import StatusBadge from '../common/StatusBadge';
-import { Sprout, MapPin, Calendar, Layers, ChevronRight } from 'lucide-react';
+import { Sprout, MapPin, Calendar, Layers, ChevronRight, AlertCircle } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 
 export default function CropCard({ crop, onClick }) {
+  const hasSpecificCropIssue = crop.cropIssues && crop.cropIssues.length > 0;
+  const isReturned = crop.status === 'RETURNED_FOR_CORRECTION';
+
   return (
     <div
       onClick={onClick}
-      className="glass-card bg-[#06151a]/90 rounded-2xl p-5 cursor-pointer border border-teal-500/20 hover:border-teal-400/50 hover:shadow-lg hover:shadow-teal-500/10 group transition-all"
+      className={`glass-card bg-[#06151a]/90 rounded-2xl p-5 cursor-pointer border transition-all group ${
+        hasSpecificCropIssue
+          ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10'
+          : 'border-teal-500/20 hover:border-teal-400/50 hover:shadow-lg hover:shadow-teal-500/10'
+      }`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
@@ -45,13 +52,26 @@ export default function CropCard({ crop, onClick }) {
         </div>
       </div>
 
-      {crop.officerComment && crop.status === 'RETURNED_FOR_CORRECTION' && (
-        <div className="mt-3 p-2.5 bg-orange-950/40 border border-orange-500/30 rounded-xl text-xs text-orange-300">
-          <strong className="block text-orange-200 font-semibold mb-0.5">Officer Note:</strong>
-          {crop.officerComment}
+      {/* Targeted Crop-Specific Officer Issue Note */}
+      {hasSpecificCropIssue ? (
+        <div className="mt-3 p-2.5 bg-amber-950/60 border border-amber-500/40 rounded-xl text-xs text-amber-200 space-y-1">
+          <strong className="block text-amber-300 font-bold flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+            Officer's Correction Note:
+          </strong>
+          {crop.cropIssues.map((iss) => (
+            <p key={iss._id || iss.id}>"{iss.description}"</p>
+          ))}
         </div>
-      )}
-
+      ) : isReturned && crop.officerComment ? (
+        <div className="mt-3 p-2.5 bg-amber-950/60 border border-amber-500/40 rounded-xl text-xs text-amber-200 space-y-1">
+          <strong className="block text-amber-300 font-bold flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+            Officer's Note:
+          </strong>
+          <p>"{crop.officerComment}"</p>
+        </div>
+      ) : null}
 
       <div className="mt-3.5 flex items-center justify-between text-xs font-bold text-teal-400 group-hover:translate-x-1 transition-transform">
         <span>View / Edit Crop Details</span>

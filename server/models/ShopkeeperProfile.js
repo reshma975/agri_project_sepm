@@ -13,6 +13,21 @@ const shopkeeperProfileSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    village: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mandal: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    district: {
+      type: String,
+      default: 'Vijayawada',
+      trim: true,
+    },
     primaryLocation: {
       type: String,
       default: 'Vijayawada',

@@ -5,7 +5,13 @@ const cropRegistrationHistorySchema = new mongoose.Schema(
     registrationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'CropRegistration',
-      required: true,
+      required: false,
+      default: null,
+    },
+    landId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Land',
+      default: null,
     },
     officerId: {
       type: mongoose.Schema.Types.ObjectId,

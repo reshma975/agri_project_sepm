@@ -96,7 +96,35 @@ export const getMyShops = async (req, res) => {
       }
     }
 
-    const shops = await Shop.find(query).sort({ createdAt: -1 });
+    let shops = await Shop.find(query).sort({ createdAt: -1 });
+
+    // If shopkeeper has no Shop record in DB yet, auto-create one synced from ShopkeeperProfile
+    if (shops.length === 0) {
+      const { ShopkeeperProfile } = await import('../models/ShopkeeperProfile.js');
+      const profile = await ShopkeeperProfile.findOne({ userId: req.user._id });
+      if (profile) {
+        const fullLocation = [profile.village, profile.mandal, profile.district].filter(Boolean).join(', ') || profile.primaryLocation || 'Vijayawada';
+        const newShop = await Shop.create({
+          shopId: `SHP${Math.floor(1000 + Math.random() * 9000)}`,
+          ownerId: req.user._id,
+          shopName: profile.businessName || `${req.user.name}'s Agro Store`,
+          location: profile.village || profile.primaryLocation || fullLocation,
+          village: profile.village || '',
+          mandal: profile.mandal || '',
+          district: profile.district || 'Vijayawada',
+          address: profile.address || `${profile.village ? profile.village + ', ' : ''}${profile.mandal ? profile.mandal + ' Mandal, ' : ''}${profile.district || 'Vijayawada'}`,
+          phone: req.user.phone || '',
+          timings: profile.timings || {
+            weekday: '7:30 AM - 8:00 PM',
+            sunday: '7:30 AM - 1:00 PM',
+            note: 'Timings may change on festival days'
+          },
+          ratingAverage: 4.5,
+          ratingCount: 1,
+        });
+        shops = [newShop];
+      }
+    }
 
     // Populate product count for each shop
     const shopsWithCounts = await Promise.all(
@@ -158,13 +186,13 @@ export const createShop = async (req, res) => {
       shopName,
       location,
       address,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80',
-      phone: phone || req.user.phone || '+91 98480 12345',
+      imageUrl: imageUrl || '',
+      phone: phone || req.user.phone || '',
       ratingAverage: 4.5,
-      ratingCount: 1
+      ratingCount: 1,
     });
 
-    return res.status(201).json({ success: true, message: 'Shop created successfully', shop });
+    return res.status(201).json({ success: true, shop });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -184,16 +212,33 @@ export const updateShop = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to edit this shop' });
     }
 
-    const { shopName, location, address, imageUrl, phone, timings } = req.body;
-    if (shopName) shop.shopName = shopName;
-    if (location) shop.location = location;
-    if (address) shop.address = address;
-    if (imageUrl) shop.imageUrl = imageUrl;
-    if (phone) shop.phone = phone;
-    if (timings) shop.timings = timings;
-
+    const { shopName, location, address, imageUrl, phone, timings, village, mandal, district } = req.body;
+    if (shopName !== undefined) shop.shopName = shopName;
+    if (location !== undefined) shop.location = location;
+    if (village !== undefined) shop.village = village;
+    if (mandal !== undefined) shop.mandal = mandal;
+    if (district !== undefined) shop.district = district;
+    if (address !== undefined) shop.address = address;
+    if (imageUrl !== undefined) shop.imageUrl = imageUrl;
+    if (phone !== undefined) shop.phone = phone;
+    if (timings !== undefined) shop.timings = timings;
 
     await shop.save();
+
+    // Synchronize updates to ShopkeeperProfile as well
+    const { ShopkeeperProfile } = await import('../models/ShopkeeperProfile.js');
+    const profile = await ShopkeeperProfile.findOne({ userId: req.user._id });
+    if (profile) {
+      if (shopName) profile.businessName = shopName;
+      if (location) profile.primaryLocation = location;
+      if (village) profile.village = village;
+      if (mandal) profile.mandal = mandal;
+      if (district) profile.district = district;
+      if (address) profile.address = address;
+      if (timings) profile.timings = timings;
+      await profile.save();
+    }
+
     return res.status(200).json({ success: true, message: 'Shop updated successfully', shop });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

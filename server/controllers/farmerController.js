@@ -2,6 +2,7 @@ import { FarmerProfile } from '../models/FarmerProfile.js';
 import { Land } from '../models/Land.js';
 import { CropRegistration } from '../models/CropRegistration.js';
 import { CropRegistrationHistory } from '../models/CropRegistrationHistory.js';
+import { VerificationIssue } from '../models/VerificationIssue.js';
 import { User } from '../models/User.js';
 import { RegistrationDeadline } from '../models/RegistrationDeadline.js';
 
@@ -20,6 +21,36 @@ const checkFarmerDocuments = (profile) => {
   };
 };
 
+// Helper to resolve effective land status
+const resolveLandStatus = (land, crops = [], openIssues = []) => {
+  if (openIssues.length > 0 || land.overallVerificationStatus === 'RESUBMIT_NEEDED') {
+    return 'RESUBMIT_NEEDED';
+  }
+  if (crops.some((c) => c.status === 'RETURNED_FOR_CORRECTION')) {
+    return 'RESUBMIT_NEEDED';
+  }
+  if (land.overallVerificationStatus === 'VERIFIED') {
+    return 'VERIFIED';
+  }
+  if (crops.length > 0 && crops.every((c) => c.status === 'VERIFIED')) {
+    return 'VERIFIED';
+  }
+  if (land.overallVerificationStatus === 'REJECTED') {
+    return 'REJECTED';
+  }
+  if (crops.length > 0 && crops.every((c) => c.status === 'REJECTED')) {
+    return 'REJECTED';
+  }
+  if (
+    land.overallVerificationStatus === 'SUBMITTED' ||
+    land.overallVerificationStatus === 'UNDER_VERIFICATION' ||
+    crops.some((c) => ['SUBMITTED', 'UNDER_VERIFICATION'].includes(c.status))
+  ) {
+    return 'PENDING_VERIFICATION';
+  }
+  return 'DRAFT';
+};
+
 // Helper to check deadlines strictly for mandals where the farmer owns land parcels
 const getFarmerMandalDeadlines = async (profile, lands = []) => {
   if (!lands || lands.length === 0) {
@@ -27,8 +58,6 @@ const getFarmerMandalDeadlines = async (profile, lands = []) => {
   }
 
   const mandalSet = new Set();
-  
-  // Collect all mandals from the farmer's registered land parcels ONLY
   lands.forEach(l => {
     if (l.mandal && l.mandal.trim()) {
       mandalSet.add(l.mandal.trim());
@@ -42,7 +71,6 @@ const getFarmerMandalDeadlines = async (profile, lands = []) => {
   const mandalDeadlines = [];
   const now = new Date();
 
-  // Query active registration deadline set by officer for each mandal of the farmer's lands
   for (const mandal of mandalSet) {
     const landsInMandal = lands.filter(
       l => l.mandal && l.mandal.trim().toLowerCase() === mandal.toLowerCase()
@@ -159,7 +187,7 @@ export const getFarmerProfile = async (req, res) => {
   }
 };
 
-// @desc    Get active registration deadline for the farmer's mandal and lands
+// @desc    Get farmer registration deadline info
 // @route   GET /api/farmers/deadline
 // @access  Private (FARMER)
 export const getFarmerDeadline = async (req, res) => {
@@ -167,10 +195,10 @@ export const getFarmerDeadline = async (req, res) => {
     const profile = await FarmerProfile.findOne({
       $or: [{ userId: req.user._id }, { _id: req.user._id }]
     });
-    const lands = profile
-      ? await Land.find({ $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] })
-      : [];
-    const farmerMandal = profile?.mandal || 'Penamaluru';
+    const farmerMandal = profile ? profile.mandal : 'Penamaluru';
+
+    const farmerIdMatch = profile ? { $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] } : {};
+    const lands = profile ? await Land.find(farmerIdMatch) : [];
 
     const deadlineCheck = await checkMandalDeadline(farmerMandal);
     const mandalDeadlines = await getFarmerMandalDeadlines(profile, lands);
@@ -187,7 +215,7 @@ export const getFarmerDeadline = async (req, res) => {
   }
 };
 
-// @desc    Get farmer lands
+// @desc    Get farmer lands (with attached crops, issues, and overallVerificationStatus)
 // @route   GET /api/farmers/lands
 // @access  Private (FARMER)
 export const getFarmerLands = async (req, res) => {
@@ -206,20 +234,46 @@ export const getFarmerLands = async (req, res) => {
       });
     }
 
-    const lands = await Land.find({
-      $or: [{ farmerId: profile._id }, { farmerId: req.user._id }]
-    }).sort({ createdAt: -1 });
+    const farmerIdMatch = { $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] };
+    const lands = await Land.find(farmerIdMatch).sort({ createdAt: -1 });
 
-    // Ensure all lands have a unique landId
+    const allCrops = await CropRegistration.find(farmerIdMatch).sort({ createdAt: -1 });
+    const allIssues = await VerificationIssue.find({ farmerId: profile._id }).sort({ createdAt: -1 });
+
+    const enrichedLands = [];
+
     for (const land of lands) {
       if (!land.landId) {
         land.landId = `LND${Math.floor(10000 + Math.random() * 90000)}`;
         await land.save();
       }
+
+      const linkedCrops = allCrops.filter(
+        (c) =>
+          (c.landId && c.landId.toString() === land._id.toString()) ||
+          (c.surveyNumber && c.surveyNumber.trim().toLowerCase() === land.surveyNumber.trim().toLowerCase())
+      );
+
+      const linkedIssues = allIssues.filter(
+        (i) => i.landId && i.landId.toString() === land._id.toString()
+      );
+
+      const effectiveStatus = resolveLandStatus(land, linkedCrops, linkedIssues.filter(i => i.status !== 'RESOLVED'));
+
+      enrichedLands.push({
+        ...land.toObject(),
+        overallVerificationStatus: effectiveStatus,
+        crops: linkedCrops,
+        issues: linkedIssues,
+        openIssues: linkedIssues.filter((i) => i.status === 'OPEN' || i.status === 'RESUBMITTED'),
+        landIssues: linkedIssues.filter((i) => i.issueLevel === 'LAND' && (i.status === 'OPEN' || i.status === 'RESUBMITTED')),
+        cropIssues: linkedIssues.filter((i) => i.issueLevel === 'CROP' && (i.status === 'OPEN' || i.status === 'RESUBMITTED')),
+      });
     }
 
-    return res.status(200).json({ success: true, lands });
+    return res.status(200).json({ success: true, lands: enrichedLands });
   } catch (error) {
+    console.error('getFarmerLands error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -343,6 +397,7 @@ export const createLand = async (req, res) => {
 
       await CropRegistrationHistory.create({
         registrationId: registeredCrop._id,
+        landId: existingLand._id,
         action: 'DRAFT_RECORDED',
         comment: `New crop "${currentCrop.trim()}" recorded on Survey No. ${targetSurvey} (Not Submitted)`,
         officerName: 'Farmer Farm Records'
@@ -368,9 +423,9 @@ export const createLand = async (req, res) => {
       currentCrop: currentCrop ? currentCrop.trim() : '',
       cropCategory: cropCategory || (currentCrop ? 'Cereals' : 'None'),
       estimatedDurationMonths: estimatedDurationMonths ? Number(estimatedDurationMonths) : null,
+      overallVerificationStatus: 'DRAFT'
     });
 
-    // If an initial crop was provided, auto-register this crop under the new land parcel as unsubmitted
     let registeredCrop = null;
     if (currentCrop && currentCrop.trim()) {
       const farmerMandal = land.mandal || profile.mandal || 'Penamaluru';
@@ -398,6 +453,7 @@ export const createLand = async (req, res) => {
 
       await CropRegistrationHistory.create({
         registrationId: registeredCrop._id,
+        landId: land._id,
         action: 'DRAFT_RECORDED',
         comment: `Crop recorded during land parcel registration (Duration: ${estimatedDurationMonths ? estimatedDurationMonths + ' Months' : 'Seasonal'})`,
         officerName: 'Farmer Farm Records'
@@ -421,7 +477,7 @@ export const createLand = async (req, res) => {
   }
 };
 
-// @desc    Get crop registrations with optional year & status filter
+// @desc    Get crop registrations with optional year & status filter (with attached issues)
 // @route   GET /api/farmers/crops
 // @access  Private (FARMER)
 export const getFarmerCrops = async (req, res) => {
@@ -460,13 +516,33 @@ export const getFarmerCrops = async (req, res) => {
       .populate('landId')
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({ success: true, crops });
+    const openIssues = await VerificationIssue.find({
+      farmerId: profile._id,
+      status: { $ne: 'RESOLVED' }
+    });
+
+    const enrichedCrops = crops.map((crop) => {
+      const cid = crop._id.toString();
+      const lid = crop.landId?._id ? crop.landId._id.toString() : crop.landId?.toString() || '';
+
+      const cropSpecificIssues = openIssues.filter((i) => i.cropId && i.cropId.toString() === cid);
+      const landLevelIssues = openIssues.filter((i) => i.issueLevel === 'LAND' && i.landId && i.landId.toString() === lid);
+
+      return {
+        ...crop.toObject(),
+        cropIssues: cropSpecificIssues,
+        landIssues: landLevelIssues,
+        hasOpenIssue: cropSpecificIssues.length > 0,
+      };
+    });
+
+    return res.status(200).json({ success: true, crops: enrichedCrops });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get single crop registration by ID with history audit trail
+// @desc    Get single crop registration by ID with history audit trail and verification issues
 // @route   GET /api/farmers/crops/:id
 // @access  Private
 export const getCropById = async (req, res) => {
@@ -482,9 +558,18 @@ export const getCropById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Crop registration not found' });
     }
 
-    const history = await CropRegistrationHistory.find({ registrationId: crop._id }).sort({ timestamp: -1 });
+    const history = await CropRegistrationHistory.find({
+      $or: [{ registrationId: crop._id }, { landId: crop.landId?._id }]
+    }).sort({ timestamp: -1 });
 
-    return res.status(200).json({ success: true, crop, history });
+    const issues = await VerificationIssue.find({
+      $or: [
+        { cropId: crop._id },
+        { landId: crop.landId?._id, issueLevel: 'LAND' }
+      ]
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, crop, history, issues });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -532,7 +617,6 @@ export const registerCrop = async (req, res) => {
 
     const farmerMandal = mandal || profile.mandal || 'Penamaluru';
 
-    // Check Mandal Deadline if submitting
     if (!isDraft) {
       const deadlineCheck = await checkMandalDeadline(farmerMandal);
       if (deadlineCheck.passed) {
@@ -548,7 +632,6 @@ export const registerCrop = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Survey Number is required for land parcel identification' });
     }
 
-    // Find or create associated Land parcel
     let land = null;
     if (landId) {
       land = await Land.findOne({ _id: landId, farmerId: profile._id });
@@ -565,15 +648,14 @@ export const registerCrop = async (req, res) => {
         district: district || profile.district || 'Vijayawada',
         totalArea: Number(totalLandArea) || Number(cultivatedArea) || 1,
         areaUnit: areaUnit || 'Acres',
-        ownershipType: ownershipType || 'Owned'
+        ownershipType: ownershipType || 'Owned',
+        overallVerificationStatus: isDraft ? 'DRAFT' : 'SUBMITTED'
       });
 
-      // Update total land holding on farmer profile
       const allLands = await Land.find({ farmerId: profile._id });
       profile.totalLandArea = allLands.reduce((acc, curr) => acc + (curr.totalArea || 0), 0);
     }
 
-    // Normalize crops list
     const cropList = Array.isArray(crops) && crops.length > 0
       ? crops
       : [{
@@ -594,7 +676,6 @@ export const registerCrop = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please specify at least one crop entry' });
     }
 
-    // Check existing crops on this land parcel to ensure sum of cultivatedArea <= totalArea
     const existingParcelCrops = await CropRegistration.find({
       farmerId: profile._id,
       $or: [
@@ -619,9 +700,7 @@ export const registerCrop = async (req, res) => {
     const status = isDraft ? 'DRAFT' : 'SUBMITTED';
 
     for (const item of cropList) {
-      if (!item.cropName || !item.cultivatedArea) {
-        continue;
-      }
+      if (!item.cropName || !item.cultivatedArea) continue;
 
       const crop = await CropRegistration.create({
         farmerId: profile._id,
@@ -641,33 +720,36 @@ export const registerCrop = async (req, res) => {
         sowingDate: item.sowingDate ? new Date(item.sowingDate) : new Date(),
         harvestDate: item.harvestDate ? new Date(item.harvestDate) : null,
         irrigationType: item.irrigationType || 'Borewell',
-        fertilizersUsed: item.fertilizersUsed || '',
-        pesticidesUsed: item.pesticidesUsed || '',
-        expectedHarvest: item.expectedHarvest || '',
+        fertilizersUsed: item.fertilizersUsed || 'Urea, DAP',
+        pesticidesUsed: item.pesticidesUsed || 'Neem Oil',
+        expectedHarvest: item.expectedHarvest || '40 Quintals',
         status,
-        submittedAt: new Date()
+        submittedAt: isDraft ? null : new Date()
       });
 
       await CropRegistrationHistory.create({
         registrationId: crop._id,
-        action: isDraft ? 'DRAFT_SAVED' : 'SUBMITTED',
-        comment: isDraft ? 'Crop saved as draft' : 'Crop submitted digitally by farmer for verification',
-        officerName: 'Farmer Self-Submission'
+        landId: land._id,
+        action: isDraft ? 'DRAFT_RECORDED' : 'SUBMITTED',
+        comment: isDraft
+          ? `Draft crop "${item.cropName}" registered by farmer`
+          : `Crop "${item.cropName}" submitted for officer verification`,
+        officerName: isDraft ? 'Farmer Self-Service' : 'Farmer Self-Submission'
       });
 
       createdCrops.push(crop);
     }
 
-    if (!isDraft && profile.registrationStatus !== 'VERIFIED') {
-      profile.registrationStatus = 'UNDER_VERIFICATION';
-      await profile.save();
+    if (!isDraft) {
+      land.overallVerificationStatus = 'SUBMITTED';
+      land.submittedAt = new Date();
+      await land.save();
     }
 
     return res.status(201).json({
       success: true,
-      message: `${createdCrops.length} crop ${createdCrops.length > 1 ? 'records' : 'record'} registered successfully on Survey No. ${land.surveyNumber}`,
+      message: `${createdCrops.length} crop record(s) registered successfully on Survey No. ${land.surveyNumber}`,
       crops: createdCrops,
-      crop: createdCrops[0],
       land
     });
   } catch (error) {
@@ -676,7 +758,7 @@ export const registerCrop = async (req, res) => {
   }
 };
 
-// @desc    Update crop (edit draft or resubmit returned application)
+// @desc    Update crop (edit draft or resubmit returned application with issue resolution)
 // @route   PUT /api/farmers/crops/:id
 // @access  Private (FARMER)
 export const updateCrop = async (req, res) => {
@@ -718,7 +800,6 @@ export const updateCrop = async (req, res) => {
     const isReturned = crop.status === 'RETURNED_FOR_CORRECTION';
     const isSubmitting = submit || resubmit;
 
-    // If submitting or resubmitting, check deadline
     if (isSubmitting) {
       const farmerMandal = crop.mandal || profile.mandal || 'Penamaluru';
       const deadlineCheck = await checkMandalDeadline(farmerMandal);
@@ -772,8 +853,28 @@ export const updateCrop = async (req, res) => {
       crop.status = 'SUBMITTED';
       crop.submittedAt = crop.submittedAt || new Date();
 
+      // Update any open issues on this crop to RESUBMITTED
+      await VerificationIssue.updateMany(
+        { cropId: crop._id, status: 'OPEN' },
+        { $set: { status: 'RESUBMITTED', resubmittedAt: new Date(), farmerComment: resubmitComment || 'Corrected by farmer' } }
+      );
+
+      // Check parent Land parcel: if all other issues on this parcel are resolved/resubmitted, set land to SUBMITTED
+      if (crop.landId) {
+        const remainingOpenIssues = await VerificationIssue.countDocuments({
+          landId: crop.landId,
+          status: 'OPEN'
+        });
+        if (remainingOpenIssues === 0) {
+          await Land.findByIdAndUpdate(crop.landId, {
+            $set: { overallVerificationStatus: 'SUBMITTED', submittedAt: new Date() }
+          });
+        }
+      }
+
       await CropRegistrationHistory.create({
         registrationId: crop._id,
+        landId: crop.landId,
         action: isReturned ? 'RESUBMITTED' : 'SUBMITTED',
         comment: isReturned
           ? (resubmitComment || 'Corrected and resubmitted by farmer for officer review')
@@ -788,6 +889,7 @@ export const updateCrop = async (req, res) => {
     } else if (isDraft) {
       await CropRegistrationHistory.create({
         registrationId: crop._id,
+        landId: crop.landId,
         action: 'DRAFT_SAVED',
         comment: 'Draft details updated by farmer',
         officerName: 'Farmer Self-Submission'
@@ -795,6 +897,7 @@ export const updateCrop = async (req, res) => {
     } else {
       await CropRegistrationHistory.create({
         registrationId: crop._id,
+        landId: crop.landId,
         action: 'UPDATED',
         comment: 'Crop details updated by farmer',
         officerName: 'Farmer Self-Submission'
@@ -804,13 +907,11 @@ export const updateCrop = async (req, res) => {
     await crop.save();
     await crop.populate('landId');
 
-    const responseMessage = isSubmitting
-      ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully with corrections!')
-      : 'Crop details updated successfully!';
-
     return res.status(200).json({
       success: true,
-      message: responseMessage,
+      message: isSubmitting
+        ? (isDraft ? 'Crop submitted successfully for officer verification!' : 'Application resubmitted successfully with corrections!')
+        : 'Crop details updated successfully!',
       crop
     });
   } catch (error) {
@@ -844,6 +945,13 @@ export const uploadDocument = async (req, res) => {
     };
 
     await profile.save();
+
+    // Mark any open land/document level verification issues as RESUBMITTED
+    await VerificationIssue.updateMany(
+      { farmerId: profile._id, issueLevel: 'LAND', status: 'OPEN' },
+      { $set: { status: 'RESUBMITTED', resubmittedAt: new Date(), farmerComment: `Uploaded new ${docType}` } }
+    );
+
     return res.status(200).json({
       success: true,
       message: `${docType} uploaded and saved successfully`,
@@ -854,7 +962,7 @@ export const uploadDocument = async (req, res) => {
   }
 };
 
-// @desc    Submit all draft/unsubmitted crops in a specific mandal for official officer verification
+// @desc    Submit all unsubmitted crops and lands in a mandal for official officer verification
 // @route   POST /api/farmers/submit-mandal-registration
 // @access  Private (FARMER)
 export const submitMandalRegistration = async (req, res) => {
@@ -871,7 +979,7 @@ export const submitMandalRegistration = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Farmer profile not found' });
     }
 
-    // 1. Find lands belonging to this mandal
+    // 1. Find lands in this mandal
     const farmerIdMatch = { $or: [{ farmerId: profile._id }, { farmerId: req.user._id }] };
     const lands = await Land.find({
       ...farmerIdMatch,
@@ -879,7 +987,7 @@ export const submitMandalRegistration = async (req, res) => {
     });
     const landIds = lands.map(l => l._id);
 
-    // 2. Check if registration deadline has passed for this mandal
+    // 2. Check deadline
     const deadlines = await getFarmerMandalDeadlines(profile, lands);
     const mDeadline = deadlines.find(d => d.mandal.toLowerCase() === mandal.toLowerCase());
     if (mDeadline && mDeadline.isDeadlinePassed) {
@@ -889,7 +997,7 @@ export const submitMandalRegistration = async (req, res) => {
       });
     }
 
-    // 3. Validate mandatory government documents (3 required)
+    // 3. Validate mandatory documents
     const docsCheck = checkFarmerDocuments(profile);
     if (!docsCheck.valid) {
       return res.status(400).json({
@@ -933,7 +1041,7 @@ export const submitMandalRegistration = async (req, res) => {
       });
     }
 
-    // 5. Update all eligible crops to SUBMITTED with current timestamp
+    // 5. Update all eligible crops to SUBMITTED
     const now = new Date();
     for (const crop of cropsToSubmit) {
       const wasReturned = crop.status === 'RETURNED_FOR_CORRECTION';
@@ -943,6 +1051,7 @@ export const submitMandalRegistration = async (req, res) => {
 
       await CropRegistrationHistory.create({
         registrationId: crop._id,
+        landId: crop.landId,
         action: wasReturned ? 'RESUBMITTED' : 'SUBMITTED',
         comment: wasReturned
           ? `Application corrected and resubmitted by farmer for ${mandal} Mandal verification`
@@ -951,13 +1060,26 @@ export const submitMandalRegistration = async (req, res) => {
       });
     }
 
+    // 6. Update all Lands in this mandal to SUBMITTED
+    await Land.updateMany(
+      { _id: { $in: landIds } },
+      { $set: { overallVerificationStatus: 'SUBMITTED', submittedAt: now } }
+    );
+
+    // 7. Mark open issues as RESUBMITTED
+    await VerificationIssue.updateMany(
+      { landId: { $in: landIds }, status: 'OPEN' },
+      { $set: { status: 'RESUBMITTED', resubmittedAt: now, farmerComment: 'Resubmitted with mandal application' } }
+    );
+
     profile.registrationStatus = 'UNDER_VERIFICATION';
     await profile.save();
 
     return res.status(200).json({
       success: true,
-      message: `Successfully submitted ${cropsToSubmit.length} crop registration(s) in ${mandal} Mandal for Agriculture Officer verification!`,
-      count: cropsToSubmit.length
+      message: `Successfully submitted ${cropsToSubmit.length} crop registration(s) across ${lands.length} land parcel(s) in ${mandal} Mandal for Agriculture Officer verification!`,
+      count: cropsToSubmit.length,
+      parcelsCount: lands.length
     });
   } catch (error) {
     console.error('Submit mandal registration error:', error);

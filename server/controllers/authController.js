@@ -151,7 +151,10 @@ export const registerUser = async (req, res) => {
           profile = await ShopkeeperProfile.create({
             userId: existingUser._id,
             businessName: businessName || `${existingUser.name}'s Agro Store`,
-            primaryLocation: village || district || 'Vijayawada'
+            village: village || '',
+            mandal: mandal || '',
+            district: district || 'Vijayawada',
+            primaryLocation: [village, mandal, district].filter(Boolean).join(', ') || village || district || 'Vijayawada'
           });
         }
       } else if (role === 'OFFICER') {
@@ -225,7 +228,10 @@ export const registerUser = async (req, res) => {
       profile = await ShopkeeperProfile.create({
         userId: user._id,
         businessName: businessName || `${name}'s Agro Store`,
-        primaryLocation: village || district || 'Vijayawada'
+        village: village || '',
+        mandal: mandal || '',
+        district: district || 'Vijayawada',
+        primaryLocation: [village, mandal, district].filter(Boolean).join(', ') || village || district || 'Vijayawada'
       });
     } else if (role === 'OFFICER') {
       const officerMandal = mandal || (address && address.includes('Mandal') ? address.split('Mandal')[0].trim() : 'Penamaluru');
@@ -505,6 +511,9 @@ export const updateProfile = async (req, res) => {
       if (profile) {
         if (businessName !== undefined) profile.businessName = businessName;
         if (tradeLicenseNo !== undefined) profile.tradeLicenseNo = tradeLicenseNo;
+        if (village !== undefined) profile.village = village;
+        if (mandal !== undefined) profile.mandal = mandal;
+        if (district !== undefined) profile.district = district;
         if (req.body.primaryLocation !== undefined) profile.primaryLocation = req.body.primaryLocation;
         if (req.body.timings !== undefined) {
           profile.timings = {
@@ -514,15 +523,21 @@ export const updateProfile = async (req, res) => {
         }
         await profile.save();
       }
-      // Also update timings on shop if present
-      if (req.body.timings !== undefined) {
-        await import('../models/Shop.js').then(async ({ Shop }) => {
-          await Shop.updateMany(
-            { ownerId: user._id },
-            { $set: { timings: req.body.timings } }
-          );
-        });
-      }
+      // Also update shop records if present
+      await import('../models/Shop.js').then(async ({ Shop }) => {
+        const shopUpdates = {};
+        if (businessName !== undefined) shopUpdates.shopName = businessName;
+        if (village !== undefined) shopUpdates.village = village;
+        if (mandal !== undefined) shopUpdates.mandal = mandal;
+        if (district !== undefined) shopUpdates.district = district;
+        if (req.body.primaryLocation !== undefined) shopUpdates.location = req.body.primaryLocation;
+        if (address !== undefined) shopUpdates.address = address;
+        if (req.body.timings !== undefined) shopUpdates.timings = req.body.timings;
+        if (phone !== undefined) shopUpdates.phone = normalizePhone(phone);
+        if (Object.keys(shopUpdates).length > 0) {
+          await Shop.updateMany({ ownerId: user._id }, { $set: shopUpdates });
+        }
+      });
     } else if (activeRole === 'OFFICER') {
       profile = await OfficerProfile.findOne({ userId: user._id });
       if (profile) {
@@ -808,7 +823,10 @@ export const addRoleToAccount = async (req, res) => {
         profile = await ShopkeeperProfile.create({
           userId: user._id,
           businessName: businessName || `${user.name}'s Agro Store`,
-          primaryLocation: village || primaryLocation || district || 'Vijayawada'
+          village: village || '',
+          mandal: mandal || '',
+          district: district || 'Vijayawada',
+          primaryLocation: [village, mandal, district].filter(Boolean).join(', ') || village || district || 'Vijayawada'
         });
       }
       // Auto-create initial Shop record
@@ -820,6 +838,9 @@ export const addRoleToAccount = async (req, res) => {
           ownerId: user._id,
           shopName: businessName || `${user.name}'s Agro Center`,
           location: village || primaryLocation || district || 'Vijayawada',
+          village: village || '',
+          mandal: mandal || '',
+          district: district || 'Vijayawada',
           address: address || `${village || 'Main Road'}, ${mandal || district || 'Vijayawada'}`,
           phone: user.phone || '+91 98480 12345',
           ratingAverage: 4.5,

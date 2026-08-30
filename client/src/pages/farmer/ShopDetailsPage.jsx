@@ -27,6 +27,7 @@ export default function ShopDetailsPage() {
 
   // Review form
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
@@ -292,23 +293,34 @@ export default function ShopDetailsPage() {
 
             <form onSubmit={handleReviewSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Your Rating
-                </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    YOUR RATING *
+                  </label>
+                  <span className="text-[11px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                    {rating === 5 && '5/5 (Very Good)'}
+                    {rating === 4 && '4/5 (Good)'}
+                    {rating === 3 && '3/5 (Average)'}
+                    {rating === 2 && '2/5 (Fair)'}
+                    {rating === 1 && '1/5 (Poor)'}
+                  </span>
+                </div>
+
+                {/* 5 Compact Rating Buttons with Star & Number */}
+                <div className="flex items-center gap-1.5">
                   {[1, 2, 3, 4, 5].map((num) => (
                     <button
                       key={num}
                       type="button"
                       onClick={() => setRating(num)}
-                      className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                      className={`flex-1 py-1.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                         rating >= num
-                          ? 'bg-amber-950/80 text-amber-300 border-amber-500/60'
-                          : 'bg-[#030b0e] text-slate-400 border-slate-700'
+                          ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 shadow-xs ring-1 ring-amber-500/30'
+                          : 'bg-[#030b0e] text-slate-400 border-slate-700 hover:border-slate-500'
                       }`}
                     >
                       <Star
-                        className={`w-4 h-4 ${
+                        className={`w-3.5 h-3.5 ${
                           rating >= num ? 'fill-amber-400 text-amber-400' : 'text-slate-500'
                         }`}
                       />

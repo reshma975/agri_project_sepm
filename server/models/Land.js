@@ -65,6 +65,34 @@ const landSchema = new mongoose.Schema(
       min: [1, 'Estimated duration must be at least 1 month'],
       max: [60, 'Estimated duration cannot exceed 60 months'],
     },
+    // Overall Land Parcel Verification Lifecycle
+    overallVerificationStatus: {
+      type: String,
+      enum: ['DRAFT', 'SUBMITTED', 'UNDER_VERIFICATION', 'VERIFIED', 'RESUBMIT_NEEDED', 'REJECTED'],
+      default: 'DRAFT',
+    },
+    submittedAt: {
+      type: Date,
+      default: null,
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'OfficerProfile',
+      default: null,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
+    officerComment: {
+      type: String,
+      default: '',
+    },
+    resubmissionCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

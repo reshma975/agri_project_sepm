@@ -256,12 +256,17 @@ export default function DigitalFarmRecordsPage() {
   };
 
   // Build unique parcel map keyed by unique Land ID / MongoDB ID
-  // Note: Survey Number is a cadastral field within a village, NOT the unique primary key.
   const parcelMap = {};
 
   // First seed all registered lands
   lands.forEach((l) => {
     const key = l._id || l.landId;
+    const lIssues = (l.landIssues || [])
+      .concat((l.issues || []).filter((i) => i.issueLevel === 'LAND' && i.status !== 'RESOLVED'));
+    if (lIssues.length === 0 && l.officerComment) {
+      lIssues.push({ _id: 'land-cmnt', description: l.officerComment.replace(/^\[LAND\]\s*/i, '') });
+    }
+
     parcelMap[key] = {
       _id: l._id,
       landId: l.landId || `LND-${l.surveyNumber}`,
@@ -272,6 +277,9 @@ export default function DigitalFarmRecordsPage() {
       totalArea: l.totalArea || 0,
       areaUnit: l.areaUnit || 'Acres',
       ownershipType: l.ownershipType || 'Owned',
+      overallVerificationStatus: l.overallVerificationStatus || 'DRAFT',
+      landIssues: lIssues,
+      officerComment: l.officerComment || '',
       crops: []
     };
   });
@@ -281,6 +289,11 @@ export default function DigitalFarmRecordsPage() {
     const landObj = c.landId;
     const key = landObj?._id || landObj?.landId || `legacy-${c.surveyNumber}`;
     if (!parcelMap[key]) {
+      const lIssues = (c.landIssues || []);
+      if (lIssues.length === 0 && landObj?.officerComment) {
+        lIssues.push({ _id: 'land-cmnt', description: landObj.officerComment.replace(/^\[LAND\]\s*/i, '') });
+      }
+
       parcelMap[key] = {
         _id: landObj?._id || null,
         landId: landObj?.landId || `LND-${c.surveyNumber}`,
@@ -291,6 +304,9 @@ export default function DigitalFarmRecordsPage() {
         totalArea: c.totalLandArea || c.cultivatedArea || 0,
         areaUnit: c.areaUnit || 'Acres',
         ownershipType: c.ownershipType || 'Owned',
+        overallVerificationStatus: landObj?.overallVerificationStatus || c.status || 'DRAFT',
+        landIssues: lIssues,
+        officerComment: landObj?.officerComment || '',
         crops: []
       };
     }
@@ -750,8 +766,17 @@ export default function DigitalFarmRecordsPage() {
                     </div>
 
                     {/* Status Badge Column (col-span-2) */}
-                    <div className="md:col-span-2 flex items-center justify-start md:justify-center">
+                    <div className="md:col-span-2 flex flex-col items-start md:items-center justify-center gap-1">
                       <StatusBadge status={crop.status} />
+                      {crop.resubmissionCount > 0 && crop.status === 'RETURNED_FOR_CORRECTION' && (
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                          crop.resubmissionCount >= 3
+                            ? 'bg-rose-950/80 text-rose-300 border-rose-500/50'
+                            : 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                        }`}>
+                          Attempt {crop.resubmissionCount}/3
+                        </span>
+                      )}
                     </div>
 
                     {/* Action Button Column (col-span-2) */}
@@ -781,11 +806,14 @@ export default function DigitalFarmRecordsPage() {
           {parcelList.map((parcel) => {
             const cultivatedTotal = parcel.crops.reduce((acc, c) => acc + (c.cultivatedArea || 0), 0);
             const remaining = Math.max(0, (parcel.totalArea || 0) - cultivatedTotal);
+            const hasLandIssues = parcel.landIssues && parcel.landIssues.length > 0;
 
             return (
               <div
                 key={parcel._id || parcel.landId}
-                className="glass-card bg-[#06151a]/90 rounded-3xl p-6 border border-teal-500/20 shadow-lg space-y-5 transition-all hover:border-teal-400/40"
+                className={`glass-card bg-[#06151a]/90 rounded-3xl p-6 border shadow-lg space-y-5 transition-all ${
+                  hasLandIssues ? 'border-amber-500/50 hover:border-amber-400' : 'border-teal-500/20 hover:border-teal-400/40'
+                }`}
               >
                 {/* Land Parcel Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-teal-900/40">
@@ -811,7 +839,26 @@ export default function DigitalFarmRecordsPage() {
                       </p>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <StatusBadge status={parcel.overallVerificationStatus || 'DRAFT'} />
+                  </div>
                 </div>
+
+                {/* Land / Document Level Officer Issue Banner */}
+                {hasLandIssues && (
+                  <div className="p-3.5 bg-amber-950/70 border border-amber-500/50 rounded-2xl text-xs space-y-1.5 shadow-sm">
+                    <strong className="font-bold text-amber-300 flex items-center gap-1.5 text-xs">
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      Officer's Note on Land / Documents:
+                    </strong>
+                    {parcel.landIssues.map((iss, idx) => (
+                      <p key={iss._id || idx} className="text-white bg-[#030b0e] p-2.5 rounded-xl border border-amber-500/30 font-medium">
+                        "{iss.description || (typeof iss === 'string' ? iss : JSON.stringify(iss))}"
+                      </p>
+                    ))}
+                  </div>
+                )}
 
                 {/* Multiple Crops List on this Parcel */}
                 <div>
@@ -825,47 +872,68 @@ export default function DigitalFarmRecordsPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {parcel.crops.map((crop) => (
-                        <div
-                          key={crop._id}
-                          onClick={() => handleCardClick(crop)}
-                          className="p-4 rounded-2xl bg-[#041014] border border-teal-500/20 hover:border-teal-400/50 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group space-y-3"
-                        >
-                          <div className="space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h5 className="font-extrabold text-sm text-white group-hover:text-teal-300 transition-colors">
-                                  {crop.cropName}
-                                </h5>
-                                <span className="text-[10px] font-semibold text-teal-300/80 block mt-0.5">
-                                  {crop.cropCategory || 'Cereals'}
-                                </span>
+                      {parcel.crops.map((crop) => {
+                        const hasCropIssue = crop.cropIssues && crop.cropIssues.length > 0;
+
+                        return (
+                          <div
+                            key={crop._id}
+                            onClick={() => handleCardClick(crop)}
+                            className={`p-4 rounded-2xl bg-[#041014] border transition-all cursor-pointer flex flex-col justify-between group space-y-3 ${
+                              hasCropIssue
+                                ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-md hover:shadow-amber-500/10'
+                                : 'border-teal-500/20 hover:border-teal-400/50 hover:shadow-md'
+                            }`}
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <h5 className="font-extrabold text-sm text-white group-hover:text-teal-300 transition-colors">
+                                    {crop.cropName}
+                                  </h5>
+                                  <span className="text-[10px] font-semibold text-teal-300/80 block mt-0.5">
+                                    {crop.cropCategory || 'Cereals'}
+                                  </span>
+                                </div>
+                                <StatusBadge status={crop.status} />
                               </div>
-                              <StatusBadge status={crop.status} />
+
+                              <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-teal-900/40 text-slate-300">
+                                <div>
+                                  <span className="text-slate-400 block text-[10px]">Cultivated Area</span>
+                                  <strong className="text-white">{crop.cultivatedArea} {crop.areaUnit}</strong>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[10px]">Season</span>
+                                  <strong className="text-white">{crop.season} ({crop.year})</strong>
+                                </div>
+                              </div>
+
+                              {/* Crop-Specific Officer Issue Note (Shown strictly on affected crop) */}
+                              {hasCropIssue && (
+                                <div className="p-2.5 bg-amber-950/80 border border-amber-500/40 rounded-xl text-[11px] text-amber-200 space-y-1">
+                                  <strong className="font-bold text-amber-300 flex items-center gap-1">
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                                    Officer's Note on {crop.cropName}:
+                                  </strong>
+                                  {crop.cropIssues.map((iss) => (
+                                    <p key={iss._id}>"{iss.description}"</p>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-teal-900/40 text-slate-300">
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">Cultivated Area</span>
-                                <strong className="text-white">{crop.cultivatedArea} {crop.areaUnit}</strong>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[10px]">Season</span>
-                                <strong className="text-white">{crop.season} ({crop.year})</strong>
-                              </div>
+                            <div className="pt-2 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3.5 h-3.5" /> View / Edit Crop Details
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {crop.registrationId}
+                              </span>
                             </div>
                           </div>
-
-                          <div className="pt-2 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-teal-400">
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-3.5 h-3.5" /> View / Edit Crop Details
-                            </span>
-                            <span className="text-[10px] font-mono text-slate-400">
-                              {crop.registrationId}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

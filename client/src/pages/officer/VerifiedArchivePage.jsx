@@ -60,52 +60,55 @@ export default function VerifiedArchivePage() {
     fetchVerified();
   }, [selectedYear, searchQuery]);
 
-  // Group verified crop applications by Land Parcel (Land-Centric Architecture)
-  const landMap = {};
+  // Map verified land applications with accurate farmer name, profile, and crops
+  const verifiedLands = verifiedList.map((app) => {
+    const profile = app.farmer || app.farmerId || {};
+    const user = profile.userId || (typeof profile.name === 'string' ? profile : {});
+    const farmerName = user.name || profile.name || app.farmerName || 'Farmer';
+    const farmerCode = profile.farmerId || app.farmerCode || 'FMR-ID';
+    const cropsList = Array.isArray(app.crops) && app.crops.length > 0
+      ? app.crops
+      : (app.cropName ? [app] : []);
 
-  verifiedList.forEach((app) => {
-    const land = app.landId;
-    const farmer = app.farmerId?.userId || {};
-    const profile = app.farmerId || {};
-    const parcelKey = land?._id?.toString() || `${profile._id || 'unknown'}_${app.surveyNumber}`;
-
-    if (!landMap[parcelKey]) {
-      landMap[parcelKey] = {
-        _id: land?._id || app._id,
-        landId: land?.landId || `LND${app.registrationId?.replace(/\D/g, '') || Math.floor(10000 + Math.random() * 90000)}`,
-        surveyNumber: app.surveyNumber,
-        village: land?.village || app.village || profile.village || 'Village',
-        mandal: land?.mandal || app.mandal || profile.mandal || 'Mandal',
-        district: land?.district || app.district || profile.district || 'District',
-        totalArea: land?.totalArea || app.totalLandArea || app.cultivatedArea || 2,
-        areaUnit: land?.areaUnit || app.areaUnit || 'Acres',
-        ownershipType: land?.ownershipType || app.ownershipType || 'Owned',
-        landUse: land?.landUse || 'Agricultural',
-        season: app.season ? `${app.season} Season` : 'Kharif Season',
-        year: app.year || new Date().getFullYear(),
-        reviewedAt: app.reviewedAt || app.updatedAt,
-        officerComment: app.officerComment || 'Verified and approved according to agricultural survey standards.',
-        farmer,
-        profile,
-        documents: profile.documents || {},
-        crops: []
-      };
-    }
-
-    landMap[parcelKey].crops.push({
+    return {
       _id: app._id,
-      registrationId: app.registrationId,
-      cropName: app.cropName,
-      cropCategory: app.cropCategory || 'Cereals',
-      season: app.season || 'Kharif',
-      year: app.year || 2026,
-      cultivatedArea: app.cultivatedArea,
+      landId: app.landId || `LND${app.registrationId?.replace(/\D/g, '') || Math.floor(10000 + Math.random() * 90000)}`,
+      surveyNumber: app.surveyNumber,
+      village: app.village || profile.village || 'Village',
+      mandal: app.mandal || profile.mandal || 'Mandal',
+      district: app.district || profile.district || 'District',
+      totalArea: app.totalArea || app.totalLandArea || 2,
       areaUnit: app.areaUnit || 'Acres',
-      status: app.status
-    });
+      ownershipType: app.ownershipType || 'Owned',
+      landUse: app.landUse || 'Agricultural',
+      season: app.season ? `${app.season} Season` : (cropsList[0]?.season ? `${cropsList[0]?.season} Season` : 'Kharif Season'),
+      year: app.year || cropsList[0]?.year || new Date().getFullYear(),
+      reviewedAt: app.reviewedAt || app.submittedAt || app.updatedAt,
+      officerComment: app.officerComment || 'Verified and approved according to agricultural survey standards.',
+      farmer: {
+        name: farmerName,
+        phone: user.phone || profile.phone,
+        email: user.email || profile.email,
+        ...user
+      },
+      profile: {
+        ...profile,
+        farmerId: farmerCode
+      },
+      documents: profile.documents || {},
+      crops: cropsList.map((c) => ({
+        _id: c._id,
+        registrationId: c.registrationId || c._id?.toString().substring(18),
+        cropName: c.cropName || 'Crop',
+        cropCategory: c.cropCategory || 'Cereals',
+        season: c.season || 'Kharif',
+        year: c.year || 2026,
+        cultivatedArea: c.cultivatedArea !== undefined ? c.cultivatedArea : 0,
+        areaUnit: c.areaUnit || 'Acres',
+        status: c.status || 'VERIFIED'
+      }))
+    };
   });
-
-  const verifiedLands = Object.values(landMap);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">

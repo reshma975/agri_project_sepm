@@ -50,7 +50,7 @@ const farmerProfileSchema = new mongoose.Schema(
     },
     registrationStatus: {
       type: String,
-      enum: ['UNVERIFIED', 'UNDER_VERIFICATION', 'VERIFIED'],
+      enum: ['UNVERIFIED', 'UNDER_VERIFICATION', 'VERIFIED', 'RETURNED_FOR_CORRECTION', 'RESUBMIT_NEEDED', 'REJECTED'],
       default: 'UNVERIFIED',
     },
     documents: {

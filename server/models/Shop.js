@@ -22,6 +22,21 @@ const shopSchema = new mongoose.Schema(
       required: [true, 'Location/City is required'],
       trim: true,
     },
+    village: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    mandal: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    district: {
+      type: String,
+      default: 'Vijayawada',
+      trim: true,
+    },
     address: {
       type: String,
       required: [true, 'Specific address is required'],

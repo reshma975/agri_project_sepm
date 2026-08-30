@@ -424,21 +424,39 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
+                        Store Location / Market Area *
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="village"
+                          value={formData.village}
+                          onChange={handleChange}
+                          placeholder="e.g. Kokilampadu Main Road"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
-                          Location / Market Area *
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Mandal / Tehsil *
                         </label>
                         <div className="relative">
                           <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
                           <input
                             type="text"
-                            name="village"
-                            value={formData.village}
+                            name="mandal"
+                            value={formData.mandal}
                             onChange={handleChange}
-                            placeholder="e.g. Vijayawada Market"
+                            placeholder="e.g. Tiruvuru"
                             required
-                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/40 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
                           />
                         </div>
                       </div>
@@ -452,7 +470,7 @@ export default function RegisterPage() {
                           name="district"
                           value={formData.district}
                           onChange={handleChange}
-                          placeholder="Vijayawada"
+                          placeholder="e.g. NTR District"
                           required
                           className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
                         />
@@ -462,86 +480,119 @@ export default function RegisterPage() {
                 )}
 
                 {role === 'FARMER' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <>
                     <div>
                       <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
                         Village / Town *
                       </label>
-                      <input
-                        type="text"
-                        name="village"
-                        value={formData.village}
-                        onChange={handleChange}
-                        placeholder="e.g. Kokilampadu"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="village"
+                          value={formData.village}
+                          onChange={handleChange}
+                          placeholder="e.g. Kokilampadu"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
-                        Mandal / Tehsil *
-                      </label>
-                      <input
-                        type="text"
-                        name="mandal"
-                        value={formData.mandal}
-                        onChange={handleChange}
-                        placeholder="e.g. Tiruvuru"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/50 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Mandal / Tehsil *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            name="mandal"
+                            value={formData.mandal}
+                            onChange={handleChange}
+                            placeholder="e.g. Tiruvuru"
+                            required
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/50 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
+                          District *
+                        </label>
+                        <input
+                          type="text"
+                          name="district"
+                          value={formData.district}
+                          onChange={handleChange}
+                          placeholder="e.g. NTR District"
+                          required
+                          className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
-                        District *
-                      </label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                        placeholder="e.g. NTR District"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {role === 'OFFICER' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
-                        Designated Mandal Jurisdiction *
-                      </label>
-                      <input
-                        type="text"
-                        name="mandal"
-                        value={formData.mandal}
-                        onChange={handleChange}
-                        placeholder="e.g. Penamaluru"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/50 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
+                  <>
                     <div>
                       <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
-                        District *
+                        Officer Designation *
                       </label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                        placeholder="e.g. Vijayawada"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
+                      <div className="relative">
+                        <Building2 className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="designation"
+                          value={formData.designation}
+                          onChange={handleChange}
+                          placeholder="e.g. Agricultural Officer (AO) / Mandal Agriculture Officer"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Designated Mandal Jurisdiction *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            name="mandal"
+                            value={formData.mandal}
+                            onChange={handleChange}
+                            placeholder="e.g. Penamaluru"
+                            required
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1">
+                          District *
+                        </label>
+                        <input
+                          type="text"
+                          name="district"
+                          value={formData.district}
+                          onChange={handleChange}
+                          placeholder="e.g. Vijayawada / Krishna"
+                          required
+                          className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
-                {/* Submit Action Button */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -551,9 +602,6 @@ export default function RegisterPage() {
                 </button>
               </div>
             ) : (
-              /* ========================================================================================= */
-              /* FIRST-TIME NEW USER REGISTRATION: Full form with password                                   */
-              /* ========================================================================================= */
               <div className="space-y-3.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -586,7 +634,7 @@ export default function RegisterPage() {
                       onBlur={(e) => handleCheckIdentityBlur(e.target.value)}
                       placeholder={role === 'OFFICER' ? 'e.g. ramu' : 'e.g. ramesh_patel'}
                       required
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                      className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-mono"
                     />
                   </div>
                 </div>
@@ -637,48 +685,82 @@ export default function RegisterPage() {
                 </div>
 
                 {role === 'SHOPKEEPER' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Primary Business / Shop Name *
-                    </label>
-                    <div className="relative">
-                      <Store className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        name="businessName"
-                        value={formData.businessName}
-                        onChange={handleChange}
-                        placeholder="e.g. Kisan Agro Center"
-                        required
-                        className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Primary Business / Shop Name *
+                      </label>
+                      <div className="relative">
+                        <Store className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="businessName"
+                          value={formData.businessName}
+                          onChange={handleChange}
+                          placeholder="e.g. Kisan Agro Center"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Store Location / Market Area *
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="village"
+                          value={formData.village}
+                          onChange={handleChange}
+                          placeholder="e.g. Kokilampadu Main Road"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Mandal / Tehsil *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            name="mandal"
+                            value={formData.mandal}
+                            onChange={handleChange}
+                            placeholder="e.g. Tiruvuru"
+                            required
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/40 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                          District *
+                        </label>
+                        <input
+                          type="text"
+                          name="district"
+                          value={formData.district}
+                          onChange={handleChange}
+                          placeholder="e.g. NTR District"
+                          required
+                          className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
-                {role === 'OFFICER' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Officer Designation *
-                    </label>
-                    <div className="relative">
-                      <Building2 className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        name="designation"
-                        value={formData.designation}
-                        onChange={handleChange}
-                        placeholder="e.g. Agricultural Officer (AO) / Mandal Agriculture Officer"
-                        required
-                        className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Location Fields */}
-                {role === 'FARMER' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {role === 'FARMER' && (
+                  <>
                     <div>
                       <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
                         Village / Town *
@@ -697,71 +779,98 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
-                        Mandal / Tehsil *
-                      </label>
-                      <input
-                        type="text"
-                        name="mandal"
-                        value={formData.mandal}
-                        onChange={handleChange}
-                        placeholder="e.g. Tiruvuru"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/40 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
-                      />
-                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Mandal / Tehsil *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            name="mandal"
+                            value={formData.mandal}
+                            onChange={handleChange}
+                            placeholder="e.g. Tiruvuru"
+                            required
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/40 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        District *
-                      </label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                        placeholder="e.g. NTR District"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        {role === 'OFFICER' ? 'Designated Mandal Jurisdiction *' : 'Location / Market Area *'}
-                      </label>
-                      <div className="relative">
-                        <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                          District *
+                        </label>
                         <input
                           type="text"
-                          name={role === 'OFFICER' ? 'mandal' : 'village'}
-                          value={role === 'OFFICER' ? formData.mandal : formData.village}
+                          name="district"
+                          value={formData.district}
                           onChange={handleChange}
-                          placeholder={role === 'OFFICER' ? 'e.g. Penamaluru' : 'e.g. Vijayawada Market'}
+                          placeholder="e.g. NTR District"
                           required
-                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {role === 'OFFICER' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Officer Designation *
+                      </label>
+                      <div className="relative">
+                        <Building2 className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                        <input
+                          type="text"
+                          name="designation"
+                          value={formData.designation}
+                          onChange={handleChange}
+                          placeholder="e.g. Agricultural Officer (AO) / Mandal Agriculture Officer"
+                          required
+                          className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        District *
-                      </label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                        placeholder="e.g. Vijayawada / Krishna"
-                        required
-                        className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1">
+                          Designated Mandal Jurisdiction *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-teal-400/70 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            name="mandal"
+                            value={formData.mandal}
+                            onChange={handleChange}
+                            placeholder="e.g. Penamaluru"
+                            required
+                            className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                          District *
+                        </label>
+                        <input
+                          type="text"
+                          name="district"
+                          value={formData.district}
+                          onChange={handleChange}
+                          placeholder="e.g. Vijayawada / Krishna"
+                          required
+                          className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-900/60 text-white placeholder-slate-500 rounded-2xl focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Password & Confirm Password (ONLY for brand new users) */}

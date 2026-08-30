@@ -2,6 +2,10 @@ import express from 'express';
 import {
   getOfficerDashboard,
   getOfficerVerifications,
+  getLandVerificationDetails,
+  verifyLandParcel,
+  returnLandForCorrection,
+  rejectLandParcel,
   getCropApplicationDetails,
   getFarmerDossier,
   verifyCrop,
@@ -24,6 +28,14 @@ router.use(requireRole('OFFICER'));
 
 router.get('/dashboard', getOfficerDashboard);
 router.get('/verifications', getOfficerVerifications);
+
+// Land-Centric Verification Endpoints
+router.get('/lands/:id', getLandVerificationDetails);
+router.put('/lands/:id/verify', verifyLandParcel);
+router.put('/lands/:id/return', returnLandForCorrection);
+router.put('/lands/:id/reject', rejectLandParcel);
+
+// Crop Application Endpoints (delegates / backward-compatible)
 router.get('/crops/:id', getCropApplicationDetails);
 router.put('/crops/:id/verify', verifyCrop);
 router.put('/crops/:id/return', returnCropForCorrection);
