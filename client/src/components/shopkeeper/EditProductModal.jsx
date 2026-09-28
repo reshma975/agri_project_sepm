@@ -31,12 +31,12 @@ export default function EditProductModal({ isOpen, onClose, item, onUpdateProduc
   }, [item]);
 
   const categories = [
-    { value: 'Tools', label: '1) Tools (Simple)' },
-    { value: 'Machines', label: '2) Machines (Big)' },
-    { value: 'Fertilizer', label: '3) Fertilizer' },
-    { value: 'Pesticide', label: '4) Pesticide' },
-    { value: 'Seeds', label: '5) Seeds' },
-    { value: 'Others', label: '6) Others (if any)' },
+    { value: 'Tools', label: 'Tools' },
+    { value: 'Machines', label: 'Machines' },
+    { value: 'Fertilizer', label: 'Fertilizer' },
+    { value: 'Pesticide', label: 'Pesticide' },
+    { value: 'Seeds', label: 'Seeds' },
+    { value: 'Others', label: 'Others' },
   ];
 
   const statuses = ['Full', 'In Stock', 'Low Stock', 'Out of Stock', 'Empty'];

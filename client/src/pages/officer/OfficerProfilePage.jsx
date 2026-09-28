@@ -8,19 +8,16 @@ import {
   User,
   Phone,
   Mail,
-  ShieldCheck,
   KeyRound,
   Save,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  Award,
-  Sprout,
-  Store
+  Award
 } from 'lucide-react';
 
 export default function OfficerProfilePage() {
-  const { user, updateProfile, switchRole } = useAuth();
+  const { user, updateProfile } = useAuth();
   const officer = user?.profile || {};
 
   const [formData, setFormData] = useState({
@@ -115,95 +112,6 @@ export default function OfficerProfilePage() {
         </div>
       )}
 
-      {/* Multi-Role Ecosystem Card */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-[#06181d]/90 border border-teal-500/30 shadow-lg space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-teal-400" />
-            <h3 className="text-sm font-extrabold text-white">
-              Account Roles & Linked Portals
-            </h3>
-          </div>
-          <span className="text-[10px] font-mono text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-teal-500/30">
-            Unified Single Login
-          </span>
-        </div>
-        <p className="text-xs text-slate-300">
-          Your account uses unified credentials (same username, mobile phone & password) across all portals.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-          {/* Officer (Current Active) */}
-          <div className="p-3 bg-[#030b0e] rounded-2xl border border-cyan-500/50 flex flex-col justify-between space-y-2">
-            <div>
-              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">🏛️ Govt Officer</span>
-              <strong className="text-xs text-white">Active Session</strong>
-            </div>
-            <span className="text-[11px] text-cyan-300 font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Current Portal
-            </span>
-          </div>
-
-          {/* Farmer */}
-          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
-            <div>
-              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">👨‍🌾 Farmer Role</span>
-              <span className="text-xs text-slate-300">
-                {user?.roles?.includes('FARMER') ? 'Activated on account' : 'Not yet added'}
-              </span>
-            </div>
-            {user?.roles?.includes('FARMER') ? (
-              <button
-                type="button"
-                onClick={async () => {
-                  const res = await switchRole('FARMER');
-                  if (res.success) window.location.href = '/farmer/dashboard';
-                }}
-                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
-              >
-                <span>Switch Portal ➔</span>
-              </button>
-            ) : (
-              <Link
-                to="/register?role=FARMER&mode=add"
-                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
-              >
-                + Add Farmer Role
-              </Link>
-            )}
-          </div>
-
-          {/* Shopkeeper */}
-          <div className="p-3 bg-[#030b0e] rounded-2xl border border-slate-700 flex flex-col justify-between space-y-2">
-            <div>
-              <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block">🏪 Shopkeeper Role</span>
-              <span className="text-xs text-slate-300">
-                {user?.roles?.includes('SHOPKEEPER') ? 'Activated on account' : 'Not yet added'}
-              </span>
-            </div>
-            {user?.roles?.includes('SHOPKEEPER') ? (
-              <button
-                type="button"
-                onClick={async () => {
-                  const res = await switchRole('SHOPKEEPER');
-                  if (res.success) window.location.href = '/shopkeeper/dashboard';
-                }}
-                className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1"
-              >
-                <span>Switch Portal ➔</span>
-              </button>
-            ) : (
-              <Link
-                to="/register?role=SHOPKEEPER&mode=add"
-                className="px-2.5 py-1 bg-[#06181d] hover:bg-[#0c242c] text-teal-300 text-xs font-bold rounded-xl border border-teal-500/30 text-center cursor-pointer"
-              >
-                + Add Shopkeeper Role
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Govt Profile Card */}
       <div className="bg-[#06151a]/95 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700">
         <form onSubmit={handleSave} className="space-y-5">
@@ -214,9 +122,13 @@ export default function OfficerProfilePage() {
             </div>
             <div>
               <h3 className="font-extrabold text-lg text-white">{user?.name}</h3>
-              <p className="text-xs font-mono font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-lg border border-slate-700 inline-block mt-0.5">
-                Officer ID: {officer.officerId || 'AGR-OFC-401'}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-xs text-white font-bold">@{user?.username}</span>
+                <span className="text-slate-600">•</span>
+                <p className="text-xs font-mono font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-lg border border-slate-700 inline-block">
+                  Officer ID: {officer.officerId || 'AGR-OFC-401'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -245,7 +157,7 @@ export default function OfficerProfilePage() {
                 type="text"
                 value={user?.username || ''}
                 disabled
-                className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e]/50 border border-slate-700 rounded-2xl text-slate-500 outline-none cursor-not-allowed font-mono"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#020709] border border-slate-700 rounded-2xl text-white font-bold outline-none cursor-not-allowed font-mono shadow-xs"
               />
             </div>
 

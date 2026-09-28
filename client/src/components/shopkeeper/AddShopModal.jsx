@@ -1,12 +1,15 @@
 import React, { useState, useRef } from 'react';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
-import { Store, MapPin, Phone, AlertCircle, Upload, X, Check, Sparkles } from 'lucide-react';
+import { Store, MapPin, Phone, AlertCircle, Upload, X, Check, Sparkles, Building, Compass } from 'lucide-react';
 
 export default function AddShopModal({ isOpen, onClose, onAddShop }) {
   const [formData, setFormData] = useState({
     shopName: '',
-    location: '',
+    village: '',
+    mandal: '',
+    district: 'Vijayawada',
+    state: 'Andhra Pradesh',
     address: '',
     imageUrl: '',
     phone: '',
@@ -42,20 +45,55 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
 
   const handlePreSubmit = (e) => {
     e.preventDefault();
-    if (!formData.shopName || !formData.location || !formData.address) {
-      return setError('Please fill all required fields');
+    if (!formData.shopName || !formData.village || !formData.mandal || !formData.address) {
+      return setError('Please fill all required fields (Shop Name, Village, Mandal, and Address)');
     }
+
+    const cleanPhone = (formData.phone || '').replace(/\D/g, '');
+    if (cleanPhone && cleanPhone.length > 0) {
+      if (cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+        return setError('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9 (e.g. 9848012345).');
+      }
+    }
+
     setShowConfirm(true);
   };
 
   const handleFinalConfirm = async () => {
     setLoading(true);
     setError('');
-    const res = await onAddShop(formData);
+
+    const cleanLocation = formData.village.trim();
+    const fullAddress = formData.address.includes(cleanLocation)
+      ? formData.address
+      : `${formData.address.trim()}, ${cleanLocation ? cleanLocation + ', ' : ''}${formData.mandal ? formData.mandal.trim() + ' Mandal, ' : ''}${formData.district ? formData.district.trim() + ', ' : ''}${formData.state || 'Andhra Pradesh'}`;
+
+    const payload = {
+      shopName: formData.shopName.trim(),
+      village: cleanLocation,
+      mandal: formData.mandal.trim(),
+      district: formData.district.trim(),
+      state: formData.state.trim() || 'Andhra Pradesh',
+      location: cleanLocation,
+      address: fullAddress,
+      phone: formData.phone.trim(),
+      imageUrl: formData.imageUrl,
+    };
+
+    const res = await onAddShop(payload);
     setLoading(false);
     setShowConfirm(false);
     if (res.success) {
-      setFormData({ shopName: '', location: '', address: '', imageUrl: '', phone: '' });
+      setFormData({
+        shopName: '',
+        village: '',
+        mandal: '',
+        district: 'Vijayawada',
+        state: 'Andhra Pradesh',
+        address: '',
+        imageUrl: '',
+        phone: '',
+      });
       onClose();
     } else {
       setError(res.message || 'Failed to create shop');
@@ -64,7 +102,7 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="➕ Add New Agricultural Shop" maxWidth="max-w-lg">
+      <Modal isOpen={isOpen} onClose={onClose} title="➕ Add New Agricultural Shop Branch" maxWidth="max-w-lg">
         <form onSubmit={handlePreSubmit} className="space-y-4">
           {error && (
             <div className="p-3 bg-rose-950/60 text-rose-300 rounded-xl text-xs border border-rose-800/60 flex items-center gap-2">
@@ -73,6 +111,7 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
             </div>
           )}
 
+          {/* Shop Name */}
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
               Shop Name *
@@ -84,34 +123,96 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
                 name="shopName"
                 value={formData.shopName}
                 onChange={handleChange}
-                placeholder="e.g. Sri Venkateswara Fertilizers & Seeds"
+                placeholder="e.g. Mahi Seeds and Pests"
                 required
                 className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-              Location / City *
-            </label>
-            <div className="relative">
-              <MapPin className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+          {/* 2-Column Grid: Village & Mandal */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Village / Town */}
+            <div>
+              <label className="block text-xs font-bold text-teal-300 uppercase tracking-wider mb-1.5">
+                Village / Town *
+              </label>
+              <div className="relative">
+                <MapPin className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  name="village"
+                  value={formData.village}
+                  onChange={handleChange}
+                  placeholder="e.g. Anumullanka Village"
+                  required
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-teal-500/40 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Mandal / Tehsil */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Mandal / Tehsil *
+              </label>
+              <div className="relative">
+                <Compass className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  name="mandal"
+                  value={formData.mandal}
+                  onChange={handleChange}
+                  placeholder="e.g. Gampalagudem"
+                  required
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2-Column Grid: District & State */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* District */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                District *
+              </label>
+              <div className="relative">
+                <Building className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="text"
+                  name="district"
+                  value={formData.district}
+                  onChange={handleChange}
+                  placeholder="e.g. NTR District / Vijayawada"
+                  required
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
+                />
+              </div>
+            </div>
+
+            {/* State */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                State *
+              </label>
               <input
                 type="text"
-                name="location"
-                value={formData.location}
+                name="state"
+                value={formData.state}
                 onChange={handleChange}
-                placeholder="e.g. Tiruvuru, Vijayawada, NTR District"
+                placeholder="e.g. Andhra Pradesh"
                 required
-                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
               />
             </div>
           </div>
 
+          {/* Specific Address */}
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-              Specific Address *
+              Specific Address (Landmark / Road / Door No.) *
             </label>
             <textarea
               name="address"
@@ -124,21 +225,42 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
             />
           </div>
 
+          {/* Contact Phone Number */}
           <div>
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-              Contact Phone Number
+              Contact Phone Number (10 Digits)
             </label>
-            <div className="relative">
-              <Phone className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />
+            <div className="relative flex items-center">
+              <span className="absolute left-3.5 top-2.5 text-sm font-bold text-teal-400 select-none">
+                +91
+              </span>
               <input
-                type="text"
+                type="tel"
                 name="phone"
                 value={formData.phone}
-                onChange={handleChange}
-                placeholder="+91 98480 00000"
-                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
+                maxLength={10}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setFormData({ ...formData, phone: digits });
+                  setError('');
+                }}
+                placeholder="98480 12345"
+                className="w-full pl-14 pr-3.5 py-2.5 text-sm bg-[#030b0e] border border-slate-700 text-white font-mono rounded-2xl focus:bg-[#041217] focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
               />
             </div>
+            {formData.phone && formData.phone.length > 0 && (
+              <p className="text-[10px] mt-1 text-slate-400">
+                {formData.phone.length === 10 && /^[6-9]\d{9}$/.test(formData.phone) ? (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    ✓ Valid 10-digit mobile number
+                  </span>
+                ) : (
+                  <span className="text-amber-400 font-semibold">
+                    Must be 10 digits starting with 6, 7, 8, or 9 ({formData.phone.length}/10 digits entered)
+                  </span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Shop Photo Upload Section */}
@@ -253,8 +375,8 @@ export default function AddShopModal({ isOpen, onClose, onAddShop }) {
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={handleFinalConfirm}
-        title="Confirm Adding New Shop"
-        message={`Are you sure you want to register "${formData.shopName}" at ${formData.location}?`}
+        title="Confirm Adding New Shop Branch"
+        message={`Are you sure you want to register "${formData.shopName}" located at ${formData.village}, ${formData.mandal} Mandal, ${formData.district}?`}
         confirmText="Yes, Create Shop"
         type="success"
         loading={loading}

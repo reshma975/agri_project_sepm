@@ -7,15 +7,13 @@ import {
   User,
   Phone,
   Mail,
-  Store,
   MapPin,
-  Clock,
   KeyRound,
   Save,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  Info
+  Home
 } from 'lucide-react';
 
 export default function ShopkeeperProfilePage() {
@@ -26,18 +24,10 @@ export default function ShopkeeperProfilePage() {
     name: user?.name || '',
     phone: user?.phone || '',
     email: user?.email || '',
-    businessName: user?.profile?.businessName || '',
     village: user?.profile?.village || '',
     mandal: user?.profile?.mandal || '',
     district: user?.profile?.district || 'Vijayawada',
-    primaryLocation: user?.profile?.primaryLocation || 'Vijayawada',
     address: user?.profile?.address || '',
-    tradeLicenseNo: user?.profile?.tradeLicenseNo || '',
-    timings: {
-      weekday: user?.profile?.timings?.weekday || '7:30 AM - 8:00 PM',
-      sunday: user?.profile?.timings?.sunday || '7:30 AM - 1:00 PM',
-      note: user?.profile?.timings?.note || 'Timings may change on festival days',
-    },
   });
 
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -51,36 +41,16 @@ export default function ShopkeeperProfilePage() {
         name: user.name || '',
         phone: user.phone || '',
         email: user.email || '',
-        businessName: user.profile?.businessName || '',
         village: user.profile?.village || '',
         mandal: user.profile?.mandal || '',
         district: user.profile?.district || 'Vijayawada',
-        primaryLocation: user.profile?.primaryLocation || 'Vijayawada',
         address: user.profile?.address || '',
-        tradeLicenseNo: user.profile?.tradeLicenseNo || '',
-        timings: {
-          weekday: user.profile?.timings?.weekday || '7:30 AM - 8:00 PM',
-          sunday: user.profile?.timings?.sunday || '7:30 AM - 1:00 PM',
-          note: user.profile?.timings?.note || 'Timings may change on festival days',
-        },
       });
     }
   }, [user]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setSuccess('');
-    setError('');
-  };
-
-  const handleTimingChange = (field, value) => {
-    setFormData({
-      ...formData,
-      timings: {
-        ...formData.timings,
-        [field]: value,
-      },
-    });
     setSuccess('');
     setError('');
   };
@@ -100,7 +70,7 @@ export default function ShopkeeperProfilePage() {
     setLoading(false);
 
     if (res.success) {
-      setSuccess('Shopkeeper profile and shop operating timings saved successfully! Redirecting...');
+      setSuccess('Shopkeeper profile saved successfully! Redirecting...');
       setTimeout(() => {
         navigate('/shopkeeper/dashboard');
       }, 1200);
@@ -124,11 +94,11 @@ export default function ShopkeeperProfilePage() {
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-black text-[#2dd4bf] text-glow-teal tracking-tight flex items-center gap-2">
-          <Store className="w-5 h-5 text-teal-400" />
-          <span>Shopkeeper Profile & Timings 🏪</span>
+          <User className="w-5 h-5 text-teal-400" />
+          <span>Shopkeeper Profile</span>
         </h1>
         <p className="text-xs text-slate-300 font-normal mt-0.5">
-          Manage your merchant identity, store address, operating hours, and login credentials.
+          Manage your merchant personal identity, residential address, and login credentials.
         </p>
       </div>
 
@@ -162,10 +132,10 @@ export default function ShopkeeperProfilePage() {
             </div>
           </div>
 
-          {/* Section 1: Personal & Store Details */}
+          {/* Personal Details Section */}
           <div className="space-y-3">
             <h4 className="text-[11px] font-black text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" /> Personal & Store Details
+              <User className="w-3.5 h-3.5" /> Personal Information
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -184,16 +154,16 @@ export default function ShopkeeperProfilePage() {
                 />
               </div>
 
-              {/* Username (Fixed) */}
+              {/* Username (Fixed & High Contrast White Text) */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                   Username
                 </label>
                 <input
                   type="text"
                   value={user?.username || ''}
                   disabled
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#020709] border border-teal-950 text-slate-500 rounded-xl outline-none cursor-not-allowed font-mono"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#020709] border border-teal-900/60 text-white font-bold rounded-xl outline-none cursor-not-allowed font-mono shadow-xs"
                 />
               </div>
 
@@ -238,39 +208,6 @@ export default function ShopkeeperProfilePage() {
                 </div>
               </div>
 
-              {/* Store Name */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Primary Store Name
-                </label>
-                <input
-                  type="text"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleChange}
-                  placeholder="e.g. Kumari Dealers Kanumuru"
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
-                />
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Location / Market Area
-                </label>
-                <div className="relative">
-                  <MapPin className="w-3.5 h-3.5 text-teal-400/70 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    name="village"
-                    value={formData.village}
-                    onChange={handleChange}
-                    placeholder="e.g. Kokilampadu"
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
               {/* Mandal */}
               <div>
                 <label className="block text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">
@@ -302,81 +239,19 @@ export default function ShopkeeperProfilePage() {
               </div>
             </div>
 
-            {/* Address */}
+            {/* Residential / Home Address */}
             <div>
               <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                Specific Address
+                Address (Residential / Home Address)
               </label>
               <textarea
                 rows={2}
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="e.g. Opposite to Ramalayam, Main Road, Kanumuru, Andhra Pradesh - 533215"
+                placeholder="e.g. D.No 4-12, Main Street, Kanumuru, Andhra Pradesh - 533215"
                 className="w-full px-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 outline-none transition-all"
               />
-            </div>
-          </div>
-
-          {/* Section 2: Shop Operating Timings */}
-          <div className="space-y-3 pt-3 border-t border-teal-900/40">
-            <h4 className="text-[11px] font-black text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> Shop Operating Timings
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Monday - Saturday */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Monday - Saturday Hours *
-                </label>
-                <div className="relative">
-                  <Clock className="w-3.5 h-3.5 text-teal-400/70 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={formData.timings.weekday}
-                    onChange={(e) => handleTimingChange('weekday', e.target.value)}
-                    placeholder="e.g. 7:30 AM - 8:00 PM"
-                    required
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Sunday */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                  Sunday Hours *
-                </label>
-                <div className="relative">
-                  <Clock className="w-3.5 h-3.5 text-teal-400/70 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={formData.timings.sunday}
-                    onChange={(e) => handleTimingChange('sunday', e.target.value)}
-                    placeholder="e.g. 7:30 AM - 1:00 PM"
-                    required
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Festival / Special Note */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                Special Timings / Festival Note
-              </label>
-              <div className="relative">
-                <Info className="w-3.5 h-3.5 text-teal-400/70 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={formData.timings.note}
-                  onChange={(e) => handleTimingChange('note', e.target.value)}
-                  placeholder="e.g. Timings may change on festival days"
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#030b0e] border border-teal-900/60 text-white rounded-xl focus:bg-[#041217] focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20 outline-none transition-all"
-                />
-              </div>
             </div>
           </div>
 
@@ -397,7 +272,7 @@ export default function ShopkeeperProfilePage() {
               className="w-full sm:w-auto px-6 py-2 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-full shadow-md shadow-teal-500/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
-              {loading ? 'Saving...' : 'Save Profile & Timings'}
+              {loading ? 'Saving...' : 'Save Profile'}
             </button>
           </div>
         </form>

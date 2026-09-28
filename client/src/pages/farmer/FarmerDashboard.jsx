@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Newspaper
 } from 'lucide-react';
 
 export default function FarmerDashboard() {
@@ -136,26 +137,26 @@ export default function FarmerDashboard() {
             </div>
           </Link>
 
-          {/* Card 3: Benefits & Policies (Government Updates) */}
+          {/* Card 3: Agricultural Updates */}
           <Link
             to="/farmer/government-updates"
             className="glass-card rounded-3xl p-6 border border-cyan-500/20 hover:border-cyan-400/50 group transition-all flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-500/30 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Building2 className="w-6 h-6" />
+                <Newspaper className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-extrabold text-lg text-white group-hover:text-cyan-300 transition-colors">
-                  Benefits & Policies
+                  Agricultural Updates
                 </h4>
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Official government welfare schemes, fertilizer subsidies, and crop insurance alerts.
+                  Real-time agricultural news, trending farming updates, market insights, and policy alerts fetched live.
                 </p>
               </div>
             </div>
             <div className="mt-6 pt-3 border-t border-teal-900/40 flex items-center justify-between text-xs font-bold text-cyan-400">
-              <span>Recommended Schemes</span>
+              <span>Explore Agricultural Updates</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>

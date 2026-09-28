@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Edit2, Trash2, Tag, Layers, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
+import { Edit2, Trash2, Tag, Layers, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/helpers';
 
 export default function ProductInventoryCard({ item, onEdit, onDelete, onStatusChange }) {
@@ -41,11 +41,6 @@ export default function ProductInventoryCard({ item, onEdit, onDelete, onStatusC
             <h4 className="font-extrabold text-sm sm:text-base text-white">
               {item.customName || prod.name}
             </h4>
-            {/* Rating */}
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-300 bg-[#030b0e] px-1.5 py-0.5 rounded-md border border-slate-700">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              {item.rating || 4.5}
-            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">

@@ -57,32 +57,57 @@ export default function ShopDiscoveryPage() {
   const farmerVillage = farmerProfile?.village || user?.profile?.village || '';
   const farmerMandal = farmerProfile?.mandal || user?.profile?.mandal || '';
   const farmerDistrict = farmerProfile?.district || user?.profile?.district || '';
+  const farmerState = farmerProfile?.state || user?.profile?.state || 'Andhra Pradesh';
   const hasFarmerLocation = Boolean(farmerVillage || farmerMandal || farmerDistrict);
 
   // Categories
   const categories = ['All', 'Fertilizer', 'Seeds', 'Pesticide', 'Tools', 'Machines', 'Others'];
 
-  // Fetch distinct locations from shops database
+  // Fetch distinct locations from shops database (scoped to farmer's state)
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const res = await apiClient.get('/shops/locations');
+        const res = await apiClient.get('/shops/locations', {
+          params: { state: farmerState }
+        });
         if (res.data.success && res.data.locations?.length > 0) {
-          const list = ['All', ...res.data.locations.filter(l => l !== 'All')];
-          setLocations([...new Set(list)]);
+          const toTitleCase = (str) =>
+            str
+              .trim()
+              .toLowerCase()
+              .split(/\s+/)
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ');
+
+          const seen = new Map();
+          for (const loc of res.data.locations) {
+            if (!loc || loc === 'All') continue;
+            const normalized = toTitleCase(loc);
+            const lower = normalized.toLowerCase();
+            if (!seen.has(lower)) {
+              seen.set(lower, normalized);
+            }
+          }
+          const list = ['All', ...Array.from(seen.values()).sort((a, b) => a.localeCompare(b))];
+          setLocations(list);
         }
       } catch (err) {
         console.error('Error fetching dynamic locations:', err);
       }
     };
     fetchLocations();
-  }, []);
+  }, [farmerState]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch products
-      const productParams = {};
+      // Fetch products strictly matching farmer's state and proximity
+      const productParams = {
+        state: farmerState,
+        village: farmerVillage,
+        mandal: farmerMandal,
+        district: farmerDistrict
+      };
       if (searchQuery) productParams.query = searchQuery;
       if (categoryFilter !== 'All') productParams.category = categoryFilter;
       if (maxPrice) productParams.maxPrice = maxPrice;
@@ -93,8 +118,13 @@ export default function ShopDiscoveryPage() {
         setRawProducts(prodRes.data.results || []);
       }
 
-      // Fetch shops
-      const shopParams = {};
+      // Fetch shops strictly matching farmer's state and proximity
+      const shopParams = {
+        state: farmerState,
+        village: farmerVillage,
+        mandal: farmerMandal,
+        district: farmerDistrict
+      };
       if (searchQuery) shopParams.search = searchQuery;
       if (minRating) shopParams.minRating = minRating;
 
@@ -111,121 +141,223 @@ export default function ShopDiscoveryPage() {
 
   useEffect(() => {
     fetchData();
-  }, [searchQuery, categoryFilter, maxPrice, minRating]);
+  }, [searchQuery, categoryFilter, maxPrice, minRating, farmerProfile]);
 
-  // Helper to extract keywords from location strings
-  const extractTokens = (str = '') => {
-    if (!str) return [];
-    return str
+  // Clean and normalize a location token (strips punctuation and common suffixes)
+  const cleanPlaceName = (name) => {
+    if (!name) return '';
+    return name
       .toLowerCase()
-      .split(/[,;\s/]+/)
-      .map(t => t.replace(/[^a-z0-9]/gi, '').trim())
-      .filter(t => t.length >= 3 && !['village', 'mandal', 'town', 'district', 'dist', 'state', 'andhra', 'pradesh', 'ap'].includes(t));
+      .replace(/\b(village|gramam|town|mandal|tehsil|district|dist|city|state|ap|andhra|pradesh)\b/gi, '')
+      .replace(/[^a-z0-9]/gi, '')
+      .trim();
   };
 
-  // Proximity Calculation (Prioritize Same Village -> Same Mandal -> Same District -> All Other Shops)
-  const getProximity = (shop) => {
-    if (!shop || !hasFarmerLocation) {
-      return { score: 10, rank: 99, level: 'ALL', label: '', badgeClass: '', isNearby: false };
+  const isVillageMatch = (shop, fVillage) => {
+    const cleanFarmerV = cleanPlaceName(fVillage);
+    if (!cleanFarmerV || cleanFarmerV.length < 2) return false;
+
+    const cleanShopV = cleanPlaceName(shop.village);
+    const cleanShopLoc = cleanPlaceName(shop.location);
+
+    if (cleanShopV && cleanShopV === cleanFarmerV) return true;
+    if (cleanShopLoc && cleanShopLoc === cleanFarmerV) return true;
+
+    if (shop.address) {
+      const addrTokens = shop.address.toLowerCase().split(/[,;\s/]+/).map(cleanPlaceName).filter(Boolean);
+      if (addrTokens.includes(cleanFarmerV)) return true;
+    }
+    return false;
+  };
+
+  const isMandalMatch = (shop, fMandal) => {
+    const cleanFarmerM = cleanPlaceName(fMandal);
+    if (!cleanFarmerM || cleanFarmerM.length < 2) return false;
+
+    const cleanShopM = cleanPlaceName(shop.mandal);
+    if (cleanShopM && cleanShopM === cleanFarmerM) return true;
+
+    const locCombined = `${shop.location || ''} ${shop.address || ''}`.toLowerCase();
+    const tokens = locCombined.split(/[,;\s/]+/).map(cleanPlaceName).filter(Boolean);
+    return tokens.includes(cleanFarmerM);
+  };
+
+  const isDistrictMatch = (shop, fDistrict) => {
+    const cleanFarmerD = cleanPlaceName(fDistrict);
+    if (!cleanFarmerD || cleanFarmerD.length < 2) return false;
+
+    const synonyms = new Set([cleanFarmerD]);
+    if (cleanFarmerD === 'ntr' || cleanFarmerD.includes('vijayawada') || cleanFarmerD.includes('krishna')) {
+      synonyms.add('ntr');
+      synonyms.add('vijayawada');
+      synonyms.add('krishna');
     }
 
-    const shopCombined = `${shop.location || ''} ${shop.address || ''} ${shop.shopName || ''}`.toLowerCase();
+    const cleanShopD = cleanPlaceName(shop.district);
+    if (cleanShopD && synonyms.has(cleanShopD)) return true;
 
-    const vTokens = extractTokens(farmerVillage);
-    const mTokens = extractTokens(farmerMandal);
-    const dTokens = extractTokens(farmerDistrict);
+    const locCombined = `${shop.location || ''} ${shop.address || ''}`.toLowerCase();
+    const tokens = locCombined.split(/[,;\s/]+/).map(cleanPlaceName).filter(Boolean);
+    return tokens.some((t) => synonyms.has(t));
+  };
 
-    // Expand district synonyms (e.g. NTR -> Vijayawada / Krishna)
-    if (dTokens.includes('ntr') || dTokens.includes('vijayawada') || dTokens.includes('krishna')) {
-      dTokens.push('ntr', 'vijayawada', 'krishna');
+  // Proximity Calculation (Strict Hierarchy: Same Village (400) -> Same Mandal (300) -> Same District (200) -> Same State (100) -> Out of state excluded)
+  const getProximity = (shop) => {
+    if (!shop) {
+      return { score: 0, rank: 999, level: 'EXCLUDED', label: '', badgeClass: '', isNearby: false, isOutOfState: true };
+    }
+
+    const normalizeState = (st) => {
+      const clean = (st || '').toLowerCase().trim();
+      if (!clean || clean === 'ap' || clean.includes('andhra')) return 'andhra pradesh';
+      if (clean === 'ts' || clean.includes('telangana')) return 'telangana';
+      return clean;
+    };
+
+    const sState = normalizeState(shop.state || 'Andhra Pradesh');
+    const fState = normalizeState(farmerState || 'Andhra Pradesh');
+
+    // Strict state isolation: Reject any shops with an address in a different state
+    const shopAddress = (shop.address || '').toLowerCase();
+    if (fState === 'andhra pradesh' && (shopAddress.includes('telangana') || shopAddress.includes('hyderabad') || sState !== 'andhra pradesh')) {
+      return { score: 0, rank: 999, level: 'OUT_OF_STATE', label: '', badgeClass: 'hidden', isNearby: false, isOutOfState: true };
+    }
+
+    if (sState !== fState) {
+      return { score: 0, rank: 999, level: 'OUT_OF_STATE', label: '', badgeClass: 'hidden', isNearby: false, isOutOfState: true };
     }
 
     // 1. Same Village / Town (Rank 1 - Highest Priority)
-    if (vTokens.length > 0 && vTokens.some(t => shopCombined.includes(t))) {
+    if (isVillageMatch(shop, farmerVillage)) {
       return {
-        score: 300,
+        score: 400,
         rank: 1,
         level: 'VILLAGE',
         label: '📍 In Your Village',
         badgeClass: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-sm ring-1 ring-emerald-400/30',
-        isNearby: true
+        isNearby: true,
+        isOutOfState: false,
       };
     }
 
     // 2. Same Mandal / Tehsil (Rank 2)
-    if (mTokens.length > 0 && mTokens.some(t => shopCombined.includes(t))) {
+    if (isMandalMatch(shop, farmerMandal)) {
       return {
-        score: 200,
+        score: 300,
         rank: 2,
         level: 'MANDAL',
         label: '📍 In Your Mandal',
         badgeClass: 'bg-teal-950/90 text-teal-300 border-teal-500/50 shadow-sm',
-        isNearby: true
+        isNearby: true,
+        isOutOfState: false,
       };
     }
 
     // 3. Same District (Rank 3)
-    if (dTokens.length > 0 && dTokens.some(t => shopCombined.includes(t))) {
+    if (isDistrictMatch(shop, farmerDistrict)) {
       return {
-        score: 100,
+        score: 200,
         rank: 3,
         level: 'DISTRICT',
         label: '📍 In Your District',
         badgeClass: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/50 shadow-sm',
-        isNearby: true
+        isNearby: true,
+        isOutOfState: false,
       };
     }
 
-    // Default: Show all shops with standard priority
+    // 4. Same State (Rank 4 - Standard within state)
     return {
-      score: 10,
-      rank: 99,
-      level: 'ALL',
-      label: '',
-      badgeClass: '',
-      isNearby: false
+      score: 100,
+      rank: 4,
+      level: 'STATE',
+      label: '📍 In Your State',
+      badgeClass: 'bg-[#030b0e] text-slate-300 border-slate-700 shadow-xs',
+      isNearby: false,
+      isOutOfState: false,
     };
   };
 
-  // Processed Products with Smart Prioritization
-  const processedProducts = useMemo(() => {
-    const scored = rawProducts.map((item) => ({
-      ...item,
-      proximity: getProximity(item.shop)
-    }));
+  // Helper to determine stock score (In Stock = 2, Low Stock = 1, Out of Stock = 0)
+  const getStockScore = (item) => {
+    const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || item.stock === 0 || item.quantity === 0;
+    if (isOut) return 0;
+    const isLow = item.status === 'Low Stock' || item.status === 'Low' || (typeof item.stock === 'number' && item.stock <= 5);
+    if (isLow) return 1;
+    return 2; // In Stock
+  };
 
-    if (locationFilter === 'All') {
-      // Sort by proximity score (Closest shops first) then by price
-      return scored.sort((a, b) => b.proximity.score - a.proximity.score || a.price - b.price);
-    } else {
-      // Filter by specific location selected in dropdown
+  const getStockCount = (item) => {
+    if (item.status === 'Out of Stock' || item.status === 'Empty') return 0;
+    if (typeof item.stock === 'number') return item.stock;
+    if (typeof item.quantity === 'number') return item.quantity;
+    if (item.status === 'In Stock' || item.status === 'Full') return 100;
+    return 10;
+  };
+
+  // Processed Products with Strict Same State & Smart Prioritization (Village -> Mandal -> District -> State)
+  const processedProducts = useMemo(() => {
+    let list = rawProducts
+      .map((item) => ({
+        ...item,
+        proximity: getProximity(item.shop),
+        stockScore: getStockScore(item),
+        stockCount: getStockCount(item),
+      }))
+      .filter((item) => !item.proximity.isOutOfState); // Exclude other states entirely
+
+    if (locationFilter !== 'All') {
       const target = locationFilter.toLowerCase();
-      return scored.filter((item) => {
-        const text = `${item.shop?.location || ''} ${item.shop?.address || ''}`.toLowerCase();
+      list = list.filter((item) => {
+        const text = `${item.shop?.village || ''} ${item.shop?.mandal || ''} ${item.shop?.district || ''} ${item.shop?.location || ''} ${item.shop?.address || ''}`.toLowerCase();
         return text.includes(target);
       });
     }
-  }, [rawProducts, locationFilter, farmerVillage, farmerMandal, farmerDistrict]);
 
-  // Processed Shops with Smart Prioritization
+    // Sort: 1. Proximity Hierarchy (Village -> Mandal -> District -> State) -> 2. In Stock First -> 3. Quantity -> 4. Price
+    return list.sort((a, b) => {
+      if (b.proximity.score !== a.proximity.score) {
+        return b.proximity.score - a.proximity.score;
+      }
+      if (b.stockScore !== a.stockScore) {
+        return b.stockScore - a.stockScore;
+      }
+      if (b.stockCount !== a.stockCount) {
+        return b.stockCount - a.stockCount;
+      }
+      return (a.price || 0) - (b.price || 0);
+    });
+  }, [rawProducts, locationFilter, farmerVillage, farmerMandal, farmerDistrict, farmerState]);
+
+  // Processed Shops with Strict Same State & Smart Prioritization (Village -> Mandal -> District -> State)
   const processedShops = useMemo(() => {
-    const scored = rawShops.map((shop) => ({
-      ...shop,
-      proximity: getProximity(shop)
-    }));
+    let scored = rawShops
+      .map((shop) => {
+        const matchedFromProducts = rawProducts.filter(
+          (p) => (p.shop?._id === shop._id || p.shop === shop._id)
+        ).length;
+        const count = typeof shop.productCount === 'number' ? shop.productCount : matchedFromProducts;
+
+        return {
+          ...shop,
+          productCount: count,
+          proximity: getProximity(shop),
+        };
+      })
+      .filter((shop) => !shop.proximity.isOutOfState); // Exclude other states entirely
 
     if (locationFilter === 'All') {
-      // Sort by proximity score (Closest shops first) then by rating
+      // Sort by proximity score (Village -> Mandal -> District -> State) then by rating
       return scored.sort((a, b) => b.proximity.score - a.proximity.score || (b.ratingAverage || 0) - (a.ratingAverage || 0));
     } else {
       // Filter by specific location selected in dropdown
       const target = locationFilter.toLowerCase();
       return scored.filter((shop) => {
-        const text = `${shop.location || ''} ${shop.address || ''}`.toLowerCase();
+        const text = `${shop.village || ''} ${shop.mandal || ''} ${shop.district || ''} ${shop.location || ''} ${shop.address || ''}`.toLowerCase();
         return text.includes(target);
       });
     }
-  }, [rawShops, locationFilter, farmerVillage, farmerMandal, farmerDistrict]);
+  }, [rawShops, rawProducts, locationFilter, farmerVillage, farmerMandal, farmerDistrict, farmerState]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -461,8 +593,9 @@ export default function ShopDiscoveryPage() {
 
                   {/* Stock Availability Badge on Image */}
                   {(() => {
-                    const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || item.quantity === 0;
-                    const isLow = item.status === 'Low Stock' || item.status === 'Low' || (item.quantity > 0 && item.quantity <= 5);
+                    const qty = typeof item.stock === 'number' ? item.stock : (typeof item.quantity === 'number' ? item.quantity : undefined);
+                    const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || qty === 0;
+                    const isLow = item.status === 'Low Stock' || item.status === 'Low' || (qty !== undefined && qty > 0 && qty <= 5);
                     return (
                       <span
                         className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold border flex items-center gap-1 shadow-xs ${
@@ -482,8 +615,8 @@ export default function ShopDiscoveryPage() {
                           {isOut
                             ? 'Out of Stock'
                             : isLow
-                            ? `Low Stock (${item.quantity || 1} left)`
-                            : `In Stock (${item.quantity !== undefined ? item.quantity : 'Available'})`}
+                            ? `Low Stock (${qty || 1} left)`
+                            : `In Stock (${qty !== undefined && qty > 0 ? `${qty} in stock` : 'Available'})`}
                         </span>
                       </span>
                     );
@@ -523,8 +656,9 @@ export default function ShopDiscoveryPage() {
                   <div className="flex items-center justify-between text-[11px] text-slate-400">
                     <span>Stock Status:</span>
                     {(() => {
-                      const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || item.quantity === 0;
-                      const isLow = item.status === 'Low Stock' || item.status === 'Low' || (item.quantity > 0 && item.quantity <= 5);
+                      const qty = typeof item.stock === 'number' ? item.stock : (typeof item.quantity === 'number' ? item.quantity : undefined);
+                      const isOut = item.status === 'Out of Stock' || item.status === 'Empty' || qty === 0;
+                      const isLow = item.status === 'Low Stock' || item.status === 'Low' || (qty !== undefined && qty > 0 && qty <= 5);
                       return (
                         <span
                           className={`font-bold flex items-center gap-1 ${
@@ -539,8 +673,8 @@ export default function ShopDiscoveryPage() {
                           {isOut
                             ? 'Out of Stock'
                             : isLow
-                            ? `Low Stock (${item.quantity || 1} ${item.unit || 'left'})`
-                            : `In Stock (${item.quantity !== undefined ? item.quantity : ''} ${item.unit || 'units'})`}
+                            ? `Low Stock (${qty || 1} ${item.unit || 'left'})`
+                            : `In Stock (${qty !== undefined && qty > 0 ? `${qty} ` : ''}${item.unit || 'units'})`}
                         </span>
                       );
                     })()}

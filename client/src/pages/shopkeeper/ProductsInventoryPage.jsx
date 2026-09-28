@@ -19,7 +19,6 @@ import {
   Edit2,
   Trash2,
   Tag,
-  Star,
   LayoutGrid,
   List,
   Info,
@@ -131,7 +130,6 @@ export default function ProductsInventoryPage() {
           const formatted = prodRes.data.products.map(item => ({
             _id: item._id,
             name: item.customName || item.productId?.name || 'Agro Product',
-            rating: item.rating || 4.5,
             category: item.productId?.category || 'Fertilizer',
             status: item.status || 'In Stock',
             description: item.productId?.description || 'Quality agricultural input for high yield crops.',
@@ -507,7 +505,7 @@ export default function ProductsInventoryPage() {
               className="px-6 py-2.5 btn-glow-primary text-slate-950 text-xs sm:text-sm font-black rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer hover:scale-105"
             >
               <Plus className="w-4 h-4 text-slate-950" />
-              <span>+ Add Your First Product</span>
+              <span>Add Your First Product</span>
             </button>
           </div>
         </div>
@@ -536,11 +534,6 @@ export default function ProductsInventoryPage() {
                     <h3 className="text-base sm:text-lg font-black text-white group-hover:text-teal-300 transition-colors">
                       {item.name}
                     </h3>
-                    {/* Rating Badge */}
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-[#030b0e] px-2 py-0.5 rounded-md border border-slate-700">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      {item.rating}
-                    </span>
                   </div>
 
                   {/* Category & Status Tags */}
@@ -662,12 +655,6 @@ export default function ProductsInventoryPage() {
                   alt={item.name}
                   className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-300"
                 />
-                {/* Floating Rating */}
-                <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-300 bg-[#030b0e]/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-slate-700 shadow-md">
-                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  {item.rating}
-                </span>
-
                 {/* Floating Category */}
                 <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-bold text-teal-300 bg-teal-950/90 backdrop-blur-md border border-teal-500/30 px-2 py-0.5 rounded-lg shadow-md">
                   <Tag className="w-2.5 h-2.5 text-teal-400" />

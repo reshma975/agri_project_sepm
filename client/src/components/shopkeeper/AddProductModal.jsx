@@ -41,14 +41,13 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
     reader.readAsDataURL(file);
   };
 
-  // 6 Categories explicitly listed in Wireframe 2!
   const categories = [
-    { value: 'Tools', label: '1) Tools (Simple)' },
-    { value: 'Machines', label: '2) Machines (Big)' },
-    { value: 'Fertilizer', label: '3) Fertilizer' },
-    { value: 'Pesticide', label: '4) Pesticide' },
-    { value: 'Seeds', label: '5) Seeds' },
-    { value: 'Others', label: '6) Others (if any)' },
+    { value: 'Fertilizer', label: 'Fertilizer' },
+    { value: 'Seeds', label: 'Seeds' },
+    { value: 'Pesticide', label: 'Pesticide' },
+    { value: 'Tools', label: 'Tools' },
+    { value: 'Machines', label: 'Machines' },
+    { value: 'Others', label: 'Others' },
   ];
 
   const units = ['kg', 'Bag (45kg)', 'Bag (50kg)', 'Bag (25kg)', 'Packet', 'Litre', '500g Pack', 'Unit', 'Machine'];
@@ -118,7 +117,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                Category * (Wireframe 2)
+                Category *
               </label>
               <div className="relative">
                 <Tag className="w-4 h-4 text-teal-400 absolute left-3.5 top-3.5" />

@@ -361,7 +361,7 @@ export default function RegisterPage() {
                       value={formData.username ? `@${formData.username}` : `@${existingUser.username}`}
                       disabled
                       readOnly
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#03090c] border border-slate-700/80 text-teal-300 font-mono rounded-2xl cursor-not-allowed opacity-80 select-none shadow-inner"
+                      className="w-full px-3.5 py-2.5 text-sm bg-[#03090c] border border-slate-700/80 text-white font-bold font-mono rounded-2xl cursor-not-allowed select-none shadow-inner"
                     />
                   </div>
                 </div>

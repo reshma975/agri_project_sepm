@@ -20,7 +20,8 @@ import {
   LayoutDashboard,
   Sparkles,
   ArrowRight,
-  Package
+  Package,
+  Newspaper
 } from 'lucide-react';
 
 
@@ -215,8 +216,8 @@ export default function Navbar() {
                       : 'text-slate-300 hover:text-white hover:bg-[#0c2228]'
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Govt Schemes</span>
+                  <Newspaper className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Agri Updates</span>
                 </Link>
 
                 <Link
@@ -347,8 +348,7 @@ export default function Navbar() {
                   <div className="absolute right-0 mt-2 w-60 bg-[#091b20] rounded-2xl shadow-2xl border border-teal-900/60 py-2 z-50 animate-slide-up">
                     <div className="px-4 py-2.5 border-b border-teal-900/50">
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Signed in as</p>
-                      <p className="text-xs font-bold text-white truncate mt-0.5">{user?.name}</p>
-                      <p className="text-[11px] text-teal-300/80 truncate">@{user?.username} • <span className="font-semibold text-teal-400">{user?.role}</span></p>
+                      <p className="text-[11px] text-slate-300 truncate"><span className="text-white font-bold">@{user?.username}</span> • <span className="font-semibold text-teal-400">{user?.role}</span></p>
                     </div>
 
                     <div className="py-1">
@@ -360,6 +360,51 @@ export default function Navbar() {
                         <User className="w-4 h-4 text-teal-400" />
                         My Profile & Settings
                       </Link>
+
+                      {/* Direct Seamless Portal Switch Option - ONLY if user already registered for both accounts */}
+                      {isShopkeeper && user?.roles?.includes('FARMER') && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setDropdownOpen(false);
+                            const res = await switchRole('FARMER');
+                            if (res.success) {
+                              navigate('/farmer/dashboard');
+                            } else {
+                              window.location.href = '/farmer/dashboard';
+                            }
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-950/40 hover:text-white transition-colors text-left cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">👨‍🌾</span>
+                            <span>Switch to Farmer Portal</span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+                        </button>
+                      )}
+
+                      {isFarmer && user?.roles?.includes('SHOPKEEPER') && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setDropdownOpen(false);
+                            const res = await switchRole('SHOPKEEPER');
+                            if (res.success) {
+                              navigate('/shopkeeper/dashboard');
+                            } else {
+                              window.location.href = '/shopkeeper/dashboard';
+                            }
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-950/40 hover:text-white transition-colors text-left cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🏪</span>
+                            <span>Switch to Shopkeeper Portal</span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                        </button>
+                      )}
 
                       {isOfficer && (
                         <Link
@@ -373,43 +418,10 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    {/* Multi-role Switcher */}
-                    {user?.roles && user.roles.length > 1 && (
-                      <div className="px-3 py-2 bg-[#06151a] mx-2 rounded-xl border border-teal-900/60 my-1">
-                        <p className="text-[10px] font-bold text-teal-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-teal-400" /> Switch Role Portal
-                        </p>
-                        <div className="space-y-1">
-                          {user.roles.map((r) => {
-                            if (r === user.role) return null;
-                            return (
-                              <button
-                                key={r}
-                                type="button"
-                                onClick={async () => {
-                                  setDropdownOpen(false);
-                                  const res = await switchRole(r);
-                                  if (res.success) {
-                                    if (r === 'FARMER') navigate('/farmer/dashboard');
-                                    else if (r === 'SHOPKEEPER') navigate('/shopkeeper/dashboard');
-                                    else if (r === 'OFFICER') navigate('/officer/dashboard');
-                                  }
-                                }}
-                                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-teal-300 hover:bg-teal-950/80 hover:text-white transition-all cursor-pointer border border-teal-500/30"
-                              >
-                                <span>{r === 'FARMER' ? '👨‍🌾 Farmer Dashboard' : r === 'SHOPKEEPER' ? '🏪 Shopkeeper Portal' : '🏛️ Officer Portal'}</span>
-                                <ArrowRight className="w-3 h-3 text-teal-400" />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
                     <div className="border-t border-teal-900/50 pt-1">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition-colors text-left cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         Log Out
@@ -481,8 +493,8 @@ export default function Navbar() {
                     to="/farmer/government-updates"
                     className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-200 rounded-xl hover:bg-[#0c2228]"
                   >
-                    <Building2 className="w-4 h-4 text-teal-400" />
-                    Government Schemes
+                    <Newspaper className="w-4 h-4 text-teal-400" />
+                    Agricultural Updates
                   </Link>
                   <Link
                     to="/farmer/weather"
@@ -562,9 +574,46 @@ export default function Navbar() {
                   <User className="w-4 h-4 text-teal-400" />
                   My Profile
                 </Link>
+
+                {isShopkeeper && user?.roles?.includes('FARMER') && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMobileMenuOpen(false);
+                      const res = await switchRole('FARMER');
+                      if (res.success) navigate('/farmer/dashboard');
+                      else window.location.href = '/farmer/dashboard';
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-bold text-emerald-300 rounded-xl hover:bg-emerald-950/40 text-left cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>👨‍🌾</span> Switch to Farmer Portal
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                  </button>
+                )}
+
+                {isFarmer && user?.roles?.includes('SHOPKEEPER') && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMobileMenuOpen(false);
+                      const res = await switchRole('SHOPKEEPER');
+                      if (res.success) navigate('/shopkeeper/dashboard');
+                      else window.location.href = '/shopkeeper/dashboard';
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-bold text-amber-300 rounded-xl hover:bg-amber-950/40 text-left cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🏪</span> Switch to Shopkeeper Portal
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-amber-400" />
+                  </button>
+                )}
+
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-rose-400 rounded-xl hover:bg-rose-950/40 text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-rose-400 rounded-xl hover:bg-rose-950/40 text-left cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   Log Out

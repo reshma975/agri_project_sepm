@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatCurrency } from '../../utils/helpers';
+import { useAuth } from '../../context/AuthContext';
 import {
   Store,
   MapPin,
@@ -15,17 +16,21 @@ import {
   MessageSquare,
   Send,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 
 export default function ShopDetailsPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [shop, setShop] = useState(null);
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Review form
+  // Review form state
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -39,7 +44,7 @@ export default function ShopDetailsPage() {
       if (res.data.success) {
         setShop(res.data.shop);
         setProducts(res.data.products);
-        setReviews(res.data.reviews);
+        setReviews(res.data.reviews || []);
       }
     } catch (err) {
       console.error('Error fetching shop details:', err);
@@ -52,6 +57,26 @@ export default function ShopDetailsPage() {
     fetchShopDetails();
   }, [id]);
 
+  const ownerIdStr = shop?.ownerId?._id ? shop.ownerId._id.toString() : shop?.ownerId?.toString();
+  const currentUserIdStr = (user?._id || user?.id)?.toString();
+  const isShopOwner = Boolean(currentUserIdStr && ownerIdStr && ownerIdStr === currentUserIdStr);
+
+  // Find existing review submitted by current farmer (1-on-1 constraint & exclude shop owner)
+  const myExistingReview = isShopOwner
+    ? null
+    : reviews.find(
+        (r) =>
+          (user?._id && (r.farmerId === user._id || r.farmerId?._id === user._id)) ||
+          (user?.name && r.farmerName && r.farmerName.toLowerCase() === user.name.toLowerCase())
+      );
+
+  useEffect(() => {
+    if (myExistingReview) {
+      setRating(myExistingReview.rating || 5);
+      setComment(myExistingReview.comment || '');
+    }
+  }, [myExistingReview?._id, myExistingReview?.updatedAt]);
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
@@ -62,16 +87,16 @@ export default function ShopDetailsPage() {
     try {
       const res = await apiClient.post(`/shops/${id}/reviews`, {
         rating: Number(rating),
-        comment,
+        comment: comment.trim(),
       });
 
       if (res.data.success) {
-        setReviewMessage('Thank you! Your review has been recorded.');
-        setComment('');
+        setReviewMessage(res.data.message || (myExistingReview ? 'Your review has been updated successfully.' : 'Thank you! Your review has been recorded.'));
         fetchShopDetails();
       }
     } catch (err) {
       console.error(err);
+      setReviewMessage(err.response?.data?.message || 'Failed to record review.');
     } finally {
       setSubmittingReview(false);
     }
@@ -120,16 +145,21 @@ export default function ShopDetailsPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent flex items-end p-6 sm:p-8">
             <div className="text-white space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  Verified Agro Dealer
-                </span>
-                <div className="bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{shop.ratingAverage?.toFixed(1) || '4.5'}</span>
-                  <span className="text-[10px] opacity-80">({shop.ratingCount || 12} reviews)</span>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                    Verified Agro Dealer
+                  </span>
+                  {isShopOwner && (
+                    <span className="bg-teal-600/90 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm border border-teal-400/40">
+                      Your Store
+                    </span>
+                  )}
+                  <div className="bg-[#030b0e]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-slate-700 shadow-md">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
+                    <span className="text-amber-300 font-extrabold">{shop.ratingAverage?.toFixed(1) || '4.5'}</span>
+                    <span className="text-white font-bold text-[11px]">({shop.ratingCount || 1} {shop.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                  </div>
                 </div>
-              </div>
 
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
                 {shop.shopName}
@@ -235,8 +265,8 @@ export default function ShopDetailsPage() {
                       <Layers className="w-3.5 h-3.5 text-teal-400" />
                       In stock: <strong className="text-white">{item.quantity} {item.unit}</strong>
                     </span>
-                    <span className="text-amber-300 font-bold flex items-center gap-0.5">
-                      ⭐ {item.rating || 4.5}
+                    <span className="text-[11px] text-teal-300 font-semibold">
+                      Verified Stock
                     </span>
                   </div>
                 </div>
@@ -250,10 +280,15 @@ export default function ShopDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6 border-t border-slate-700">
         {/* Left: Farmer Reviews List */}
         <div className="lg:col-span-7 space-y-4">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-teal-400" />
-            Farmer Reviews & Feedback ({reviews.length})
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-teal-400" />
+              Farmer Reviews & Feedback ({reviews.length})
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              1 rating per verified farmer
+            </span>
+          </div>
 
           {reviews.length === 0 ? (
             <p className="text-xs text-slate-300 p-4 bg-[#06151a]/90 rounded-2xl border border-slate-700">
@@ -261,99 +296,188 @@ export default function ShopDetailsPage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {reviews.map((r) => (
-                <div key={r._id} className="p-4 bg-[#06151a]/95 rounded-2xl border border-slate-700 shadow-md space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <strong className="text-xs sm:text-sm text-white font-bold">{r.farmerName}</strong>
-                    <span className="flex items-center gap-1 text-xs text-amber-300 font-bold bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-slate-700">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      {r.rating}/5
-                    </span>
+              {reviews.map((r) => {
+                const isMine =
+                  (user?._id && (r.farmerId === user._id || r.farmerId?._id === user._id)) ||
+                  (user?.name && r.farmerName && r.farmerName.toLowerCase() === user.name.toLowerCase());
+
+                return (
+                  <div
+                    key={r._id}
+                    className={`p-4 rounded-2xl border shadow-md space-y-1.5 transition-all ${
+                      isMine
+                        ? 'bg-[#061e24] border-teal-500/50 ring-1 ring-teal-500/20'
+                        : 'bg-[#06151a]/95 border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-xs sm:text-sm text-white font-bold">{r.farmerName}</strong>
+                        {isMine && (
+                          <span className="text-[10px] bg-teal-950/80 text-teal-300 font-bold px-2 py-0.5 rounded-full border border-teal-500/40">
+                            Your Rating
+                          </span>
+                        )}
+                      </div>
+                      <span className="flex items-center gap-1 text-xs text-amber-300 font-bold bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-slate-700">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        {r.rating}/5
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{r.comment}</p>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{r.comment}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Right: Submit Review Form */}
+        {/* Right: Submit Review Form OR Owner Notice Card */}
         <div className="lg:col-span-5">
-          <div className="bg-[#06151a]/95 rounded-3xl p-6 border border-slate-700 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-white">
-              Rate This Agricultural Shop
-            </h3>
-
-            {reviewMessage && (
-              <div className="p-3 bg-emerald-950/60 text-emerald-300 rounded-xl text-xs border border-emerald-800/60 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>{reviewMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleReviewSubmit} className="space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    YOUR RATING *
-                  </label>
-                  <span className="text-[11px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
-                    {rating === 5 && '5/5 (Very Good)'}
-                    {rating === 4 && '4/5 (Good)'}
-                    {rating === 3 && '3/5 (Average)'}
-                    {rating === 2 && '2/5 (Fair)'}
-                    {rating === 1 && '1/5 (Poor)'}
-                  </span>
+          {isShopOwner ? (
+            <div className="bg-[#061e24] rounded-3xl p-6 border border-teal-500/50 shadow-xl space-y-5 ring-1 ring-teal-500/20">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-6 h-6 text-teal-400" />
                 </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">Your Agro Store</h3>
+                    <span className="text-[10px] font-bold text-teal-300 bg-teal-950/90 px-2.5 py-0.5 rounded-full border border-teal-500/50">
+                      Store Owner
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-teal-200/80">Public Farmer View Preview</p>
+                </div>
+              </div>
 
-                {/* 5 Compact Rating Buttons with Star & Number */}
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setRating(num)}
-                      className={`flex-1 py-1.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                        rating >= num
-                          ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 shadow-xs ring-1 ring-amber-500/30'
-                          : 'bg-[#030b0e] text-slate-400 border-slate-700 hover:border-slate-500'
-                      }`}
-                    >
-                      <Star
-                        className={`w-3.5 h-3.5 ${
-                          rating >= num ? 'fill-amber-400 text-amber-400' : 'text-slate-500'
+              <div className="p-4 bg-[#030b0e] rounded-2xl border border-teal-900/60 text-xs text-slate-300 space-y-2.5 shadow-inner">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">
+                    You are logged in as the registered owner of this shop. <strong className="text-white">Store owners cannot submit ratings or reviews for their own store</strong> to guarantee authentic and unbiased feedback from local farmers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-700/60 space-y-2.5">
+                <Link
+                  to="/shopkeeper/inventory"
+                  className="w-full py-2.5 btn-glow-primary text-slate-950 font-black rounded-2xl shadow-md transition-all text-xs flex items-center justify-center gap-2"
+                >
+                  <Store className="w-4 h-4" />
+                  Manage Store & Inventory
+                </Link>
+                <Link
+                  to="/shopkeeper/dashboard"
+                  className="w-full py-2 px-3 bg-[#030b0e] hover:bg-slate-800 text-slate-300 hover:text-white font-bold rounded-2xl border border-slate-700 transition-all text-xs flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open Shopkeeper Dashboard
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-[#06151a]/95 rounded-3xl p-6 border border-slate-700 shadow-xl space-y-4">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+                    {myExistingReview ? (
+                      <>
+                        <Edit3 className="w-4 h-4 text-teal-400" />
+                        Edit Your Rating & Review
+                      </>
+                    ) : (
+                      <>
+                        <Star className="w-4 h-4 text-teal-400" />
+                        Rate This Agricultural Shop
+                      </>
+                    )}
+                  </h3>
+                  {myExistingReview && (
+                    <span className="text-[10px] font-bold text-teal-300 bg-teal-950/80 px-2 py-0.5 rounded-full border border-teal-500/40">
+                      Already Rated
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {myExistingReview
+                    ? 'You have already rated this shop. Submitting will update your existing rating.'
+                    : 'One-on-one rating: Every farmer can submit 1 rating per store.'}
+                </p>
+              </div>
+
+              {reviewMessage && (
+                <div className="p-3 bg-emerald-950/60 text-emerald-300 rounded-xl text-xs border border-emerald-800/60 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{reviewMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleReviewSubmit} className="space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      YOUR RATING *
+                    </label>
+                    <span className="text-[11px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                      {rating === 5 && '5/5 (Very Good)'}
+                      {rating === 4 && '4/5 (Good)'}
+                      {rating === 3 && '3/5 (Average)'}
+                      {rating === 2 && '2/5 (Fair)'}
+                      {rating === 1 && '1/5 (Poor)'}
+                    </span>
+                  </div>
+
+                  {/* 5 Compact Rating Buttons with Star & Number */}
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setRating(num)}
+                        className={`flex-1 py-1.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                          rating >= num
+                            ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 shadow-xs ring-1 ring-amber-500/30'
+                            : 'bg-[#030b0e] text-slate-400 border-slate-700 hover:border-slate-500'
                         }`}
-                      />
-                      <span>{num}</span>
-                    </button>
-                  ))}
+                      >
+                        <Star
+                          className={`w-3.5 h-3.5 ${
+                            rating >= num ? 'fill-amber-400 text-amber-400' : 'text-slate-500'
+                          }`}
+                        />
+                        <span>{num}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Your Review / Experience
-                </label>
-                <textarea
-                  rows={3}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Share feedback on product quality, availability, and fair pricing..."
-                  required
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Your Review / Experience
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Share feedback on product quality, availability, and fair pricing..."
+                    required
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#030b0e] border border-slate-700 text-white rounded-2xl focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 outline-none transition-all placeholder:text-slate-500"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={submittingReview}
-                className="w-full py-2.5 btn-glow-primary text-slate-950 font-black rounded-2xl shadow-md transition-all text-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                <Send className="w-4 h-4 text-slate-950" />
-                {submittingReview ? 'Submitting...' : 'Post Farmer Review'}
-              </button>
-            </form>
-          </div>
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="w-full py-2.5 btn-glow-primary text-slate-950 font-black rounded-2xl shadow-md transition-all text-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  <Send className="w-4 h-4 text-slate-950" />
+                  {submittingReview ? 'Saving...' : myExistingReview ? 'Update Your Rating' : 'Post Farmer Review'}
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>

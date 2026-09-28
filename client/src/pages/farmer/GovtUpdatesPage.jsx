@@ -81,14 +81,11 @@ export default function GovtUpdatesPage() {
       if (res.data.success) {
         setNewsList(res.data.news || []);
       } else {
-        setNewsError(res.data.message || 'Failed to fetch live agriculture news.');
+        setNewsError("We're having trouble loading live news right now. Please try again later.");
       }
     } catch (err) {
       console.error('Error fetching live agriculture news:', err);
-      const errMsg =
-        err.response?.data?.message ||
-        'Unable to connect to the news feed. Please verify the server configuration and NEWS_API_KEY in .env.';
-      setNewsError(errMsg);
+      setNewsError("We're having trouble loading live news right now. Please try again later.");
     } finally {
       setNewsLoading(false);
     }
@@ -149,11 +146,11 @@ export default function GovtUpdatesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-              <Building2 className="w-7 h-7 text-emerald-400" />
-              <span>Farmer & Agriculture Government Updates</span>
+              <Newspaper className="w-7 h-7 text-teal-400" />
+              <span>Agricultural Updates & News</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
-              Real-time media reports, nationwide welfare policies, subsidies, and verified government portals.
+              Real-time agricultural news, trending farming updates, market insights, and welfare policies fetched live.
             </p>
           </div>
         </div>
@@ -281,26 +278,30 @@ export default function GovtUpdatesPage() {
           {newsLoading ? (
             <LoadingSpinner message="Fetching latest farmer & agriculture updates from across India..." />
           ) : newsError ? (
-            <div className="glass-card bg-[#06151a]/95 rounded-3xl p-8 border border-amber-500/30 text-center space-y-4 shadow-xl">
+            <div className="glass-card bg-[#06151a]/95 rounded-3xl p-8 border border-slate-700 text-center space-y-4 shadow-xl">
               <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
                 <AlertCircle className="w-6 h-6" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-extrabold text-white">Live News Feed Unavailable</h3>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-extrabold text-white">Latest Agricultural News Currently Unavailable</h3>
                 <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
-                  {newsError}
+                  We're having trouble loading live news right now. Please try again later.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => fetchFarmerNews(newsSearchQuery)}
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                  disabled={newsLoading}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Retry News Feed
+                  <RefreshCw className={`w-3.5 h-3.5 ${newsLoading ? 'animate-spin' : ''}`} />
+                  <span>{newsLoading ? 'Retrying...' : 'Retry News Feed'}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab('schemes')}
-                  className="px-4 py-2 bg-[#030b0e] hover:bg-[#0c242c] text-slate-300 font-bold rounded-xl text-xs border border-slate-700 cursor-pointer transition-colors"
+                  className="px-4 py-2 bg-[#030b0e] hover:bg-[#0c242c] text-slate-300 hover:text-white font-bold rounded-xl text-xs border border-slate-700 cursor-pointer transition-colors"
                 >
                   Browse Official Schemes
                 </button>
@@ -308,17 +309,33 @@ export default function GovtUpdatesPage() {
             </div>
           ) : newsList.length === 0 ? (
             <div className="text-center py-12 p-4 bg-[#06151a]/90 rounded-3xl border border-slate-700 text-slate-300 text-xs shadow-xl space-y-2">
-              <p className="text-sm font-bold text-white">No articles found matching your query.</p>
-              <p className="text-xs text-slate-400">Try broadening your search term or select "All Updates".</p>
-              <button
-                onClick={() => {
-                  setNewsSearchQuery('');
-                  setNewsTopic('All');
-                }}
-                className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-teal-300 bg-[#030b0e] border border-slate-700 hover:bg-[#0c242c] cursor-pointer"
-              >
-                Reset Filters
-              </button>
+              <p className="text-sm font-bold text-white">No news available right now.</p>
+              <p className="text-xs text-slate-400">
+                {newsSearchQuery || newsTopic !== 'All'
+                  ? 'No articles found matching your query. Try broadening your search term or select "All Updates".'
+                  : 'Please check back soon or browse verified government schemes.'}
+              </p>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                {(newsSearchQuery || newsTopic !== 'All') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewsSearchQuery('');
+                      setNewsTopic('All');
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-teal-300 bg-[#030b0e] border border-slate-700 hover:bg-[#0c242c] cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('schemes')}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 bg-[#030b0e] border border-slate-700 hover:bg-[#0c242c] cursor-pointer"
+                >
+                  Browse Official Schemes
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -421,39 +438,75 @@ export default function GovtUpdatesPage() {
         <div className="space-y-6">
           {/* Personalized "Recommended for You" Banner */}
           {recommended.length > 0 && selectedCategory === 'All' && !schemesSearchQuery && (
-            <div className="bg-[#06151a]/95 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4 border border-slate-700">
+            <div className="bg-[#06151a]/95 text-white rounded-2xl p-4 sm:p-5 shadow-lg space-y-3.5 border border-slate-700">
               <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                 <Sparkles className="w-4 h-4 text-teal-400" />
                 <span>Recommended for You (Based on Paddy Crop & Andhra Pradesh)</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recommended.map((rec) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommended.map((item) => (
                   <div
-                    key={rec._id}
-                    className="bg-[#030b0e] p-4 sm:p-5 rounded-2xl border border-slate-700 space-y-2 hover:border-teal-400 transition-all shadow-md"
+                    key={item._id}
+                    className="glass-card bg-[#030b0e] rounded-2xl p-4 border border-slate-700 flex flex-col justify-between space-y-3 hover:border-teal-400 transition-all shadow-md group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-teal-300 bg-[#06151a] px-2.5 py-0.5 rounded-full uppercase border border-slate-700">
-                        {rec.category}
-                      </span>
-                      <span className="text-[11px] text-slate-300">
-                        Deadline: {rec.deadline || 'Ongoing'}
-                      </span>
+                    <div className="space-y-2">
+                      {/* Meta header */}
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 font-bold text-teal-300 bg-[#06151a] px-2 py-0.5 rounded-md border border-slate-700">
+                            <Tag className="w-2.5 h-2.5 text-teal-400" />
+                            {item.category}
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/40">
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                            Recommended
+                          </span>
+                        </div>
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-teal-400" />
+                          {item.publishedDate ? formatDate(item.publishedDate) : item.deadline || 'Ongoing'}
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-bold text-white group-hover:text-teal-300 transition-colors leading-snug line-clamp-2">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
+                        {item.description}
+                      </p>
+
+                      {/* Key Benefits List (Compact) */}
+                      {item.keyBenefits?.length > 0 && (
+                        <div className="p-2 bg-[#06151a] rounded-xl border border-slate-800 space-y-1 text-[10px]">
+                          {item.keyBenefits.slice(0, 2).map((b, bIdx) => (
+                            <div key={bIdx} className="flex items-center gap-1.5 text-slate-300 truncate" title={b}>
+                              <CheckCircle2 className="w-3 h-3 text-teal-400 flex-shrink-0" />
+                              <span className="truncate">{b}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <h4 className="font-extrabold text-base text-white">{rec.title}</h4>
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-                      {rec.description}
-                    </p>
-                    <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-700">
-                      <span className="text-[11px] text-slate-400">Source: {rec.source}</span>
+
+                    {/* Source and official notification link */}
+                    <div className="pt-2.5 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Source
+                        </span>
+                        <p className="text-[10px] font-semibold text-slate-300 truncate">{item.source}</p>
+                      </div>
+
                       <a
-                        href={rec.officialUrl}
+                        href={item.officialUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-bold text-teal-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 btn-glow-primary text-slate-950 font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1 text-[11px] flex-shrink-0 cursor-pointer"
                       >
-                        Official Portal <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Official Portal</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
                       </a>
                     </div>
                   </div>
@@ -514,43 +567,40 @@ export default function GovtUpdatesPage() {
               No announcements found matching this category.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {updates.map((item) => (
                 <div
                   key={item._id}
-                  className="glass-card bg-[#06151a]/95 rounded-3xl p-6 border border-slate-700 flex flex-col justify-between space-y-4 hover:border-teal-400 transition-all shadow-xl"
+                  className="glass-card bg-[#06151a]/95 rounded-2xl p-4 border border-slate-700/80 flex flex-col justify-between space-y-3 hover:border-teal-400 transition-all shadow-md group"
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {/* Meta header */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-300 bg-[#030b0e] px-2.5 py-0.5 rounded-full border border-slate-700">
-                        <Tag className="w-3 h-3 text-teal-400" />
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+                      <span className="inline-flex items-center gap-1 font-bold text-teal-300 bg-[#030b0e] px-2 py-0.5 rounded-md border border-slate-700">
+                        <Tag className="w-2.5 h-2.5 text-teal-400" />
                         {item.category}
                       </span>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-teal-400" />
                         {formatDate(item.publishedDate)}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-extrabold text-white leading-snug">
+                    <h3 className="text-sm font-bold text-white group-hover:text-teal-300 transition-colors leading-snug line-clamp-2">
                       {item.title}
                     </h3>
 
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
                       {item.description}
                     </p>
 
-                    {/* Key Benefits List */}
+                    {/* Key Benefits List (Compact) */}
                     {item.keyBenefits?.length > 0 && (
-                      <div className="p-3.5 bg-[#030b0e] rounded-2xl border border-slate-700 space-y-1.5 text-xs">
-                        <strong className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                          Key Scheme Benefits:
-                        </strong>
-                        {item.keyBenefits.map((b, bIdx) => (
-                          <div key={bIdx} className="flex items-center gap-2 text-slate-200">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" />
-                            <span>{b}</span>
+                      <div className="p-2 bg-[#030b0e] rounded-xl border border-slate-800 space-y-1 text-[10px]">
+                        {item.keyBenefits.slice(0, 2).map((b, bIdx) => (
+                          <div key={bIdx} className="flex items-center gap-1.5 text-slate-300 truncate" title={b}>
+                            <CheckCircle2 className="w-3 h-3 text-teal-400 flex-shrink-0" />
+                            <span className="truncate">{b}</span>
                           </div>
                         ))}
                       </div>
@@ -558,22 +608,22 @@ export default function GovtUpdatesPage() {
                   </div>
 
                   {/* Source and official notification link */}
-                  <div className="pt-4 border-t border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Official Source
+                  <div className="pt-2.5 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Source
                       </span>
-                      <p className="text-[11px] font-semibold text-slate-300">{item.source}</p>
+                      <p className="text-[10px] font-semibold text-slate-300 truncate">{item.source}</p>
                     </div>
 
                     <a
                       href={item.officialUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 btn-glow-primary text-slate-950 font-black rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 text-xs flex-shrink-0 cursor-pointer"
+                      className="px-2.5 py-1.5 btn-glow-primary text-slate-950 font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1 text-[11px] flex-shrink-0 cursor-pointer"
                     >
-                      <span>Read Official Notification</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Official Portal</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
                     </a>
                   </div>
                 </div>

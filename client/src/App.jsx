@@ -194,7 +194,7 @@ function AppContent() {
             path="/shopkeeper/shops/:id"
             element={
               <ProtectedRoute allowedRoles={['SHOPKEEPER']}>
-                <ProductsInventoryPage />
+                <ShopkeeperShopDetailsPage />
               </ProtectedRoute>
             }
           />
