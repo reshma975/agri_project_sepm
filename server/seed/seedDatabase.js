@@ -526,7 +526,6 @@ export const seedDatabase = async (force = false) => {
         price: 267,
         quantity: 120,
         unit: 'Bag (45kg)',
-        rating: 4.9,
         status: 'Full',
         imageUrl: prodUrea.imageUrl
       },
@@ -537,7 +536,6 @@ export const seedDatabase = async (force = false) => {
         price: 1350,
         quantity: 60,
         unit: 'Bag (50kg)',
-        rating: 4.8,
         status: 'In Stock',
         imageUrl: prodDAP.imageUrl
       },
@@ -548,7 +546,6 @@ export const seedDatabase = async (force = false) => {
         price: 850,
         quantity: 35,
         unit: 'Bag (25kg)',
-        rating: 4.7,
         status: 'In Stock',
         imageUrl: prodPaddySeeds.imageUrl
       },
@@ -559,7 +556,6 @@ export const seedDatabase = async (force = false) => {
         price: 380,
         quantity: 18,
         unit: 'Litre',
-        rating: 4.6,
         status: 'In Stock',
         imageUrl: prodNeemPesticide.imageUrl
       },
@@ -570,7 +566,6 @@ export const seedDatabase = async (force = false) => {
         price: 2400,
         quantity: 8,
         unit: 'Unit',
-        rating: 4.8,
         status: 'In Stock',
         imageUrl: prodSprayer.imageUrl
       },
@@ -581,7 +576,6 @@ export const seedDatabase = async (force = false) => {
         price: 48000,
         quantity: 2,
         unit: 'Machine',
-        rating: 5.0,
         status: 'Low Stock',
         imageUrl: prodTiller.imageUrl
       },
@@ -594,7 +588,6 @@ export const seedDatabase = async (force = false) => {
         price: 265,
         quantity: 0,
         unit: 'Bag (45kg)',
-        rating: 4.3,
         status: 'Out of Stock',
         imageUrl: prodUrea.imageUrl
       },
@@ -605,7 +598,6 @@ export const seedDatabase = async (force = false) => {
         price: 1600,
         quantity: 22,
         unit: 'Bag (50kg)',
-        rating: 4.5,
         status: 'In Stock',
         imageUrl: prodPotash.imageUrl
       },
@@ -616,7 +608,6 @@ export const seedDatabase = async (force = false) => {
         price: 860,
         quantity: 50,
         unit: 'Packet',
-        rating: 4.7,
         status: 'In Stock',
         imageUrl: prodCottonSeeds.imageUrl
       },
@@ -627,7 +618,6 @@ export const seedDatabase = async (force = false) => {
         price: 450,
         quantity: 14,
         unit: '500g Pack',
-        rating: 4.6,
         status: 'In Stock',
         imageUrl: prodCartap.imageUrl
       },
@@ -640,7 +630,6 @@ export const seedDatabase = async (force = false) => {
         price: 268,
         quantity: 80,
         unit: 'Bag (45kg)',
-        rating: 4.8,
         status: 'In Stock',
         imageUrl: prodUrea.imageUrl
       },
@@ -651,7 +640,6 @@ export const seedDatabase = async (force = false) => {
         price: 1350,
         quantity: 45,
         unit: 'Bag (50kg)',
-        rating: 4.9,
         status: 'In Stock',
         imageUrl: prodDAP.imageUrl
       },
@@ -662,7 +650,6 @@ export const seedDatabase = async (force = false) => {
         price: 650,
         quantity: 12,
         unit: 'Unit',
-        rating: 4.6,
         status: 'In Stock',
         imageUrl: prodSoilTester.imageUrl
       },
@@ -675,7 +662,6 @@ export const seedDatabase = async (force = false) => {
         price: 266,
         quantity: 110,
         unit: 'Bag (45kg)',
-        rating: 4.8,
         status: 'In Stock',
         imageUrl: prodUrea.imageUrl
       },
@@ -686,7 +672,6 @@ export const seedDatabase = async (force = false) => {
         price: 1350,
         quantity: 40,
         unit: 'Bag (50kg)',
-        rating: 4.7,
         status: 'In Stock',
         imageUrl: prodDAP.imageUrl
       },
@@ -699,7 +684,6 @@ export const seedDatabase = async (force = false) => {
         price: 270,
         quantity: 95,
         unit: 'Bag (45kg)',
-        rating: 4.7,
         status: 'In Stock',
         imageUrl: prodUrea.imageUrl
       },
@@ -710,7 +694,6 @@ export const seedDatabase = async (force = false) => {
         price: 1580,
         quantity: 30,
         unit: 'Bag (50kg)',
-        rating: 4.5,
         status: 'In Stock',
         imageUrl: prodPotash.imageUrl
       },
@@ -723,7 +706,6 @@ export const seedDatabase = async (force = false) => {
         price: 275,
         quantity: 50,
         unit: 'Bag (45kg)',
-        rating: 4.3,
         status: 'In Stock',
         imageUrl: prodUrea.imageUrl
       }

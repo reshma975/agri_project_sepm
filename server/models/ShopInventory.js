@@ -30,12 +30,6 @@ const shopInventorySchema = new mongoose.Schema(
       type: String,
       default: 'kg',
     },
-    rating: {
-      type: Number,
-      default: 4.5,
-      min: 1,
-      max: 5,
-    },
     status: {
       type: String,
       enum: ['Full', 'In Stock', 'Low Stock', 'Out of Stock', 'Empty'],

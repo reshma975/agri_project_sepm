@@ -372,7 +372,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// @desc    Switch active session role for a multi-role user
+// @desc    Switch active session role for unified multi-role account
 // @route   POST /api/auth/switch-role
 // @access  Private
 export const switchRole = async (req, res) => {
@@ -393,7 +393,7 @@ export const switchRole = async (req, res) => {
     if (!userRoles.includes(targetRole)) {
       return res.status(403).json({
         success: false,
-        message: `You do not have access to the ${targetRole} role on this account.`
+        message: `You have not registered for the ${targetRole} role yet.`
       });
     }
 
@@ -411,7 +411,7 @@ export const switchRole = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Switched to ${targetRole === 'FARMER' ? 'Farmer' : targetRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Officer'} role`,
+      message: `Switched to ${targetRole === 'FARMER' ? 'Farmer' : targetRole === 'SHOPKEEPER' ? 'Shopkeeper' : 'Officer'} Portal`,
       token,
       user: {
         _id: user._id,
@@ -442,7 +442,7 @@ export const getMe = async (req, res) => {
     }
 
     const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role || 'FARMER'];
-    const activeRole = req.currentRole || userRoles[0];
+    const activeRole = req.currentRole || user.role || userRoles[0];
 
     let profile = null;
     if (activeRole === 'FARMER') {

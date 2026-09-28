@@ -33,4 +33,7 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
+// Enforce 1-on-1 rating: a single farmer can only have one review per shop
+reviewSchema.index({ farmerId: 1, shopId: 1 }, { unique: true });
+
 export const Review = mongoose.model('Review', reviewSchema);

@@ -37,6 +37,11 @@ const shopSchema = new mongoose.Schema(
       default: 'Vijayawada',
       trim: true,
     },
+    state: {
+      type: String,
+      default: 'Andhra Pradesh',
+      trim: true,
+    },
     address: {
       type: String,
       required: [true, 'Specific address is required'],

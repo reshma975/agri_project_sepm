@@ -7,95 +7,157 @@ import { Shop } from '../models/Shop.js';
 // @access  Public
 export const searchProductsAcrossShops = async (req, res) => {
   try {
-    const { query, category, location, minPrice, maxPrice, status, minRating } = req.query;
+    const { query, category, location, minPrice, maxPrice, status, minRating, village, mandal, district, state } = req.query;
 
-    const inventoryPipeline = [
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'productId',
-          foreignField: '_id',
-          as: 'product',
-        },
-      },
-      { $unwind: '$product' },
-      {
-        $lookup: {
-          from: 'shops',
-          localField: 'shopId',
-          foreignField: '_id',
-          as: 'shop',
-        },
-      },
-      { $unwind: '$shop' },
-    ];
+    const inventories = await ShopInventory.find({})
+      .populate('productId')
+      .populate('shopId')
+      .sort({ price: 1 })
+      .lean();
 
-    const matchConditions = {};
+    let results = inventories
+      .filter((item) => item.productId && item.shopId)
+      .map((item) => ({
+        _id: item._id,
+        customName: item.customName,
+        price: item.price,
+        stock: item.stock,
+        unit: item.unit || 'per unit',
+        status: item.status,
+        discountPrice: item.discountPrice,
+        product: item.productId,
+        shop: item.shopId,
+      }));
+
+    // State isolation: strictly filter out products from shops in different states
+    const targetState = (state || 'Andhra Pradesh').toLowerCase().trim();
+    const normalizeState = (st) => {
+      if (!st) return 'andhra pradesh';
+      const clean = st.toLowerCase().trim();
+      if (clean === 'ap' || clean.includes('andhra')) return 'andhra pradesh';
+      if (clean === 'ts' || clean.includes('telangana')) return 'telangana';
+      return clean;
+    };
+
+    results = results.filter((r) => {
+      const s = r.shop?.state || 'Andhra Pradesh';
+      return normalizeState(s) === normalizeState(targetState);
+    });
 
     if (query) {
-      matchConditions.$or = [
-        { 'product.name': { $regex: query, $options: 'i' } },
-        { customName: { $regex: query, $options: 'i' } },
-        { 'product.description': { $regex: query, $options: 'i' } },
-        { 'shop.shopName': { $regex: query, $options: 'i' } },
-      ];
+      const q = query.toLowerCase().trim();
+      results = results.filter((r) =>
+        r.product?.name?.toLowerCase().includes(q) ||
+        r.customName?.toLowerCase().includes(q) ||
+        r.product?.description?.toLowerCase().includes(q) ||
+        r.shop?.shopName?.toLowerCase().includes(q) ||
+        r.shop?.location?.toLowerCase().includes(q) ||
+        r.shop?.address?.toLowerCase().includes(q)
+      );
     }
 
     if (category && category !== 'All') {
-      matchConditions['product.category'] = category;
+      results = results.filter((r) => r.product?.category?.toLowerCase() === category.toLowerCase());
     }
 
     if (location && location !== 'All') {
-      const stopWords = new Set(['town', 'city', 'district', 'distrcit', 'dist', 'near', 'mandal', 'village', 'state', 'andhra', 'pradesh']);
-      const tokens = location
-        .split(/[,;\s/]+/)
-        .map(t => t.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .filter(t => t.length >= 2 && !stopWords.has(t.toLowerCase()));
-
-      if (tokens.length === 0) {
-        matchConditions.$or = [
-          ...(matchConditions.$or || []),
-          { 'shop.location': { $regex: location.trim(), $options: 'i' } },
-          { 'shop.address': { $regex: location.trim(), $options: 'i' } },
-        ];
-      } else {
-        const locQueries = tokens.flatMap(token => [
-          { 'shop.location': { $regex: token, $options: 'i' } },
-          { 'shop.address': { $regex: token, $options: 'i' } },
-        ]);
-        if (matchConditions.$or) {
-          matchConditions.$and = [{ $or: matchConditions.$or }, { $or: locQueries }];
-          delete matchConditions.$or;
-        } else {
-          matchConditions.$or = locQueries;
-        }
-      }
+      const targetLoc = location.toLowerCase().trim();
+      results = results.filter((r) => {
+        const fullLoc = `${r.shop?.location || ''} ${r.shop?.address || ''} ${r.shop?.village || ''} ${r.shop?.mandal || ''} ${r.shop?.district || ''}`.toLowerCase();
+        return fullLoc.includes(targetLoc);
+      });
     }
 
-    if (minPrice || maxPrice) {
-      matchConditions.price = {};
-      if (minPrice) matchConditions.price.$gte = Number(minPrice);
-      if (maxPrice) matchConditions.price.$lte = Number(maxPrice);
+    if (minPrice) {
+      results = results.filter((r) => r.price >= Number(minPrice));
+    }
+    if (maxPrice) {
+      results = results.filter((r) => r.price <= Number(maxPrice));
     }
 
     if (status && status !== 'All') {
-      matchConditions.status = status;
+      results = results.filter((r) => r.status === status);
     }
 
     if (minRating) {
-      matchConditions['shop.ratingAverage'] = { $gte: Number(minRating) };
+      results = results.filter((r) => (r.shop?.ratingAverage || 4.5) >= Number(minRating));
     }
 
-    if (Object.keys(matchConditions).length > 0) {
-      inventoryPipeline.push({ $match: matchConditions });
+    // Proximity hierarchy scoring & sorting
+    if (village || mandal || district || state) {
+      const v = (village || '').toLowerCase().trim();
+      const m = (mandal || '').toLowerCase().trim();
+      const d = (district || '').toLowerCase().trim();
+
+      const cleanPlace = (name) => {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .replace(/\b(village|gramam|town|mandal|tehsil|district|dist|city|state|ap|andhra|pradesh)\b/gi, '')
+          .replace(/[^a-z0-9]/gi, '')
+          .trim();
+      };
+
+      const cleanFarmerV = cleanPlace(v);
+      const cleanFarmerM = cleanPlace(m);
+      const cleanFarmerD = cleanPlace(d);
+
+      const districtSynonyms = new Set([cleanFarmerD]);
+      if (cleanFarmerD === 'ntr' || cleanFarmerD.includes('vijayawada') || cleanFarmerD.includes('krishna')) {
+        districtSynonyms.add('ntr');
+        districtSynonyms.add('vijayawada');
+        districtSynonyms.add('krishna');
+      }
+
+      results = results.map((r) => {
+        const cleanShopV = cleanPlace(r.shop?.village);
+        const cleanShopLoc = cleanPlace(r.shop?.location);
+        const cleanShopM = cleanPlace(r.shop?.mandal);
+        const cleanShopD = cleanPlace(r.shop?.district);
+
+        const locCombined = `${r.shop?.location || ''} ${r.shop?.address || ''}`.toLowerCase();
+        const tokens = locCombined.split(/[,;\s/]+/).map(cleanPlace).filter(Boolean);
+
+        let score = 100;
+        let proximityLevel = 'STATE';
+        let proximityLabel = '📍 In Your State';
+
+        // 3. Same District
+        if (cleanFarmerD && (districtSynonyms.has(cleanShopD) || tokens.some(t => districtSynonyms.has(t)))) {
+          score = 200;
+          proximityLevel = 'DISTRICT';
+          proximityLabel = '📍 In Your District';
+        }
+
+        // 2. Same Mandal
+        if (cleanFarmerM && (cleanShopM === cleanFarmerM || tokens.includes(cleanFarmerM))) {
+          score = 300;
+          proximityLevel = 'MANDAL';
+          proximityLabel = '📍 In Your Mandal';
+        }
+
+        // 1. Same Village (Highest Priority - Strict Match)
+        if (cleanFarmerV && (cleanShopV === cleanFarmerV || cleanShopLoc === cleanFarmerV || tokens.includes(cleanFarmerV))) {
+          score = 400;
+          proximityLevel = 'VILLAGE';
+          proximityLabel = '📍 In Your Village';
+        }
+
+        return {
+          ...r,
+          proximityScore: score,
+          proximityLevel,
+          proximityLabel,
+        };
+      });
+
+      // Sort by proximity hierarchy, then price/rating
+      results.sort((a, b) => b.proximityScore - a.proximityScore || (a.price || 0) - (b.price || 0));
     }
-
-    inventoryPipeline.push({ $sort: { price: 1 } });
-
-    const results = await ShopInventory.aggregate(inventoryPipeline);
 
     return res.status(200).json({ success: true, count: results.length, results });
   } catch (error) {
+    console.error('searchProductsAcrossShops error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -143,7 +205,6 @@ export const addProductToShop = async (req, res) => {
       price: Number(price),
       quantity: Number(quantity),
       unit: unit || product.defaultUnit || 'kg',
-      rating: rating ? Number(rating) : 4.5,
       status: finalStatus,
       imageUrl: imageUrl || product.imageUrl,
     });

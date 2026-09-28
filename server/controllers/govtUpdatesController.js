@@ -22,10 +22,11 @@ export const getGovernmentNewsUpdates = async (req, res) => {
       news: articles,
     });
   } catch (error) {
+    console.error('Error in getGovernmentNewsUpdates:', error.message);
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
-      message: error.message || 'Failed to fetch live agriculture news',
+      message: "We're having trouble loading live news right now. Please try again later.",
       code: error.code || 'NEWS_FETCH_ERROR',
     });
   }

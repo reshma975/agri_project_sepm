@@ -122,12 +122,12 @@ export const isValidSchemeArticle = (article) => {
  * @returns {Promise<Object>} Formatted and strictly filtered government scheme news articles
  */
 export const fetchFarmerNews = async ({ query = '', pageSize = 20, page = 1 } = {}) => {
-  const apiKey = process.env.NEWS_API_KEY;
+  const apiKey = (process.env.NEWS_API_KEY || '').trim();
 
-  if (!apiKey || apiKey.trim() === '' || apiKey === 'mock_news_key' || apiKey === 'your_news_api_key_here') {
-    const error = new Error('NEWS_API_KEY is missing. Please set your API key in server/.env (NEWS_API_KEY=your_key_here) and restart the backend server.');
+  if (!apiKey || apiKey === 'mock_news_key' || apiKey === 'your_news_api_key_here') {
+    const error = new Error('Live news service is currently unavailable.');
     error.statusCode = 503;
-    error.code = 'API_KEY_MISSING';
+    error.code = 'NEWS_SERVICE_UNAVAILABLE';
     throw error;
   }
 
